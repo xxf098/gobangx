@@ -19,6 +19,7 @@ pub struct Config {
     pub log_level: LogLevel,
 }
 
+// TODO: Oracle, SQL Server
 #[derive(Debug, Deserialize, Clone)]
 enum DatabaseType {
     #[serde(rename = "mysql")]
