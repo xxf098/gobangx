@@ -1,14 +1,13 @@
-use crate::config::CliConfig;
-use structopt::StructOpt;
+use std::path::PathBuf;
+use clap::{Parser};
 
 /// A cross-platform TUI database management tool written in Rust
-#[derive(StructOpt, Debug)]
-#[structopt(name = "gobang")]
-pub struct Cli {
-    #[structopt(flatten)]
-    pub config: CliConfig,
+#[derive(Parser)]
+pub struct CliConfig {
+    #[clap(short, long, parse(from_os_str), value_name = "FILE")]
+    pub config: Option<PathBuf>,
 }
 
-pub fn parse() -> Cli {
-    Cli::from_args()
+pub fn parse() -> CliConfig {
+    CliConfig::parse()
 }

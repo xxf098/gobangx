@@ -1,21 +1,14 @@
 use crate::log::LogLevel;
 use crate::Key;
+use crate::cli::CliConfig;
 use serde::Deserialize;
 use std::fmt;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
-use structopt::StructOpt;
 
 #[cfg(test)]
 use serde::Serialize;
-
-#[derive(StructOpt, Debug)]
-pub struct CliConfig {
-    /// Set the config file
-    #[structopt(long, short, global = true)]
-    config_path: Option<std::path::PathBuf>,
-}
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
@@ -158,8 +151,8 @@ impl Default for KeyConfig {
 }
 
 impl Config {
-    pub fn new(config: &CliConfig) -> anyhow::Result<Self> {
-        let config_path = if let Some(config_path) = &config.config_path {
+    pub fn new(cli_config: &CliConfig) -> anyhow::Result<Self> {
+        let config_path = if let Some(config_path) = &cli_config.config {
             config_path.clone()
         } else {
             get_app_config_path()?.join("config.toml")

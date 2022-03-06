@@ -21,10 +21,11 @@ use crossterm::{
 use std::io;
 use tui::{backend::CrosstermBackend, Terminal};
 
+// TODO: pass url from command line
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let value = crate::cli::parse();
-    let config = config::Config::new(&value.config)?;
+    let config = config::Config::new(&value)?;
 
     setup_terminal()?;
 
