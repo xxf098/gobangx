@@ -10,7 +10,7 @@ use crate::{
         command, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
         PropertiesComponent, RecordTableComponent, SqlEditorComponent, TabComponent,
     },
-    config::Config,
+    config::{Config, Connection},
 };
 use tui::{
     backend::Backend,
@@ -132,6 +132,36 @@ impl App {
         self.properties.commands(&mut res);
 
         res
+    }
+
+    pub async fn update_databases_internal(&mut self, conn: Option<&Connection>) -> anyhow::Result<()> {
+        if conn.is_none() {
+            return Ok(())
+        }
+        let conn = conn.unwrap();
+        if let Some(pool) = self.pool.as_ref() {
+            pool.close().await;
+        }
+        self.pool = if conn.is_mysql() {
+            Some(Box::new(
+                MySqlPool::new(conn.database_url()?.as_str()).await?,
+            ))
+        } else if conn.is_postgres() {
+            Some(Box::new(
+                PostgresPool::new(conn.database_url()?.as_str()).await?,
+            ))
+        } else {
+            Some(Box::new(
+                SqlitePool::new(conn.database_url()?.as_str()).await?,
+            ))
+        };
+        self.databases
+            .update(conn, self.pool.as_ref().unwrap())
+            .await?;
+        self.focus = Focus::DabataseList;
+        self.record_table.reset();
+        self.tab.reset();
+        Ok(())
     }
 
     async fn update_databases(&mut self) -> anyhow::Result<()> {

@@ -6,6 +6,7 @@ use std::fmt;
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
+use url::Url;
 
 #[cfg(test)]
 use serde::Serialize;
@@ -52,6 +53,7 @@ impl Default for Config {
                 path: None,
                 password: None,
                 database: None,
+                database_url: None,
             }],
             key_config: KeyConfig::default(),
             log_level: LogLevel::default(),
@@ -65,10 +67,11 @@ pub struct Connection {
     name: Option<String>,
     user: Option<String>,
     host: Option<String>,
-    port: Option<u64>,
-    path: Option<std::path::PathBuf>,
+    port: Option<u16>,
+    path: Option<std::path::PathBuf>, // sqlite file path
     password: Option<String>,
     pub database: Option<String>,
+    pub database_url: Option<String>, // database connection url
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -174,7 +177,35 @@ impl Config {
 }
 
 impl Connection {
+
+    pub fn new(db_url: &str) -> anyhow::Result<Self> {
+        let u = Url::parse(&db_url)?;
+        let db_type = match u.scheme() {
+            "mysql" => DatabaseType::MySql,
+            "postgres" => DatabaseType::Postgres,
+            "sqlite" => DatabaseType::Sqlite,
+            _ => anyhow::bail!("not supported {}", db_url),
+        };
+        // FIXME: sqlite
+        let database = u.path_segments().map(|c| c.collect::<Vec<_>>().iter().map(|c| c.to_string()).next()).flatten();
+        let c = Self {
+            r#type: db_type,
+            name: None,
+            user: Some(u.username().to_string()),
+            host: u.host_str().map(|s| s.to_string()),
+            port: u.port(),
+            path: None,
+            password: u.password().map(|s| s.to_string()),
+            database: database,
+            database_url: Some(db_url.to_string()),
+        };
+        return Ok(c)
+    }
+    
     pub fn database_url(&self) -> anyhow::Result<String> {
+        if self.database_url.is_some() {
+            return Ok(self.database_url.as_ref().map(|u| u.to_string()).unwrap())
+        }
         match self.r#type {
             DatabaseType::MySql => {
                 let user = self
@@ -319,7 +350,7 @@ fn expand_path(path: &Path) -> Option<PathBuf> {
 
 #[cfg(test)]
 mod test {
-    use super::{expand_path, KeyConfig, Path, PathBuf};
+    use super::{expand_path, KeyConfig, Path, PathBuf, Connection};
     use serde_json::Value;
     use std::env;
 
@@ -402,5 +433,17 @@ mod test {
                     .join("bar")
             )
         );
+    }
+
+    #[test]
+    fn test_new_connection() {
+        let db_url = "postgres://root:123456@192.168.0.123:5432/test";
+        let conn = Connection::new(db_url).unwrap();
+        assert_eq!(conn.user, Some("root".to_string()));
+        assert_eq!(conn.host, Some("192.168.0.123".to_string()));
+        assert_eq!(conn.port, Some(5432));
+        assert_eq!(conn.password, Some("123456".to_string()));
+        assert_eq!(conn.database, Some("test".to_string()));
+        assert_eq!(conn.database_url, Some(db_url.to_string()));
     }
 }

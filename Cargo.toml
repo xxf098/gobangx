@@ -38,6 +38,7 @@ dirs-next = "2.0"
 clap = { version = "3.1.5", features = ["derive"] }
 syntect = { version = "4.6", default-features = false, features = ["metadata", "default-fancy"]}
 unicode-segmentation = "1.9"
+url = "2.2.2"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
 which = "4.2"
