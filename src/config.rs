@@ -53,6 +53,7 @@ impl Default for Config {
                 path: None,
                 password: None,
                 database: None,
+                ssl_mode: None,
                 database_url: None,
             }],
             key_config: KeyConfig::default(),
@@ -70,6 +71,7 @@ pub struct Connection {
     port: Option<u16>,
     path: Option<std::path::PathBuf>, // sqlite file path
     password: Option<String>,
+    ssl_mode: Option<String>, // mysql ssl-mode
     pub database: Option<String>,
     pub database_url: Option<String>, // database connection url
 }
@@ -186,8 +188,9 @@ impl Connection {
             "sqlite" => DatabaseType::Sqlite,
             _ => anyhow::bail!("not supported {}", db_url),
         };
-        // FIXME: sqlite
         let database = u.path_segments().map(|c| c.collect::<Vec<_>>().iter().map(|c| c.to_string()).next()).flatten();
+        let pairs = u.query_pairs();
+        let ssl_mode = pairs.filter(|p| p.0 == "ssl-mode").map(|p| p.1.to_string()).next();
         let c = Self {
             r#type: db_type,
             name: None,
@@ -197,6 +200,7 @@ impl Connection {
             path: None,
             password: u.password().map(|s| s.to_string()),
             database: database,
+            ssl_mode: ssl_mode,
             database_url: Some(db_url.to_string()),
         };
         return Ok(c)
@@ -224,22 +228,25 @@ impl Connection {
                     .password
                     .as_ref()
                     .map_or(String::new(), |p| p.to_string());
+                let ssl_mode = self.ssl_mode.as_deref().unwrap_or("DISABLED");
 
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
-                        "mysql://{user}:{password}@{host}:{port}/{database}",
+                        "mysql://{user}:{password}@{host}:{port}/{database}?ssl-mode={ssl_mode}",
                         user = user,
                         password = password,
                         host = host,
                         port = port,
-                        database = database
+                        database = database,
+                        ssl_mode = ssl_mode,
                     )),
                     None => Ok(format!(
-                        "mysql://{user}:{password}@{host}:{port}",
+                        "mysql://{user}:{password}@{host}:{port}?ssl-mode={ssl_mode}",
                         user = user,
                         password = password,
                         host = host,
                         port = port,
+                        ssl_mode = ssl_mode, 
                     )),
                 }
             }
