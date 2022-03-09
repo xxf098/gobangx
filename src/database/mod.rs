@@ -1,10 +1,12 @@
 pub mod mysql;
 pub mod postgres;
 pub mod sqlite;
+pub mod mssql;
 
 pub use mysql::MySqlPool;
 pub use postgres::PostgresPool;
 pub use sqlite::SqlitePool;
+pub use mssql::MssqlPool;
 
 use async_trait::async_trait;
 use database_tree::{Child, Database, Table};

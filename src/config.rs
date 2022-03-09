@@ -29,6 +29,8 @@ enum DatabaseType {
     Postgres,
     #[serde(rename = "sqlite")]
     Sqlite,
+    #[serde(rename = "mssql")]
+    Mssql,
 }
 
 impl fmt::Display for DatabaseType {
@@ -37,6 +39,7 @@ impl fmt::Display for DatabaseType {
             Self::MySql => write!(f, "mysql"),
             Self::Postgres => write!(f, "postgres"),
             Self::Sqlite => write!(f, "sqlite"),
+            Self::Mssql => write!(f, "mssql"),
         }
     }
 }
@@ -286,6 +289,42 @@ impl Connection {
                     )),
                 }
             }
+            DatabaseType::Mssql => {
+                let user = self
+                    .user
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("type postgres needs the user field"))?;
+                let host = self
+                    .host
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("type postgres needs the host field"))?;
+                let port = self
+                    .port
+                    .as_ref()
+                    .ok_or_else(|| anyhow::anyhow!("type postgres needs the port field"))?;
+                let password = self
+                    .password
+                    .as_ref()
+                    .map_or(String::new(), |p| p.to_string());
+
+                match self.database.as_ref() {
+                    Some(database) => Ok(format!(
+                        "mssql://{user}:{password}@{host}:{port}/{database}",
+                        user = user,
+                        password = password,
+                        host = host,
+                        port = port,
+                        database = database
+                    )),
+                    None => Ok(format!(
+                        "mssql://{user}:{password}@{host}:{port}",
+                        user = user,
+                        password = password,
+                        host = host,
+                        port = port,
+                    )),
+                }                
+            }
             DatabaseType::Sqlite => {
                 let path = self.path.as_ref().map_or(
                     Err(anyhow::anyhow!("type sqlite needs the path field")),
@@ -318,6 +357,10 @@ impl Connection {
 
     pub fn is_postgres(&self) -> bool {
         matches!(self.r#type, DatabaseType::Postgres)
+    }
+
+    pub fn is_mssql(&self) -> bool {
+        matches!(self.r#type, DatabaseType::Mssql)
     }
 }
 
