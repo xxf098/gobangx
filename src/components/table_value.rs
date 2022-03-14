@@ -15,7 +15,7 @@ pub struct TableValueComponent {
 }
 
 impl TableValueComponent {
-    pub fn new(value: String) -> Self {
+    pub fn _new(value: String) -> Self {
         Self { value }
     }
 }

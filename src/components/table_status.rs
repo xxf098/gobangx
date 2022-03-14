@@ -16,6 +16,7 @@ pub struct TableStatusComponent {
     column_count: Option<usize>,
     row_count: Option<usize>,
     table: Option<Table>,
+    table_value: Option<String>,
 }
 
 impl Default for TableStatusComponent {
@@ -24,6 +25,7 @@ impl Default for TableStatusComponent {
             row_count: None,
             column_count: None,
             table: None,
+            table_value: None,
         }
     }
 }
@@ -32,12 +34,14 @@ impl TableStatusComponent {
     pub fn new(
         row_count: Option<usize>,
         column_count: Option<usize>,
+        table_value: Option<String>,
         table: Option<Table>,
     ) -> Self {
         Self {
             row_count,
             column_count,
             table,
+            table_value,
         }
     }
 }
@@ -54,11 +58,12 @@ impl DrawableComponent for TableStatusComponent {
                 self.column_count.map_or("-".to_string(), |c| c.to_string())
             )),
             Span::from(format!(
-                "engine: {}",
+                "engine: {}, ",
                 self.table.as_ref().map_or("-".to_string(), |c| {
                     c.engine.as_ref().map_or("-".to_string(), |e| e.to_string())
                 })
             )),
+            Span::from(format!("{}", self.table_value.as_deref().unwrap_or(""))),
         ]))
         .block(Block::default().borders(Borders::TOP).style(if focused {
             Style::default()

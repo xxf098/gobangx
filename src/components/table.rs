@@ -1,6 +1,6 @@
 use super::{
     utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
-    StatefulDrawableComponent, TableStatusComponent, TableValueComponent,
+    StatefulDrawableComponent, TableStatusComponent,
 };
 use crate::components::command::{self, CommandInfo};
 use crate::config::KeyConfig;
@@ -453,7 +453,7 @@ impl StatefulDrawableComponent for TableComponent {
             .direction(Direction::Vertical)
             .constraints(
                 [
-                    Constraint::Length(2),
+                    // Constraint::Length(2),
                     Constraint::Min(1),
                     Constraint::Length(2),
                 ]
@@ -481,14 +481,14 @@ impl StatefulDrawableComponent for TableComponent {
                 self.scroll.update(
                     selection,
                     self.rows.len(),
-                    chunks[1].height.saturating_sub(2) as usize,
+                    chunks[0].height.saturating_sub(2) as usize,
                 );
             },
         );
 
         let block = Block::default().borders(Borders::NONE);
         let (selected_column_index, headers, rows, constraints) =
-            self.calculate_cell_widths(block.inner(chunks[0]).width);
+            self.calculate_cell_widths(block.inner(chunks[1]).width);
         let header_cells = headers.iter().enumerate().map(|(column_index, h)| {
             Cell::from(h.to_string()).style(if selected_column_index == column_index {
                 Style::default().add_modifier(Modifier::BOLD)
@@ -530,7 +530,7 @@ impl StatefulDrawableComponent for TableComponent {
         let mut state = self.selected_row.clone();
         f.render_stateful_widget(
             table,
-            chunks[1],
+            chunks[0],
             if let Some((_, y)) = self.selection_area_corner {
                 state.select(Some(y));
                 &mut state
@@ -539,8 +539,8 @@ impl StatefulDrawableComponent for TableComponent {
             },
         );
 
-        TableValueComponent::new(self.selected_cells().unwrap_or_default())
-            .draw(f, chunks[0], focused)?;
+        // TableValueComponent::new(self.selected_cells().unwrap_or_default())
+        //     .draw(f, chunks[0], focused)?;
 
         TableStatusComponent::new(
             if self.rows.is_empty() {
@@ -553,11 +553,12 @@ impl StatefulDrawableComponent for TableComponent {
             } else {
                 Some(self.headers.len())
             },
+            self.selected_cells(),
             self.table.as_ref().map(|t| t.1.clone()),
         )
-        .draw(f, chunks[2], focused)?;
+        .draw(f, chunks[1], focused)?;
 
-        self.scroll.draw(f, chunks[1]);
+        self.scroll.draw(f, chunks[0]);
         Ok(())
     }
 }
