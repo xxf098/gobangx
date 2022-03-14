@@ -18,14 +18,14 @@ impl Default for EventConfig {
 }
 
 #[derive(Copy, Clone)]
-pub enum Event<I> {
-    Input(I),
+pub enum Event {
+    Input(Key),
     Tick,
 }
 
 pub struct Events {
-    rx: mpsc::Receiver<Event<Key>>,
-    _tx: mpsc::Sender<Event<Key>>,
+    rx: mpsc::Receiver<Event>,
+    _tx: mpsc::Sender<Event>,
 }
 
 impl Events {
@@ -55,7 +55,7 @@ impl Events {
         Events { rx, _tx: tx }
     }
 
-    pub fn next(&self) -> Result<Event<Key>, mpsc::RecvError> {
+    pub fn next(&self) -> Result<Event, mpsc::RecvError> {
         self.rx.recv()
     }
 }
