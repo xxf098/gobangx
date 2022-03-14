@@ -22,7 +22,7 @@ pub struct Config {
 
 // TODO: Oracle, SQL Server
 #[derive(Debug, Deserialize, Clone)]
-enum DatabaseType {
+pub enum DatabaseType {
     #[serde(rename = "mysql")]
     MySql,
     #[serde(rename = "postgres")]
@@ -119,6 +119,7 @@ pub struct KeyConfig {
     pub expand_column_width: Key,
     pub shorten_column_width: Key,
     pub reset_column_width: Key,
+    pub delete: Key, // drop table/ delete record 
 }
 
 impl Default for KeyConfig {
@@ -161,6 +162,7 @@ impl Default for KeyConfig {
             expand_column_width: Key::Char('='),
             shorten_column_width: Key::Char('-'),
             reset_column_width: Key::Char('0'),
+            delete: Key::Char('D'),
         }
     }
 }

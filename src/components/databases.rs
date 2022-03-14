@@ -3,13 +3,14 @@ use super::{
     EventState,
 };
 use crate::components::command::{self, CommandInfo};
-use crate::config::{Connection, KeyConfig};
+use crate::config::{Connection, KeyConfig, DatabaseType};
 use crate::database::Pool;
 use crate::event::Key;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
 use database_tree::{Database, DatabaseTree, DatabaseTreeItem};
+use async_trait::async_trait;
 use std::collections::BTreeSet;
 use std::convert::From;
 use tui::{
@@ -217,6 +218,7 @@ impl DrawableComponent for DatabasesComponent {
     }
 }
 
+#[async_trait]
 impl Component for DatabasesComponent {
     fn commands(&self, out: &mut Vec<CommandInfo>) {
         out.push(CommandInfo::new(command::expand_collapse(&self.key_config)))
@@ -260,6 +262,26 @@ impl Component for DatabasesComponent {
                 }
             }
         }
+        Ok(EventState::NotConsumed)
+    }
+
+    async fn async_event(
+        &mut self,
+        key: crate::event::Key,
+        pool: &Box<dyn Pool>,
+    ) -> Result<EventState> {
+        if key == self.key_config.delete {
+            if let Some((database, table)) = self.tree().selected_table() {
+                let sql = match pool.database_type() {
+                    DatabaseType::Postgres => format!("drop table {}.{}.{}", database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()),table.name),
+                    DatabaseType::MySql => format!("drop table {}.{}", database.name, table.name),
+                    _ => format!("drop table {}", table.name)
+                };
+                pool.execute(&sql).await?;
+                // TODO: update database
+            }
+            return Ok(EventState::Consumed)
+        } 
         Ok(EventState::NotConsumed)
     }
 }
