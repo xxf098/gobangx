@@ -10,6 +10,7 @@ pub use mssql::MssqlPool;
 
 use async_trait::async_trait;
 use database_tree::{Child, Database, Table};
+use crate::config::DatabaseType;
 
 pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
 
@@ -46,6 +47,8 @@ pub trait Pool: Send + Sync {
         table: &Table,
     ) -> anyhow::Result<Vec<Box<dyn TableRow>>>;
     async fn close(&self);
+
+    fn database_type(&self) -> DatabaseType;
 }
 
 pub enum ExecuteResult {

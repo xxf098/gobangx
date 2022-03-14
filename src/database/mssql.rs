@@ -7,6 +7,7 @@ use futures::TryStreamExt;
 use itertools::Itertools;
 use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use crate::get_or_null;
+use crate::config::DatabaseType;
 
 
 pub type MssqlPoolOptions = sqlx::pool::PoolOptions<Mssql>;
@@ -431,6 +432,10 @@ impl Pool for MssqlPool {
 
     async fn close(&self) {
         self.pool.close().await;
+    }
+
+    fn database_type(&self) -> DatabaseType {
+        DatabaseType::Mssql
     }
 }
 

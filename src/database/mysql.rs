@@ -1,5 +1,5 @@
 use crate::get_or_null;
-
+use crate::config::DatabaseType;
 use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
@@ -393,6 +393,10 @@ impl Pool for MySqlPool {
 
     async fn close(&self) {
         self.pool.close().await;
+    }
+
+    fn database_type(&self) -> DatabaseType {
+        DatabaseType::MySql
     }
 }
 

@@ -1,5 +1,5 @@
 use crate::get_or_null;
-
+use crate::config::DatabaseType;
 use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
 use async_trait::async_trait;
 use chrono::NaiveDateTime;
@@ -380,6 +380,10 @@ impl Pool for SqlitePool {
 
     async fn close(&self) {
         self.pool.close().await;
+    }
+    
+    fn database_type(&self) -> DatabaseType {
+        DatabaseType::Sqlite
     }
 }
 
