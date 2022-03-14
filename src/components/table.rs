@@ -22,6 +22,7 @@ pub struct TableComponent {
     pub rows: Vec<Vec<String>>,
     pub eod: bool,
     pub selected_row: TableState,
+    constraint_adjust: Vec<u16>, // adjust constraints
     table: Option<(Database, DTable)>,
     selected_column: usize,
     selection_area_corner: Option<(usize, usize)>,
@@ -37,6 +38,7 @@ impl TableComponent {
             headers: vec![],
             rows: vec![],
             table: None,
+            constraint_adjust: vec![],
             selected_column: 0,
             selection_area_corner: None,
             column_page_start: std::cell::Cell::new(0),
@@ -162,6 +164,38 @@ impl TableComponent {
         self.selected_column -= 1;
     }
 
+    fn expand_column(&mut self) {
+        if self.rows.is_empty() {
+            return;
+        }
+        let index = self.selected_column_index()+1;
+        let adjust = self.constraint_adjust[index];
+        if adjust >= 24 {
+            return
+        }
+        self.constraint_adjust[index] = adjust + 1;
+    }
+
+    fn shorten_column(&mut self) {
+        if self.rows.is_empty() {
+            return;
+        }
+        let index = self.selected_column_index()+1;
+        let adjust = self.constraint_adjust[index];
+        if adjust < 1 {
+            return 
+        }
+        self.constraint_adjust[index] = adjust - 1;
+    }
+
+    fn reset_column(&mut self) {
+        if self.rows.is_empty() {
+            return;
+        }
+        let index = self.selected_column_index()+1;
+        self.constraint_adjust[index] = 0;
+    }
+
     fn expand_selected_area_x(&mut self, positive: bool) {
         if self.selection_area_corner.is_none() {
             self.selection_area_corner = Some((
@@ -279,7 +313,7 @@ impl TableComponent {
     }
 
     fn calculate_cell_widths(
-        &self,
+        &mut self,
         area_width: u16,
     ) -> (usize, Vec<String>, Vec<Vec<String>>, Vec<Constraint>) {
         if self.rows.is_empty() {
@@ -380,6 +414,17 @@ impl TableComponent {
             constraints.push(Constraint::Min(10));
         }
         constraints.insert(0, Constraint::Length(number_column_width));
+        if self.constraint_adjust.len() < 1 {
+            self.constraint_adjust = vec![0; constraints.len()];
+        }
+        for (i, adjust) in self.constraint_adjust.iter().enumerate() {
+            if *adjust > 0 {
+                match constraints[i] {
+                    Constraint::Length(l) => { constraints[i] = Constraint::Length(l+*adjust) },
+                    _ => {}
+                }
+            }
+        }
         self.column_page_start.set(far_left_column_index);
 
         (
@@ -560,6 +605,15 @@ impl Component for TableComponent {
             return Ok(EventState::Consumed);
         } else if key == self.key_config.extend_selection_by_one_cell_right {
             self.expand_selected_area_x(true);
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.expand_column_width {
+            self.expand_column();
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.shorten_column_width {
+            self.shorten_column();
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.reset_column_width {
+            self.reset_column();
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)

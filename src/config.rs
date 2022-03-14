@@ -116,6 +116,9 @@ pub struct KeyConfig {
     pub tab_properties: Key,
     pub extend_or_shorten_widget_width_to_right: Key,
     pub extend_or_shorten_widget_width_to_left: Key,
+    pub expand_column_width: Key,
+    pub shorten_column_width: Key,
+    pub reset_column_width: Key,
 }
 
 impl Default for KeyConfig {
@@ -155,6 +158,9 @@ impl Default for KeyConfig {
             tab_indexes: Key::Char('7'),
             extend_or_shorten_widget_width_to_right: Key::Char('>'),
             extend_or_shorten_widget_width_to_left: Key::Char('<'),
+            expand_column_width: Key::Char('='),
+            shorten_column_width: Key::Char('-'),
+            reset_column_width: Key::Char('0'),
         }
     }
 }

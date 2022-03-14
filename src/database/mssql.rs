@@ -246,7 +246,7 @@ impl Pool for MssqlPool {
         &self,
         database: &Database,
         table: &Table,
-        page: u16,
+        _page: u16,
         filter: Option<String>,
     ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
         // FIXME
