@@ -29,6 +29,7 @@ pub struct TableComponent {
     column_page_start: std::cell::Cell<usize>,
     scroll: VerticalScroll,
     key_config: KeyConfig,
+    area_width: u16,
 }
 
 impl TableComponent {
@@ -45,6 +46,7 @@ impl TableComponent {
             scroll: VerticalScroll::new(false, false),
             eod: false,
             key_config,
+            area_width: 0,
         }
     }
 
@@ -170,7 +172,7 @@ impl TableComponent {
         }
         let index = self.selected_column_index()+1;
         let adjust = self.constraint_adjust[index];
-        if adjust >= 24 {
+        if adjust >= self.area_width*2/5 {
             return
         }
         self.constraint_adjust[index] = adjust + 1;
@@ -487,8 +489,9 @@ impl StatefulDrawableComponent for TableComponent {
         );
 
         let block = Block::default().borders(Borders::NONE);
+        self.area_width = block.inner(chunks[1]).width;
         let (selected_column_index, headers, rows, constraints) =
-            self.calculate_cell_widths(block.inner(chunks[1]).width);
+            self.calculate_cell_widths(self.area_width);
         let header_cells = headers.iter().enumerate().map(|(column_index, h)| {
             Cell::from(h.to_string()).style(if selected_column_index == column_index {
                 Style::default().add_modifier(Modifier::BOLD)
