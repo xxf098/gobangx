@@ -3,7 +3,7 @@ use crate::components::{
     CommandInfo, Component as _, DrawableComponent as _, EventState, StatefulDrawableComponent,
 };
 use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, MssqlPool, RECORDS_LIMIT_PER_PAGE};
-use crate::event::Key;
+use crate::event::{Key, Event, Store};
 use crate::{
     components::tab::Tab,
     components::{
@@ -17,6 +17,7 @@ use tui::{
     layout::{Constraint, Direction, Layout, Rect},
     Frame,
 };
+use tokio::sync::mpsc;
 
 pub enum Focus {
     DabataseList,
@@ -36,10 +37,12 @@ pub struct App {
     left_main_chunk_percentage: u16,
     pub config: Config,
     pub error: ErrorComponent,
+    pub store: Store,
 }
 
 impl App {
-    pub fn new(config: Config) -> App {
+    pub fn new(config: Config, sender: mpsc::Sender<Event>) -> App {
+        let store = Store::new(sender);
         Self {
             config: config.clone(),
             connections: ConnectionsComponent::new(config.key_config.clone(), config.conn),
@@ -48,11 +51,12 @@ impl App {
             sql_editor: SqlEditorComponent::new(config.key_config.clone()),
             tab: TabComponent::new(config.key_config.clone()),
             help: HelpComponent::new(config.key_config.clone()),
-            databases: DatabasesComponent::new(config.key_config.clone()),
+            databases: DatabasesComponent::new(config.key_config.clone(), store.clone()),
             error: ErrorComponent::new(config.key_config),
             focus: Focus::ConnectionList,
             pool: None,
             left_main_chunk_percentage: 15,
+            store,
         }
     }
 
@@ -164,7 +168,7 @@ impl App {
         Ok(())
     }
 
-    async fn update_databases(&mut self) -> anyhow::Result<()> {
+    async fn update_databases(&mut self, is_focus: bool) -> anyhow::Result<()> {
         if let Some(conn) = self.connections.selected_connection() {
             if let Some(pool) = self.pool.as_ref() {
                 pool.close().await;
@@ -189,7 +193,7 @@ impl App {
             self.databases
                 .update(conn, self.pool.as_ref().unwrap())
                 .await?;
-            self.focus = Focus::DabataseList;
+            if is_focus { self.focus = Focus::DabataseList; }
             self.record_table.reset();
             self.tab.reset();
         }
@@ -232,6 +236,17 @@ impl App {
         Ok(EventState::NotConsumed)
     }
 
+    pub async fn action_event(&mut self, r: Event) -> anyhow::Result<EventState> {
+        match r {
+            Event::RedrawDatabase(focus) => {
+                self.update_databases(focus).await?;
+                return Ok(EventState::Consumed)
+            },
+            _ => {},
+        };
+        return Ok(EventState::NotConsumed)
+    }
+
     async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
         if self.error.event(key)?.is_consumed() {
             return Ok(EventState::Consumed);
@@ -248,7 +263,7 @@ impl App {
                 }
 
                 if key == self.config.key_config.enter {
-                    self.update_databases().await?;
+                    self.update_databases(true).await?;
                     return Ok(EventState::Consumed);
                 }
             }
@@ -413,10 +428,12 @@ impl App {
 #[cfg(test)]
 mod test {
     use super::{App, Config, EventState, Key};
+    use crate::event::Events;
 
     #[test]
     fn test_extend_or_shorten_widget_width() {
-        let mut app = App::new(Config::default());
+        let events = Events::new(250);
+        let mut app = App::new(Config::default(), events.sender());
         assert_eq!(
             app.extend_or_shorten_widget_width(Key::Char('>')).unwrap(),
             EventState::Consumed

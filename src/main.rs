@@ -33,7 +33,7 @@ async fn main() -> anyhow::Result<()> {
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
     let mut events = event::Events::new(250);
-    let mut app = App::new(config.clone());
+    let mut app = App::new(config.clone(), events.sender());
     app.update_databases_internal(connection.as_ref()).await?;
 
     terminal.clear()?;
@@ -58,6 +58,10 @@ async fn main() -> anyhow::Result<()> {
                 Err(err) => app.error.set(err.to_string())?,
             },
             Event::Tick => (),
+            _  => match app.action_event(next_event).await {
+                Ok(_) => {},
+                Err(err) => app.error.set(err.to_string())?,
+            },
         }
     }
 

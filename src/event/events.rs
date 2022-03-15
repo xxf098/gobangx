@@ -21,6 +21,7 @@ impl Default for EventConfig {
 #[derive(Copy, Clone, Debug)]
 pub enum Event {
     Input(Key),
+    RedrawDatabase(bool),
     Tick,
 }
 
@@ -72,4 +73,40 @@ impl Events {
     pub async fn next(&mut self) -> Option<Event> {
         self.rx.recv().await
     }
+
+    pub fn sender(&self) -> mpsc::Sender<Event> {
+        self._tx.clone()
+    }
+}
+
+
+#[derive(Clone)]
+pub struct Store {
+    pub sender: mpsc::Sender<Event>,
+}
+
+
+impl Store {
+
+    pub fn new(sender: mpsc::Sender<Event>) -> Self {
+        Self { sender }
+    }
+
+    pub async fn dispatch(&self, event: Event) -> anyhow::Result<()> {
+        self.sender.send(event).await.map_err(|e| anyhow::anyhow!(e))
+    }
+
+    pub async fn dispatch_each(&self, events: Vec<Event>) -> anyhow::Result<()> {
+        for event in events.into_iter() {
+            if let Err(e) = self.sender.send(event).await.map_err(|e| anyhow::anyhow!(e)) {
+                return Err(e)
+            }
+        }
+        Ok(())
+    }
+
+    // pub async fn dispatch_all(&self, events: Vec<Event>) -> anyhow::Result<()> {
+
+    // }
+
 }

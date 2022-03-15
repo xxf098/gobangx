@@ -5,7 +5,7 @@ use super::{
 use crate::components::command::{self, CommandInfo};
 use crate::config::{Connection, KeyConfig, DatabaseType};
 use crate::database::Pool;
-use crate::event::Key;
+use crate::event::{Key, Store, Event};
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
@@ -41,10 +41,11 @@ pub struct DatabasesComponent {
     scroll: VerticalScroll,
     focus: Focus,
     key_config: KeyConfig,
+    store: Store,
 }
 
 impl DatabasesComponent {
-    pub fn new(key_config: KeyConfig) -> Self {
+    pub fn new(key_config: KeyConfig, store: Store) -> Self {
         Self {
             tree: DatabaseTree::default(),
             filter: DatabaseFilterComponent::new(),
@@ -52,6 +53,7 @@ impl DatabasesComponent {
             scroll: VerticalScroll::new(false, false),
             focus: Focus::Tree,
             key_config,
+            store,
         }
     }
 
@@ -278,7 +280,7 @@ impl Component for DatabasesComponent {
                     _ => format!("drop table {}", table.name)
                 };
                 pool.execute(&sql).await?;
-                // TODO: update database ui
+                self.store.dispatch(Event::RedrawDatabase(true)).await?;
             }
             return Ok(EventState::Consumed)
         } 
