@@ -1,4 +1,5 @@
 use crate::{Database, Schema, Table};
+use uuid::Uuid;
 
 #[derive(Debug, Clone)]
 pub struct TreeItemInfo {
@@ -103,6 +104,7 @@ impl DatabaseTreeItemKind {
 /// `DatabaseTreeItem` can be of two kinds: see `DatabaseTreeItem` but shares an info
 #[derive(Debug, Clone)]
 pub struct DatabaseTreeItem {
+    pub id: Uuid,
     info: TreeItemInfo,
     kind: DatabaseTreeItemKind,
 }
@@ -110,6 +112,7 @@ pub struct DatabaseTreeItem {
 impl DatabaseTreeItem {
     pub fn new_table(database: &Database, table: &Table) -> Self {
         Self {
+            id: Uuid::new_v4(),
             info: TreeItemInfo::new(if table.schema.is_some() { 2 } else { 1 }, false),
             kind: DatabaseTreeItemKind::Table {
                 database: database.clone(),
@@ -120,6 +123,7 @@ impl DatabaseTreeItem {
 
     pub fn new_schema(database: &Database, schema: &Schema, _collapsed: bool) -> Self {
         Self {
+            id: Uuid::new_v4(),
             info: TreeItemInfo::new(1, false),
             kind: DatabaseTreeItemKind::Schema {
                 database: database.clone(),
@@ -131,6 +135,7 @@ impl DatabaseTreeItem {
 
     pub fn new_database(database: &Database, _collapsed: bool) -> Self {
         Self {
+            id: Uuid::new_v4(),
             info: TreeItemInfo::new(0, true),
             kind: DatabaseTreeItemKind::Database {
                 name: database.name.to_string(),

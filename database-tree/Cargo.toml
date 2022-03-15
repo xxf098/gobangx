@@ -12,4 +12,5 @@ description = "Database tree structure"
 [dependencies]
 thiserror = "1.0"
 chrono = "0.4"
-anyhow = "1.0.38"
+anyhow = "1.0.55"
+uuid = { version = "0.8", features = ["serde", "v4"] }

@@ -4,6 +4,7 @@ use crate::{
 };
 use crate::{Database, Table};
 use std::{collections::BTreeSet, usize};
+use uuid::Uuid;
 
 ///
 #[derive(Copy, Clone, Debug)]
@@ -55,6 +56,16 @@ impl DatabaseTree {
         new_self
     }
 
+    pub fn filter_by_id(&self, id: Uuid, reverse: bool) -> Self {
+        let mut new_self = Self {
+            items: self.items.filter_by_id(id, reverse),
+            selection: Some(0),
+            visual_selection: None,
+        };
+        new_self.visual_selection = new_self.calc_visual_selection();
+        new_self
+    }
+
     pub fn collapse_but_root(&mut self) {
         self.items.collapse(0, true);
         self.items.expand(0, false);
@@ -77,13 +88,13 @@ impl DatabaseTree {
             .and_then(|index| self.items.tree_items.get(index))
     }
 
-    pub fn selected_table(&self) -> Option<(Database, Table)> {
+    pub fn selected_table(&self) -> Option<(Database, Table, Uuid)> {
         self.selection.and_then(|index| {
             let item = &self.items.tree_items[index];
             match item.kind() {
                 DatabaseTreeItemKind::Database { .. } => None,
                 DatabaseTreeItemKind::Table { table, database } => {
-                    Some((database.clone(), table.clone()))
+                    Some((database.clone(), table.clone(), item.id))
                 }
                 DatabaseTreeItemKind::Schema { .. } => None,
             }

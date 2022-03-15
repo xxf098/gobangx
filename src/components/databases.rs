@@ -5,7 +5,7 @@ use super::{
 use crate::components::command::{self, CommandInfo};
 use crate::config::{Connection, KeyConfig, DatabaseType};
 use crate::database::Pool;
-use crate::event::{Key, Store, Event};
+use crate::event::{Key, Store};
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
@@ -273,14 +273,14 @@ impl Component for DatabasesComponent {
         pool: &Box<dyn Pool>,
     ) -> Result<EventState> {
         if key == self.key_config.delete {
-            if let Some((database, table)) = self.tree().selected_table() {
+            if let Some((database, table, id)) = self.tree.selected_table() {
                 let sql = match pool.database_type() {
                     DatabaseType::Postgres => format!("drop table {}.{}.{}", database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()),table.name),
                     DatabaseType::MySql => format!("drop table {}.{}", database.name, table.name),
                     _ => format!("drop table {}", table.name)
                 };
                 pool.execute(&sql).await?;
-                self.store.dispatch(Event::RedrawDatabase(true)).await?;
+                self.tree = self.tree.filter_by_id(id, true);
             }
             return Ok(EventState::Consumed)
         } 

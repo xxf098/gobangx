@@ -201,7 +201,7 @@ impl App {
     }
 
     async fn update_record_table(&mut self) -> anyhow::Result<()> {
-        if let Some((database, table)) = self.databases.tree().selected_table() {
+        if let Some((database, table, _)) = self.databases.tree().selected_table() {
             let (headers, records) = self
                 .pool
                 .as_ref()
@@ -274,7 +274,7 @@ impl App {
                 }
 
                 if key == self.config.key_config.enter && self.databases.tree_focused() {
-                    if let Some((database, table)) = self.databases.tree().selected_table() {
+                    if let Some((database, table, _)) = self.databases.tree().selected_table() {
                         self.record_table.reset();
                         let (headers, records) = self
                             .pool
@@ -317,7 +317,7 @@ impl App {
 
                         if let Some(index) = self.record_table.table.selected_row.selected() {
                             if index.saturating_add(1) % RECORDS_LIMIT_PER_PAGE as usize == 0 {
-                                if let Some((database, table)) =
+                                if let Some((database, table, _)) =
                                     self.databases.tree().selected_table()
                                 {
                                     let (_, records) = self
