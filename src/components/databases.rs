@@ -3,7 +3,7 @@ use super::{
     EventState,
 };
 use crate::components::command::{self, CommandInfo};
-use crate::config::{Connection, KeyConfig, DatabaseType};
+use crate::config::{Connection, KeyConfig};
 use crate::database::Pool;
 use crate::event::{Key, Store};
 use crate::clipboard::copy_to_clipboard;
@@ -282,16 +282,13 @@ impl Component for DatabasesComponent {
     ) -> Result<EventState> {
         if key == self.key_config.delete {
             if let Some((database, table, id)) = self.tree.selected_table() {
-                let sql = match pool.database_type() {
-                    DatabaseType::Postgres => format!("drop table {}.{}.{}", database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()),table.name),
-                    DatabaseType::MySql => format!("drop table {}.{}", database.name, table.name),
-                    _ => format!("drop table {}", table.name)
-                };
+                let sql = pool.database_type().drop_table(&database, &table);
                 pool.execute(&sql).await?;
                 self.tree = self.tree.filter_by_id(id, true);
             }
             return Ok(EventState::Consumed)
         }
+        // self.key_config.advanced_copy
         Ok(EventState::NotConsumed)
     }
 }

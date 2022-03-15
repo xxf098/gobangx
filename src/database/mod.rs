@@ -68,6 +68,17 @@ pub trait TableRow: std::marker::Send {
     fn columns(&self) -> Vec<String>;
 }
 
+impl DatabaseType {
+
+    pub fn drop_table(&self, database: &Database, table: &Table) -> String {
+        match self {
+            DatabaseType::Postgres => format!("drop table {}.{}.{}", database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()),table.name),
+            DatabaseType::MySql => format!("drop table {}.{}", database.name, table.name),
+            _ => format!("drop table {}", table.name)
+        }
+    }
+}
+
 #[macro_export]
 macro_rules! get_or_null {
     ($value:expr) => {
