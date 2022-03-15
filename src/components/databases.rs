@@ -6,6 +6,7 @@ use crate::components::command::{self, CommandInfo};
 use crate::config::{Connection, KeyConfig, DatabaseType};
 use crate::database::Pool;
 use crate::event::{Key, Store};
+use crate::clipboard::copy_to_clipboard;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
@@ -250,6 +251,13 @@ impl Component for DatabasesComponent {
                     return Ok(EventState::Consumed);
                 }
             }
+            key if key == self.key_config.copy => {
+                if let Some(item) = self.tree.selected_item() {
+                    let name = item.kind().name();
+                    copy_to_clipboard(&name)?;
+                }
+                return Ok(EventState::Consumed);
+            }
             key => {
                 if tree_nav(
                     if let Some(tree) = self.filterd_tree.as_mut() {
@@ -283,7 +291,7 @@ impl Component for DatabasesComponent {
                 self.tree = self.tree.filter_by_id(id, true);
             }
             return Ok(EventState::Consumed)
-        } 
+        }
         Ok(EventState::NotConsumed)
     }
 }
