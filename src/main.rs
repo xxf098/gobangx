@@ -32,7 +32,7 @@ async fn main() -> anyhow::Result<()> {
 
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
-    let events = event::Events::new(250);
+    let mut events = event::Events::new(250);
     let mut app = App::new(config.clone());
     app.update_databases_internal(connection.as_ref()).await?;
 
@@ -45,7 +45,8 @@ async fn main() -> anyhow::Result<()> {
                 std::process::exit(1);
             }
         })?;
-        match events.next()? {
+        let next_event = events.next().await.unwrap();
+        match next_event {
             Event::Input(key) => match app.event(key).await {
                 Ok(state) => {
                     if !state.is_consumed()

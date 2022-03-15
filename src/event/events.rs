@@ -1,6 +1,7 @@
 use crate::event::Key;
 use crossterm::event;
-use std::{sync::mpsc, thread, time::Duration};
+use tokio::sync::mpsc;
+use tokio::time::{self, Duration};
 
 #[derive(Debug, Clone, Copy)]
 pub struct EventConfig {
@@ -17,7 +18,7 @@ impl Default for EventConfig {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 pub enum Event {
     Input(Key),
     Tick,
@@ -37,25 +38,38 @@ impl Events {
     }
 
     pub fn with_config(config: EventConfig) -> Events {
-        let (tx, rx) = mpsc::channel();
+        let (tx, rx) = mpsc::channel(1024);
 
         let event_tx = tx.clone();
-        thread::spawn(move || loop {
-            if event::poll(config.tick_rate).unwrap() {
-                if let event::Event::Key(key) = event::read().unwrap() {
-                    let key = Key::from(key);
+        tokio::spawn(async move  {
+            let tick_rate = config.tick_rate.as_millis() as u64;
+            let sleep = time::sleep(Duration::from_millis(tick_rate));
+            tokio::pin!(sleep);
 
-                    event_tx.send(Event::Input(key)).unwrap();
+            loop {
+                tokio::select! {
+                    () = &mut sleep => {
+                        if event::poll(config.tick_rate).unwrap() {
+                            if let event::Event::Key(key) = event::read().unwrap() {
+                                let key = Key::from(key);
+            
+                                event_tx.send(Event::Input(key)).await.unwrap();
+                                continue;
+                            }
+                        }
+                        if let Err(_) = event_tx.send(Event::Tick).await {
+                            break;
+                        }
+                        // sleep.as_mut().reset(Instant::now() + Duration::from_millis(tick_rate));
+                    },
                 }
             }
-
-            event_tx.send(Event::Tick).unwrap();
         });
 
         Events { rx, _tx: tx }
     }
 
-    pub fn next(&self) -> Result<Event, mpsc::RecvError> {
-        self.rx.recv()
+    pub async fn next(&mut self) -> Option<Event> {
+        self.rx.recv().await
     }
 }

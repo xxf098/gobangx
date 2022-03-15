@@ -87,6 +87,7 @@ impl TableComponent {
         self.scroll = VerticalScroll::new(false, false);
         self.eod = false;
         self.table = None;
+        self.constraint_adjust = vec![];
     }
 
     fn reset_selection(&mut self) {
@@ -172,7 +173,7 @@ impl TableComponent {
         }
         let index = self.selected_column_index()+1;
         let adjust = self.constraint_adjust[index];
-        if adjust >= self.area_width*2/5 {
+        if adjust >= self.area_width/3 {
             return
         }
         self.constraint_adjust[index] = adjust + 1;

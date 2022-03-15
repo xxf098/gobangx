@@ -278,7 +278,7 @@ impl Component for DatabasesComponent {
                     _ => format!("drop table {}", table.name)
                 };
                 pool.execute(&sql).await?;
-                // TODO: update database
+                // TODO: update database ui
             }
             return Ok(EventState::Consumed)
         } 
