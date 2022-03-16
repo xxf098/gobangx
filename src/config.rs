@@ -30,7 +30,7 @@ pub enum DatabaseType {
     #[serde(rename = "sqlite")]
     Sqlite,
     #[serde(rename = "mssql")]
-    Mssql,
+    Mssql,  // TODO: remove Mssql
 }
 
 impl fmt::Display for DatabaseType {
@@ -89,6 +89,7 @@ pub struct KeyConfig {
     pub move_up: Key,
     pub move_down: Key,
     pub copy: Key,
+    pub advanced_copy: Key, // copy table schema
     pub enter: Key,
     pub exit: Key,
     pub quit: Key,
@@ -119,7 +120,7 @@ pub struct KeyConfig {
     pub expand_column_width: Key,
     pub shorten_column_width: Key,
     pub reset_column_width: Key,
-    pub delete: Key, // drop table/ delete record 
+    pub delete: Key, // drop table/ delete record
 }
 
 impl Default for KeyConfig {
@@ -132,6 +133,7 @@ impl Default for KeyConfig {
             move_up: Key::Up,
             move_down: Key::Down,
             copy: Key::Char('y'),
+            advanced_copy: Key::Char('Y'),
             enter: Key::Enter,
             exit: Key::Ctrl('c'),
             quit: Key::Char('q'),

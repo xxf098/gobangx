@@ -467,8 +467,7 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
             // https://docs.rs/sqlx-core/0.5.11/src/sqlx_core/mysql/types/str.rs.html
             if let Ok(value) = Decode::<MySql>::decode(val) {
                 let value: &str = value;
-                let r = format!("{}", value);
-                return Ok(r)
+                return Ok(value.to_string())
             }
         }
         anyhow::bail!(

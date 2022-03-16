@@ -81,6 +81,7 @@ impl DatabaseType {
     pub fn show_schema(&self, database: &Database, table: &Table) -> String {
         match self {
             DatabaseType::MySql => format!("show create table {}.{}", database.name, table.name),
+            DatabaseType::Sqlite => format!("select name, sql from sqlite_schema where name = '{}';", table.name),
             _ => format!(""),
         }
     }
