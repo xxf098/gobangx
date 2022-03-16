@@ -189,7 +189,7 @@ impl Pool for PostgresPool {
     }
 
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
-        let databases = sqlx::query("SELECT datname FROM pg_database")
+        let databases = sqlx::query("SELECT datname FROM pg_database ORDER BY datname")
             .fetch_all(&self.pool)
             .await?
             .iter()
@@ -207,7 +207,7 @@ impl Pool for PostgresPool {
 
     async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Child>> {
         let mut rows =
-            sqlx::query("SELECT * FROM information_schema.tables WHERE table_catalog = $1")
+            sqlx::query("SELECT * FROM information_schema.tables WHERE table_catalog = $1 ORDER BY table_name")
                 .bind(database)
                 .fetch(&self.pool);
         let mut tables = Vec::new();

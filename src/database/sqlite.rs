@@ -192,7 +192,7 @@ impl Pool for SqlitePool {
     }
 
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
-        let databases = sqlx::query("SELECT name FROM pragma_database_list")
+        let databases = sqlx::query("SELECT name FROM pragma_database_list ORDER BY name")
             .fetch_all(&self.pool)
             .await?
             .iter()
@@ -210,7 +210,7 @@ impl Pool for SqlitePool {
 
     async fn get_tables(&self, _database: String) -> anyhow::Result<Vec<Child>> {
         let mut rows =
-            sqlx::query("SELECT name FROM sqlite_master WHERE type = 'table'").fetch(&self.pool);
+            sqlx::query("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").fetch(&self.pool);
         let mut tables = Vec::new();
         while let Some(row) = rows.try_next().await? {
             tables.push(Table {
