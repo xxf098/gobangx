@@ -5,8 +5,9 @@ use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
-use sqlx::mysql::{MySqlColumn, MySqlPoolOptions, MySqlRow};
+use sqlx::mysql::{MySqlColumn, MySqlPoolOptions, MySqlRow, MySql};
 use sqlx::{Column as _, Row as _, TypeInfo as _};
+use sqlx::decode::Decode;
 use std::time::Duration;
 
 pub struct MySqlPool {
@@ -149,7 +150,7 @@ impl Pool for MySqlPool {
     async fn execute(&self, query: &String) -> anyhow::Result<ExecuteResult> {
         let query = query.trim();
 
-        if query.to_uppercase().starts_with("SELECT") {
+        if query.to_uppercase().starts_with("SELECT") || query.to_uppercase().starts_with("SHOW") {
             let mut rows = sqlx::query(query).fetch(&self.pool);
             let mut headers = vec![];
             let mut records = vec![];
@@ -461,6 +462,15 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
         let value: Option<bool> = value;
         Ok(get_or_null!(value))
     } else {
+        let index = column.ordinal();
+        if let Ok(val) = row.try_get_raw(index) {
+            // https://docs.rs/sqlx-core/0.5.11/src/sqlx_core/mysql/types/str.rs.html
+            if let Ok(value) = Decode::<MySql>::decode(val) {
+                let value: &str = value;
+                let r = format!("{}", value);
+                return Ok(r)
+            }
+        }
         anyhow::bail!(
             "column type not implemented: `{}` {}",
             column_name,

@@ -74,7 +74,14 @@ impl DatabaseType {
         match self {
             DatabaseType::Postgres => format!("drop table {}.{}.{}", database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()),table.name),
             DatabaseType::MySql => format!("drop table {}.{}", database.name, table.name),
-            _ => format!("drop table {}", table.name)
+            _ => format!("drop table {}", table.name),
+        }
+    }
+
+    pub fn show_schema(&self, database: &Database, table: &Table) -> String {
+        match self {
+            DatabaseType::MySql => format!("show create table {}.{}", database.name, table.name),
+            _ => format!(""),
         }
     }
 }

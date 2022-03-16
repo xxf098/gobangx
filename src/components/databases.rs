@@ -4,7 +4,7 @@ use super::{
 };
 use crate::components::command::{self, CommandInfo};
 use crate::config::{Connection, KeyConfig};
-use crate::database::Pool;
+use crate::database::{Pool, ExecuteResult};
 use crate::event::{Key, Store};
 use crate::clipboard::copy_to_clipboard;
 use crate::ui::common_nav;
@@ -289,6 +289,20 @@ impl Component for DatabasesComponent {
             return Ok(EventState::Consumed)
         }
         // self.key_config.advanced_copy
+        if key == self.key_config.advanced_copy {
+            if let Some((database, table, _)) = self.tree.selected_table() {
+                let sql = pool.database_type().show_schema(&database, &table);
+                let result = pool.execute(&sql).await?;
+                match result {
+                    ExecuteResult::Read{ rows, .. } => {
+                        if rows.len() > 0 && rows[0].len() > 1 {
+                            copy_to_clipboard(&rows[0][1])?;
+                        }
+                    },
+                    _ => {}
+                };
+            }
+        }
         Ok(EventState::NotConsumed)
     }
 }
