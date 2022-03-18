@@ -319,8 +319,13 @@ impl TableComponent {
         &mut self,
         area_width: u16,
     ) -> (usize, Vec<String>, Vec<Vec<String>>, Vec<Constraint>) {
-        if self.rows.is_empty() {
-            return (0, Vec::new(), Vec::new(), Vec::new());
+        let mut rows = &self.rows;
+        let headers = &vec![self.headers.clone()];
+        if rows.is_empty() && !self.headers.is_empty() {
+            rows = headers;
+        }
+        if rows.is_empty() {
+             return (0, Vec::new(), Vec::new(), Vec::new());
         }
         if self.selected_column_index() < self.column_page_start.get() {
             self.column_page_start.set(self.selected_column_index());
@@ -328,11 +333,10 @@ impl TableComponent {
 
         let far_right_column_index = self.selected_column_index();
         let mut column_index = self.selected_column_index();
-        let number_column_width = (self.rows.len() + 1).to_string().width() as u16;
+        let number_column_width = (rows.len() + 1).to_string().width() as u16;
         let mut widths = Vec::new();
         loop {
-            let length = self
-                .rows
+            let length = rows
                 .iter()
                 .map(|row| {
                     row.get(column_index)
@@ -371,8 +375,7 @@ impl TableComponent {
         while widths.iter().map(|(_, width)| width).sum::<usize>() + widths.len()
             < area_width.saturating_sub(number_column_width) as usize
         {
-            let length = self
-                .rows
+            let length = rows
                 .iter()
                 .map(|row| {
                     row.get(column_index)
@@ -491,16 +494,8 @@ impl StatefulDrawableComponent for TableComponent {
 
         let block = Block::default().borders(Borders::NONE);
         self.area_width = block.inner(chunks[1]).width;
-        let is_empty_row = self.rows.is_empty(); 
-        if is_empty_row && !self.headers.is_empty() {
-            self.rows = vec![self.headers.clone()];
-        }
-        let (selected_column_index, headers, mut rows, constraints) =
+        let (selected_column_index, headers, rows, constraints) =
             self.calculate_cell_widths(self.area_width);
-        if is_empty_row && !self.headers.is_empty() {
-            self.rows = vec![];
-            rows = vec![]
-        }
         let header_cells = headers.iter().enumerate().map(|(column_index, h)| {
             Cell::from(h.to_string()).style(if selected_column_index == column_index {
                 Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD)
