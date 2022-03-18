@@ -319,11 +319,8 @@ impl TableComponent {
         &mut self,
         area_width: u16,
     ) -> (usize, Vec<String>, Vec<Vec<String>>, Vec<Constraint>) {
-        let mut rows = &self.rows;
-        let headers = &vec![self.headers.clone()];
-        if rows.is_empty() && !self.headers.is_empty() {
-            rows = headers;
-        }
+        let headers = if self.rows.is_empty() && !self.headers.is_empty() { vec![self.headers.clone()] } else { vec![] };
+        let rows = if self.rows.is_empty() && !self.headers.is_empty() { &headers } else { &self.rows };
         if rows.is_empty() {
              return (0, Vec::new(), Vec::new(), Vec::new());
         }
