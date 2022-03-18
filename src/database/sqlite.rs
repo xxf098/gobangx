@@ -226,7 +226,7 @@ impl Pool for SqlitePool {
 
     async fn get_records(
         &self,
-        _database: &Database,
+        database: &Database,
         table: &Table,
         page: u16,
         filter: Option<String>,
@@ -261,6 +261,12 @@ impl Pool for SqlitePool {
                 new_row.push(convert_column_value_to_string(&row, column)?)
             }
             records.push(new_row)
+        }
+        if headers.len() < 1 && records.len() < 1 {
+            let columns = self.get_columns(database, table).await?;
+            if !columns.is_empty() {
+                headers = columns.iter().map(|c| c.columns()[0].clone()).collect::<Vec<String>>();
+            }
         }
         Ok((headers, records))
     }

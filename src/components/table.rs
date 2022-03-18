@@ -491,11 +491,19 @@ impl StatefulDrawableComponent for TableComponent {
 
         let block = Block::default().borders(Borders::NONE);
         self.area_width = block.inner(chunks[1]).width;
-        let (selected_column_index, headers, rows, constraints) =
+        let is_empty_row = self.rows.is_empty(); 
+        if is_empty_row && !self.headers.is_empty() {
+            self.rows = vec![self.headers.clone()];
+        }
+        let (selected_column_index, headers, mut rows, constraints) =
             self.calculate_cell_widths(self.area_width);
+        if is_empty_row && !self.headers.is_empty() {
+            self.rows = vec![];
+            rows = vec![]
+        }
         let header_cells = headers.iter().enumerate().map(|(column_index, h)| {
             Cell::from(h.to_string()).style(if selected_column_index == column_index {
-                Style::default().add_modifier(Modifier::BOLD)
+                Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD)
             } else {
                 Style::default()
             })
