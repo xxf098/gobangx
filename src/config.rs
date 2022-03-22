@@ -120,7 +120,7 @@ pub struct KeyConfig {
     pub expand_column_width: Key,
     pub shorten_column_width: Key,
     pub reset_column_width: Key,
-    pub delete: Key, // drop table/ delete record
+    pub delete: Key, // drop table/ delete record by id
 }
 
 impl Default for KeyConfig {

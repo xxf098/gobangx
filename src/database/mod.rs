@@ -82,7 +82,16 @@ impl DatabaseType {
         match self {
             DatabaseType::MySql => format!("show create table {}.{}", database.name, table.name),
             DatabaseType::Sqlite => format!("select name, sql from sqlite_schema where name = '{}';", table.name),
-            _ => format!(""),
+            _ => unimplemented!(),
+        }
+    }
+
+    pub fn delete_row_by_id(&self, database: &Database, table: &Table, id: &str) -> String {
+        match self {
+            DatabaseType::MySql => format!("delete from {}.{} where id = '{}'", database.name, table.name, id),
+            DatabaseType::Sqlite => format!("delete from {} where id = '{}'", table.name, id),
+            DatabaseType::Postgres => format!("delete from {}.{} where id = '{}'", database.name, table.name, id),
+            _ => unimplemented!(),
         }
     }
 }

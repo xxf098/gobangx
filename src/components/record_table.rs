@@ -3,6 +3,7 @@ use crate::components::command::CommandInfo;
 use crate::components::{TableComponent, TableFilterComponent};
 use crate::config::KeyConfig;
 use crate::event::Key;
+use crate::database::{Pool};
 use anyhow::Result;
 use database_tree::{Database, Table as DTable};
 use tui::{
@@ -10,6 +11,7 @@ use tui::{
     layout::{Constraint, Direction, Layout, Rect},
     Frame,
 };
+use async_trait::async_trait;
 
 pub enum Focus {
     Table,
@@ -70,6 +72,7 @@ impl StatefulDrawableComponent for RecordTableComponent {
     }
 }
 
+#[async_trait]
 impl Component for RecordTableComponent {
     fn commands(&self, out: &mut Vec<CommandInfo>) {
         self.table.commands(out)
@@ -87,4 +90,18 @@ impl Component for RecordTableComponent {
         }
         Ok(EventState::NotConsumed)
     }
+
+    async fn async_event(
+        &mut self,
+        key: crate::event::Key,
+        pool: &Box<dyn Pool>,
+    ) -> Result<EventState> {
+        match key {
+            key if matches!(self.focus, Focus::Filter) => return self.filter.async_event(key, pool).await,
+            key if matches!(self.focus, Focus::Table) => return self.table.async_event(key, pool).await,
+            _ => (),
+        }
+        Ok(EventState::NotConsumed)
+    }    
+
 }

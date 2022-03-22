@@ -5,6 +5,7 @@ use super::{
 use crate::components::command::{self, CommandInfo};
 use crate::config::KeyConfig;
 use crate::event::Key;
+use crate::database::{Pool};
 use anyhow::Result;
 use database_tree::{Database, Table as DTable};
 use std::convert::From;
@@ -16,6 +17,7 @@ use tui::{
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
+use async_trait::async_trait;
 
 pub struct TableComponent {
     pub headers: Vec<String>,
@@ -254,6 +256,20 @@ impl TableComponent {
             .get(self.selected_row.selected()?)?
             .get(self.selected_column)
             .map(|cell| cell.to_string())
+    }
+
+    pub fn selected_rows(&self) -> Option<Vec<Vec<String>>> {
+        if let Some((x, y)) = self.selection_area_corner {
+            let selected_row_index = self.selected_row.selected()?;
+            return Some(
+                self.rows[y.min(selected_row_index)..y.max(selected_row_index) + 1]
+                    .iter()
+                    .map(|row| row[x.min(self.selected_column)..x.max(self.selected_column) + 1].to_vec())
+                    .collect()
+            );
+        }
+        let rows = self.rows.get(self.selected_row.selected()?)?;
+        Some(vec![rows.to_vec()])
     }
 
     fn selected_column_index(&self) -> usize {
@@ -567,6 +583,7 @@ impl StatefulDrawableComponent for TableComponent {
     }
 }
 
+#[async_trait]
 impl Component for TableComponent {
     fn commands(&self, out: &mut Vec<CommandInfo>) {
         out.push(CommandInfo::new(command::extend_selection_by_one_cell(
@@ -620,6 +637,26 @@ impl Component for TableComponent {
         } else if key == self.key_config.reset_column_width {
             self.reset_column();
             return Ok(EventState::Consumed);
+        }
+        Ok(EventState::NotConsumed)
+    }
+
+    async fn async_event(
+        &mut self,
+        key: crate::event::Key,
+        pool: &Box<dyn Pool>,
+    ) -> Result<EventState> {
+        // delete by id
+        if key == self.key_config.delete {
+            if self.headers.iter().next().map(|h| h == "id").unwrap_or_default() {
+                if let Some(r) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
+                    if let Some((database, table)) = &self.table {
+                        let sql = pool.database_type().delete_row_by_id(&database, &table, &r);
+                        pool.execute(&sql).await?;
+                        return Ok(EventState::Consumed)
+                    }
+                }
+            }
         }
         Ok(EventState::NotConsumed)
     }

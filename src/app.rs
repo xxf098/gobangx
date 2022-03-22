@@ -295,7 +295,8 @@ impl App {
             Focus::Table => {
                 match self.tab.selected_tab {
                     Tab::Records => {
-                        if self.record_table.event(key)?.is_consumed() {
+                        if self.record_table.event(key)?.is_consumed() || 
+                        self.record_table.async_event(key, self.pool.as_ref().unwrap()).await?.is_consumed() {
                             return Ok(EventState::Consumed);
                         };
 
