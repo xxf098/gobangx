@@ -113,18 +113,7 @@ impl DatabaseType {
                 match result {
                     ExecuteResult::Read{ headers, rows, .. } => {
                         let index = headers.iter().position(|h| h.to_lowercase() == "key_name").unwrap_or(headers.len());
-                        // let cols = rows.into_iter().flat_map(|row| row.get(index).map(|c| c.clone())).collect();
-                        // TODO: refactor
-                        let mut cols = vec![];
-                        for row in rows {
-                            if let Some(key_name) = row.get(index) {
-                                if key_name == "PRIMARY" {
-                                    if let Some(col_name) = row.get(index+2) {
-                                        cols.push(col_name.clone())
-                                    }
-                                }
-                            }
-                        }
+                        let cols = rows.into_iter().flat_map(|row| if row.get(index).filter(|c| *c == "PRIMARY").is_some() { row.get(index+2).map(|c| c.clone()) } else { None } ).collect();
                         return Ok(cols)
                     },
                     _ => {}
