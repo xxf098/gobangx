@@ -86,11 +86,37 @@ impl DatabaseType {
         }
     }
 
+    pub async fn primary_key_columns(&self, pool: &Box<dyn Pool>,_database: &Database, table: &Table) -> anyhow::Result<Vec<String>> {
+        let columns = vec![];
+        match self {
+            DatabaseType::Postgres => {
+                let sql = format!(r#"SELECT
+                kcu.column_name,tc.table_schema, tc.constraint_name, tc.table_name
+            FROM
+                information_schema.table_constraints AS tc
+                JOIN information_schema.key_column_usage AS kcu
+                    USING (table_schema, table_name, constraint_name)
+            WHERE constraint_type = 'PRIMARY KEY' AND tc.table_schema='{}' AND tc.table_name='{}' ORDER BY kcu.ordinal_position"#, 
+                table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name);
+            let result = pool.execute(&sql).await?;
+            match result {
+                ExecuteResult::Read{ rows, .. } => {
+                    let cols = rows.into_iter().flat_map(|row| row.into_iter().next()).collect();
+                    return Ok(cols)
+                },
+                _ => {}
+            };
+            },
+            _ => {},
+        };
+        Ok(columns)
+    }
+
     pub fn delete_row_by_column(&self, database: &Database, table: &Table, col: &str, val: &str) -> String {
         match self {
             DatabaseType::MySql => format!("delete from {}.{} where {} = '{}'", database.name, table.name, col, val),
             DatabaseType::Sqlite => format!("delete from {} where {} = '{}'", table.name, col, val),
-            DatabaseType::Postgres => format!("delete from {}.{} where {} = '{}'", database.name, table.name, col, val),
+            DatabaseType::Postgres => format!("delete from {}.{}.{} where {} = '{}'", database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, col, val),
             _ => unimplemented!(),
         }
     }

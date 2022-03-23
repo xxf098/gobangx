@@ -648,19 +648,34 @@ impl Component for TableComponent {
         pool: &Box<dyn Pool>,
         store: &Store
     ) -> Result<EventState> {
-        // delete by id
+        // delete by primary_key
         if key == self.key_config.delete {
-            if self.headers.iter().next().map(|h| h.to_lowercase() == "id" || h.to_lowercase().ends_with("_id") ).unwrap_or_default() {
-                if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
-                    if let Some((database, table)) = &self.table {
-                        let col = self.headers.iter().next().unwrap();
-                        let sql = pool.database_type().delete_row_by_column(&database, &table, col, &id);
-                        pool.execute(&sql).await?;
-                        store.dispatch(Event::RedrawTable(true)).await?;
-                        return Ok(EventState::Consumed)
-                    }
+            if let Some((database, table)) = &self.table {
+                let database_type = pool.database_type();
+                if let Ok(columns) = database_type.primary_key_columns(pool, &database, &table).await {
+                    if  let Some(primary_key) = columns.iter().next() {
+                        if let Some(index) = self.headers.iter().position(|h| h == primary_key) {
+                            if let Some(value) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.get(index).map(|s| s.clone()))).flatten().flatten() {
+                                let sql = pool.database_type().delete_row_by_column(&database, &table, primary_key, &value);
+                                pool.execute(&sql).await?;
+                                store.dispatch(Event::RedrawTable(true)).await?;
+                                return Ok(EventState::Consumed)
+                            }
+                        }
+                    } 
                 }
             }
+            // if self.headers.iter().next().map(|h| h.to_lowercase() == "id" || h.to_lowercase().ends_with("_id") ).unwrap_or_default() {
+            //     if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
+            //         if let Some((database, table)) = &self.table {
+            //             let col = self.headers.iter().next().unwrap();
+            //             let sql = pool.database_type().delete_row_by_column(&database, &table, col, &id);
+            //             pool.execute(&sql).await?;
+            //             store.dispatch(Event::RedrawTable(true)).await?;
+            //             return Ok(EventState::Consumed)
+            //         }
+            //     }
+            // }
         }
         Ok(EventState::NotConsumed)
     }
