@@ -207,7 +207,7 @@ impl Pool for PostgresPool {
 
     async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Child>> {
         let mut rows =
-            sqlx::query("SELECT * FROM information_schema.tables WHERE table_catalog = $1 AND table_type = 'BASE TABLE' ORDER BY table_name")
+            sqlx::query("SELECT * FROM information_schema.tables WHERE table_catalog = $1 AND table_type = 'BASE TABLE' and table_schema not in ('information_schema', 'pg_catalog') ORDER BY table_name")
                 .bind(database)
                 .fetch(&self.pool);
         let mut tables = Vec::new();
