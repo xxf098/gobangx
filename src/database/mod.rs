@@ -86,7 +86,7 @@ impl DatabaseType {
         }
     }
 
-    pub async fn primary_key_columns(&self, pool: &Box<dyn Pool>,_database: &Database, table: &Table) -> anyhow::Result<Vec<String>> {
+    pub async fn primary_key_columns(&self, pool: &Box<dyn Pool>, database: &Database, table: &Table) -> anyhow::Result<Vec<String>> {
         let columns = vec![];
         match self {
             DatabaseType::Postgres => {
@@ -106,6 +106,30 @@ impl DatabaseType {
                 },
                 _ => {}
             };
+            },
+            DatabaseType::MySql => {
+                let sql = format!("SHOW INDEX FROM {}.{}", database.name, table.name);
+                let result = pool.execute(&sql).await?;
+                match result {
+                    ExecuteResult::Read{ headers, rows, .. } => {
+                        let index = headers.iter().position(|h| h.to_lowercase() == "key_name").unwrap_or(headers.len());
+                        // let cols = rows.into_iter().flat_map(|row| row.get(index).map(|c| c.clone())).collect();
+                        // TODO: refactor
+                        let mut cols = vec![];
+                        for row in rows {
+                            if let Some(key_name) = row.get(index) {
+                                if key_name == "PRIMARY" {
+                                    if let Some(col_name) = row.get(index+2) {
+                                        cols.push(col_name.clone())
+                                    }
+                                }
+                            }
+                        }
+                        return Ok(cols)
+                    },
+                    _ => {}
+                };
+
             },
             _ => {},
         };
