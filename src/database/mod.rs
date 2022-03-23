@@ -113,7 +113,7 @@ impl DatabaseType {
                 match result {
                     ExecuteResult::Read{ headers, rows, .. } => {
                         let index = headers.iter().position(|h| h.to_lowercase() == "key_name").unwrap_or(headers.len());
-                        let cols = rows.into_iter().flat_map(|row| if row.get(index).filter(|c| *c == "PRIMARY").is_some() { row.get(index+2).map(|c| c.clone()) } else { None } ).collect();
+                        let cols = rows.into_iter().flat_map(|row| row.get(index).filter(|c| *c == "PRIMARY").map(|_| row.get(index+2).map(|c| c.clone())).flatten()).collect();
                         return Ok(cols)
                     },
                     _ => {}
