@@ -86,11 +86,11 @@ impl DatabaseType {
         }
     }
 
-    pub fn delete_row_by_id(&self, database: &Database, table: &Table, id: &str) -> String {
+    pub fn delete_row_by_column(&self, database: &Database, table: &Table, col: &str, val: &str) -> String {
         match self {
-            DatabaseType::MySql => format!("delete from {}.{} where id = '{}'", database.name, table.name, id),
-            DatabaseType::Sqlite => format!("delete from {} where id = '{}'", table.name, id),
-            DatabaseType::Postgres => format!("delete from {}.{} where id = '{}'", database.name, table.name, id),
+            DatabaseType::MySql => format!("delete from {}.{} where {} = '{}'", database.name, table.name, col, val),
+            DatabaseType::Sqlite => format!("delete from {} where {} = '{}'", table.name, col, val),
+            DatabaseType::Postgres => format!("delete from {}.{} where {} = '{}'", database.name, table.name, col, val),
             _ => unimplemented!(),
         }
     }

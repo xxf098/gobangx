@@ -650,10 +650,11 @@ impl Component for TableComponent {
     ) -> Result<EventState> {
         // delete by id
         if key == self.key_config.delete {
-            if self.headers.iter().next().map(|h| h == "id").unwrap_or_default() {
+            if self.headers.iter().next().map(|h| h.to_lowercase() == "id" || h.to_lowercase().ends_with("_id") ).unwrap_or_default() {
                 if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
                     if let Some((database, table)) = &self.table {
-                        let sql = pool.database_type().delete_row_by_id(&database, &table, &id);
+                        let col = self.headers.iter().next().unwrap();
+                        let sql = pool.database_type().delete_row_by_column(&database, &table, col, &id);
                         pool.execute(&sql).await?;
                         store.dispatch(Event::RedrawTable(true)).await?;
                         return Ok(EventState::Consumed)
