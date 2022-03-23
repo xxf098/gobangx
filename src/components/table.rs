@@ -4,7 +4,7 @@ use super::{
 };
 use crate::components::command::{self, CommandInfo};
 use crate::config::KeyConfig;
-use crate::event::Key;
+use crate::event::{Key, Store, Event};
 use crate::database::{Pool};
 use anyhow::Result;
 use database_tree::{Database, Table as DTable};
@@ -646,6 +646,7 @@ impl Component for TableComponent {
         &mut self,
         key: crate::event::Key,
         pool: &Box<dyn Pool>,
+        store: &Store
     ) -> Result<EventState> {
         // delete by id
         if key == self.key_config.delete {
@@ -654,7 +655,7 @@ impl Component for TableComponent {
                     if let Some((database, table)) = &self.table {
                         let sql = pool.database_type().delete_row_by_id(&database, &table, &id);
                         pool.execute(&sql).await?;
-                        // redraw table
+                        store.dispatch(Event::RedrawTable(true)).await?;
                         return Ok(EventState::Consumed)
                     }
                 }

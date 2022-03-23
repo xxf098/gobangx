@@ -5,7 +5,7 @@ use super::{
 use crate::components::command::CommandInfo;
 use crate::config::KeyConfig;
 use crate::database::{ExecuteResult, Pool};
-use crate::event::Key;
+use crate::event::{Key, Store};
 use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
 use anyhow::Result;
 use async_trait::async_trait;
@@ -258,7 +258,7 @@ impl Component for SqlEditorComponent {
         return Ok(EventState::NotConsumed);
     }
 
-    async fn async_event(&mut self, key: Key, pool: &Box<dyn Pool>) -> Result<EventState> {
+    async fn async_event(&mut self, key: Key, pool: &Box<dyn Pool>, _store: &Store) -> Result<EventState> {
         if key == self.key_config.enter && matches!(self.focus, Focus::Editor) {
             let query = self.input.iter().collect();
             let result = pool.execute(&query).await?;

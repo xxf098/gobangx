@@ -42,11 +42,10 @@ pub struct DatabasesComponent {
     scroll: VerticalScroll,
     focus: Focus,
     key_config: KeyConfig,
-    store: Store,
 }
 
 impl DatabasesComponent {
-    pub fn new(key_config: KeyConfig, store: Store) -> Self {
+    pub fn new(key_config: KeyConfig) -> Self {
         Self {
             tree: DatabaseTree::default(),
             filter: DatabaseFilterComponent::new(),
@@ -54,11 +53,11 @@ impl DatabasesComponent {
             scroll: VerticalScroll::new(false, false),
             focus: Focus::Tree,
             key_config,
-            store,
         }
     }
 
     pub async fn update(&mut self, connection: &Connection, pool: &Box<dyn Pool>) -> Result<()> {
+        // TODO: load schema first
         let databases = match &connection.database {
             Some(database) => vec![Database::new(
                 database.clone(),
@@ -279,6 +278,7 @@ impl Component for DatabasesComponent {
         &mut self,
         key: crate::event::Key,
         pool: &Box<dyn Pool>,
+        _store: &Store,
     ) -> Result<EventState> {
         if key == self.key_config.delete {
             if let Some((database, table, id)) = self.tree.selected_table() {

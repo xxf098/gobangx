@@ -22,6 +22,7 @@ impl Default for EventConfig {
 pub enum Event {
     Input(Key),
     RedrawDatabase(bool),
+    RedrawTable(bool),
     Tick,
 }
 
@@ -85,6 +86,13 @@ pub struct Store {
     pub sender: mpsc::Sender<Event>,
 }
 
+
+impl Default for Store {
+    fn default() -> Self {
+        let event = Events::new(200);
+        Self::new(event.sender())
+    }
+}
 
 impl Store {
 

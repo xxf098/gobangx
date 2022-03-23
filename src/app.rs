@@ -51,7 +51,7 @@ impl App {
             sql_editor: SqlEditorComponent::new(config.key_config.clone()),
             tab: TabComponent::new(config.key_config.clone()),
             help: HelpComponent::new(config.key_config.clone()),
-            databases: DatabasesComponent::new(config.key_config.clone(), store.clone()),
+            databases: DatabasesComponent::new(config.key_config.clone()),
             error: ErrorComponent::new(config.key_config),
             focus: Focus::ConnectionList,
             pool: None,
@@ -200,7 +200,7 @@ impl App {
         Ok(())
     }
 
-    async fn update_record_table(&mut self) -> anyhow::Result<()> {
+    async fn update_record_table(&mut self, focus: bool) -> anyhow::Result<()> {
         if let Some((database, table, _)) = self.databases.tree().selected_table() {
             let (headers, records) = self
                 .pool
@@ -219,6 +219,7 @@ impl App {
                 .await?;
             self.record_table
                 .update(records, headers, database.clone(), table.clone());
+            if focus { self.record_table.focus = crate::components::record_table::Focus::Table; }
         }
         Ok(())
     }
@@ -242,6 +243,10 @@ impl App {
                 self.update_databases(focus).await?;
                 return Ok(EventState::Consumed)
             },
+            Event::RedrawTable(focus) => {
+                self.update_record_table(focus).await?;
+                return Ok(EventState::Consumed)
+            }
             _ => {},
         };
         return Ok(EventState::NotConsumed)
@@ -269,7 +274,7 @@ impl App {
             }
             Focus::DabataseList => {
                 if self.databases.event(key)?.is_consumed() ||
-                    self.databases.async_event(key, self.pool.as_ref().unwrap()).await?.is_consumed() {
+                    self.databases.async_event(key, self.pool.as_ref().unwrap(), &self.store).await?.is_consumed() {
                     return Ok(EventState::Consumed);
                 }
 
@@ -296,7 +301,7 @@ impl App {
                 match self.tab.selected_tab {
                     Tab::Records => {
                         if self.record_table.event(key)?.is_consumed() || 
-                        self.record_table.async_event(key, self.pool.as_ref().unwrap()).await?.is_consumed() {
+                        self.record_table.async_event(key, self.pool.as_ref().unwrap(), &self.store).await?.is_consumed() {
                             return Ok(EventState::Consumed);
                         };
 
@@ -308,8 +313,7 @@ impl App {
 
                         if key == self.config.key_config.enter && self.record_table.filter_focused()
                         {
-                            self.record_table.focus = crate::components::record_table::Focus::Table;
-                            self.update_record_table().await?;
+                            self.update_record_table(true).await?;
                         }
 
                         if self.record_table.table.eod {
@@ -349,7 +353,7 @@ impl App {
                         if self.sql_editor.event(key)?.is_consumed()
                             || self
                                 .sql_editor
-                                .async_event(key, self.pool.as_ref().unwrap())
+                                .async_event(key, self.pool.as_ref().unwrap(), &self.store)
                                 .await?
                                 .is_consumed()
                         {

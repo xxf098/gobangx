@@ -95,10 +95,11 @@ impl Component for RecordTableComponent {
         &mut self,
         key: crate::event::Key,
         pool: &Box<dyn Pool>,
+        store: &crate::event::Store,
     ) -> Result<EventState> {
         match key {
-            key if matches!(self.focus, Focus::Filter) => return self.filter.async_event(key, pool).await,
-            key if matches!(self.focus, Focus::Table) => return self.table.async_event(key, pool).await,
+            key if matches!(self.focus, Focus::Filter) => return self.filter.async_event(key, pool, store).await,
+            key if matches!(self.focus, Focus::Table) => return self.table.async_event(key, pool, store).await,
             _ => (),
         }
         Ok(EventState::NotConsumed)

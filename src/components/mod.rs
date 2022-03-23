@@ -96,6 +96,7 @@ pub trait Component {
         &mut self,
         _key: crate::event::Key,
         _pool: &Box<dyn Pool>,
+        _store: &crate::event::Store,
     ) -> Result<EventState> {
         Ok(EventState::NotConsumed)
     }
