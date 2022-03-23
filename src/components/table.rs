@@ -9,6 +9,7 @@ use crate::database::{Pool};
 use anyhow::Result;
 use database_tree::{Database, Table as DTable};
 use std::convert::From;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -28,7 +29,7 @@ pub struct TableComponent {
     table: Option<(Database, DTable)>,
     selected_column: usize,
     selection_area_corner: Option<(usize, usize)>,
-    column_page_start: std::cell::Cell<usize>,
+    column_page_start: AtomicUsize,
     scroll: VerticalScroll,
     key_config: KeyConfig,
     area_width: u16,
@@ -44,7 +45,7 @@ impl TableComponent {
             constraint_adjust: vec![],
             selected_column: 0,
             selection_area_corner: None,
-            column_page_start: std::cell::Cell::new(0),
+            column_page_start: AtomicUsize::new(0),
             scroll: VerticalScroll::new(false, false),
             eod: false,
             key_config,
@@ -73,7 +74,7 @@ impl TableComponent {
         self.rows = rows;
         self.selected_column = 0;
         self.selection_area_corner = None;
-        self.column_page_start = std::cell::Cell::new(0);
+        self.column_page_start = AtomicUsize::new(0);
         self.scroll = VerticalScroll::new(false, false);
         self.eod = false;
         self.table = Some((database, table));
@@ -85,7 +86,7 @@ impl TableComponent {
         self.rows = Vec::new();
         self.selected_column = 0;
         self.selection_area_corner = None;
-        self.column_page_start = std::cell::Cell::new(0);
+        self.column_page_start = AtomicUsize::new(0);
         self.scroll = VerticalScroll::new(false, false);
         self.eod = false;
         self.table = None;
@@ -288,7 +289,7 @@ impl TableComponent {
         if let Some((x, y)) = self.selection_area_corner {
             let x_in_page = x
                 .saturating_add(1)
-                .saturating_sub(self.column_page_start.get());
+                .saturating_sub(self.column_page_start.load(Ordering::Relaxed));
             return matches!(
                 self.selected_row.selected(),
                 Some(selected_row_index)
@@ -340,8 +341,8 @@ impl TableComponent {
         if rows.is_empty() {
              return (0, Vec::new(), Vec::new(), Vec::new());
         }
-        if self.selected_column_index() < self.column_page_start.get() {
-            self.column_page_start.set(self.selected_column_index());
+        if self.selected_column_index() < self.column_page_start.load(Ordering::Relaxed) {
+            self.column_page_start.store(self.selected_column_index(), Ordering::Relaxed);
         }
 
         let far_right_column_index = self.selected_column_index();
@@ -375,7 +376,7 @@ impl TableComponent {
                 break;
             }
             widths.push((self.headers[column_index].clone(), length));
-            if column_index == self.column_page_start.get() {
+            if column_index == self.column_page_start.load(Ordering::Relaxed) {
                 break;
             }
             column_index -= 1;
@@ -444,7 +445,7 @@ impl TableComponent {
                 }
             }
         }
-        self.column_page_start.set(far_left_column_index);
+        self.column_page_start.store(far_left_column_index, Ordering::Relaxed);
 
         (
             self.selection_area_corner
@@ -649,10 +650,11 @@ impl Component for TableComponent {
         // delete by id
         if key == self.key_config.delete {
             if self.headers.iter().next().map(|h| h == "id").unwrap_or_default() {
-                if let Some(r) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
+                if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
                     if let Some((database, table)) = &self.table {
-                        let sql = pool.database_type().delete_row_by_id(&database, &table, &r);
+                        let sql = pool.database_type().delete_row_by_id(&database, &table, &id);
                         pool.execute(&sql).await?;
+                        // redraw table
                         return Ok(EventState::Consumed)
                     }
                 }
