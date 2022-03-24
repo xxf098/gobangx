@@ -1,6 +1,6 @@
 use crate::get_or_null;
 use crate::config::DatabaseType;
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Schema, Table};
@@ -154,14 +154,16 @@ impl Pool for PostgresPool {
             let mut headers = vec![];
             let mut records = vec![];
             while let Some(row) = rows.try_next().await? {
-                headers = row
-                    .columns()
-                    .iter()
-                    .map(|column| column.name().to_string())
-                    .collect();
+                // headers = row
+                //     .columns()
+                //     .iter()
+                //     .map(|column| column.name().to_string())
+                //     .collect();
                 let mut new_row = vec![];
                 for column in row.columns() {
-                    new_row.push(convert_column_value_to_string(&row, column)?)
+                    let row = convert_column_value_to_string(&row, column)?;
+                    new_row.push(row.0);
+                    headers.push(row.1);
                 }
                 records.push(new_row)
             }
@@ -245,7 +247,7 @@ impl Pool for PostgresPool {
         table: &Table,
         page: u16,
         filter: Option<String>,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<String>>)> {
         let query = if let Some(filter) = filter.as_ref() {
             format!(
                 r#"SELECT * FROM "{database}"."{table_schema}"."{table}" WHERE {filter} LIMIT {limit} OFFSET {page}"#,
@@ -271,15 +273,18 @@ impl Pool for PostgresPool {
         let mut records = vec![];
         let mut json_records = None;
         while let Some(row) = rows.try_next().await? {
-            headers = row
-                .columns()
-                .iter()
-                .map(|column| column.name().to_string())
-                .collect();
+            // headers = row
+            //     .columns()
+            //     .iter()
+            //     .map(|column| column.name().to_string())
+            //     .collect();
             let mut new_row = vec![];
             for column in row.columns() {
                 match convert_column_value_to_string(&row, column) {
-                    Ok(v) => new_row.push(v),
+                    Ok(v) => {
+                        headers.push(v.1);
+                        new_row.push(v.0)
+                    },
                     Err(_) => {
                         if json_records.is_none() {
                             json_records = Some(
@@ -288,6 +293,7 @@ impl Pool for PostgresPool {
                             );
                         }
                         if let Some(json_records) = &json_records {
+                            headers.push(Header::new(column.name().to_string(), ColType::Json));
                             match json_records
                                 .get(records.len())
                                 .unwrap()
@@ -510,23 +516,28 @@ impl PostgresPool {
     }
 }
 
-fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Result<String> {
+fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Result<(String, Header)> {
     let column_name = column.name();
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<i16> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i32> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i64> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
+        let header = Header::new(column_name.to_string(), ColType::Int);
         let value: Option<rust_decimal::Decimal> = value;
-        Ok(get_or_null!(value))
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<&[u8]> = value;
-        Ok(value.map_or("NULL".to_string(), |values| {
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((value.map_or("NULL".to_string(), |values| {
             format!(
                 "\\x{}",
                 values
@@ -534,37 +545,47 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
                     .map(|v| format!("{:02x}", v))
                     .collect::<String>()
             )
-        }))
+        }), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDate> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: String = value;
-        Ok(value)
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        Ok((value, header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Local>> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDateTime> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDate> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveTime> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<serde_json::Value> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get::<Option<bool>, _>(column_name) {
         let value: Option<bool> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Boolean);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<Vec<String>> = value;
-        Ok(value.map_or("NULL".to_string(), |v| v.join(",")))
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        Ok((value.map_or("NULL".to_string(), |v| v.join(",")), header))
     } else {
         anyhow::bail!(
             "column type not implemented: `{}` {}",

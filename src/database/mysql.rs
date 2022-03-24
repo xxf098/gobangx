@@ -1,6 +1,6 @@
 use crate::get_or_null;
 use crate::config::DatabaseType;
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Table};
@@ -155,14 +155,16 @@ impl Pool for MySqlPool {
             let mut headers = vec![];
             let mut records = vec![];
             while let Some(row) = rows.try_next().await? {
-                headers = row
-                    .columns()
-                    .iter()
-                    .map(|column| column.name().to_string())
-                    .collect();
+                // headers = row
+                //     .columns()
+                //     .iter()
+                //     .map(|column| column.name().to_string())
+                //     .collect();
                 let mut new_row = vec![];
                 for column in row.columns() {
-                    new_row.push(convert_column_value_to_string(&row, column)?)
+                    let row = convert_column_value_to_string(&row, column)?;
+                    new_row.push(row.0);
+                    headers.push(row.1);
                 }
                 records.push(new_row)
             }
@@ -229,7 +231,7 @@ impl Pool for MySqlPool {
         table: &Table,
         page: u16,
         filter: Option<String>,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<String>>)> {
         let query = if let Some(filter) = filter {
             format!(
                 "SELECT * FROM `{database}`.`{table}` WHERE {filter} LIMIT {page}, {limit}",
@@ -252,14 +254,16 @@ impl Pool for MySqlPool {
         let mut headers = vec![];
         let mut records = vec![];
         while let Some(row) = rows.try_next().await? {
-            headers = row
-                .columns()
-                .iter()
-                .map(|column| column.name().to_string())
-                .collect();
+            // headers = row
+            //     .columns()
+            //     .iter()
+            //     .map(|column| column.name().to_string())
+            //     .collect();
             let mut new_row = vec![];
             for column in row.columns() {
-                new_row.push(convert_column_value_to_string(&row, column)?)
+                let row = convert_column_value_to_string(&row, column)?;
+                new_row.push(row.0);
+                headers.push(row.1);
             }
             records.push(new_row)
         }
@@ -401,73 +405,93 @@ impl Pool for MySqlPool {
     }
 }
 
-fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyhow::Result<String> {
+fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyhow::Result<(String, Header)> {
     let column_name = column.name();
 
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
-        Ok(value.unwrap_or_else(|| "NULL".to_string()))
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        Ok((value.unwrap_or_else(|| "NULL".to_string()), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i8> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i16> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i32> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i64> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f32> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Float);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f64> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Float);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u8> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u16> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u32> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<u64> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<rust_decimal::Decimal> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDate> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveTime> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDateTime> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<serde_json::Value> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<bool> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Boolean);
+        Ok((get_or_null!(value), header))
     } else {
         let index = column.ordinal();
         if let Ok(val) = row.try_get_raw(index) {
             // https://docs.rs/sqlx-core/0.5.11/src/sqlx_core/mysql/types/str.rs.html
             if let Ok(value) = Decode::<MySql>::decode(val) {
                 let value: &str = value;
-                return Ok(value.to_string())
+                let header = Header::new(column_name.to_string(), ColType::VarChar);
+                return Ok((value.to_string(), header))
             }
         }
         anyhow::bail!(

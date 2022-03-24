@@ -3,7 +3,7 @@ use crate::clipboard::copy_to_clipboard;
 use crate::components::command::{self, CommandInfo};
 use crate::components::TableComponent;
 use crate::config::KeyConfig;
-use crate::database::Pool;
+use crate::database::{Pool, Header, ColType};
 use crate::event::Key;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -74,7 +74,7 @@ impl PropertiesComponent {
                     .iter()
                     .map(|c| c.columns())
                     .collect::<Vec<Vec<String>>>(),
-                columns.get(0).unwrap().fields(),
+                columns.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
             );
@@ -87,7 +87,7 @@ impl PropertiesComponent {
                     .iter()
                     .map(|c| c.columns())
                     .collect::<Vec<Vec<String>>>(),
-                constraints.get(0).unwrap().fields(),
+                constraints.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
             );
@@ -100,7 +100,7 @@ impl PropertiesComponent {
                     .iter()
                     .map(|c| c.columns())
                     .collect::<Vec<Vec<String>>>(),
-                foreign_keys.get(0).unwrap().fields(),
+                foreign_keys.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
             );
@@ -113,7 +113,7 @@ impl PropertiesComponent {
                     .iter()
                     .map(|c| c.columns())
                     .collect::<Vec<Vec<String>>>(),
-                indexes.get(0).unwrap().fields(),
+                indexes.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
             );

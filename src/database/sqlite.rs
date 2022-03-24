@@ -1,6 +1,6 @@
 use crate::get_or_null;
 use crate::config::DatabaseType;
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType};
 use async_trait::async_trait;
 use chrono::NaiveDateTime;
 use database_tree::{Child, Database, Table};
@@ -157,14 +157,16 @@ impl Pool for SqlitePool {
             let mut headers = vec![];
             let mut records = vec![];
             while let Some(row) = rows.try_next().await? {
-                headers = row
-                    .columns()
-                    .iter()
-                    .map(|column| column.name().to_string())
-                    .collect();
+                // headers = row
+                //     .columns()
+                //     .iter()
+                //     .map(|column| column.name().to_string())
+                //     .collect();
                 let mut new_row = vec![];
                 for column in row.columns() {
-                    new_row.push(convert_column_value_to_string(&row, column)?)
+                    let row = convert_column_value_to_string(&row, column)?;
+                    new_row.push(row.0);
+                    headers.push(row.1);
                 }
                 records.push(new_row)
             }
@@ -230,7 +232,7 @@ impl Pool for SqlitePool {
         table: &Table,
         page: u16,
         filter: Option<String>,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<String>>)> {
         let query = if let Some(filter) = filter {
             format!(
                 "SELECT * FROM `{table}` WHERE {filter} LIMIT {page}, {limit}",
@@ -251,21 +253,23 @@ impl Pool for SqlitePool {
         let mut headers = vec![];
         let mut records = vec![];
         while let Some(row) = rows.try_next().await? {
-            headers = row
-                .columns()
-                .iter()
-                .map(|column| column.name().to_string())
-                .collect();
+            // headers = row
+            //     .columns()
+            //     .iter()
+            //     .map(|column| column.name().to_string())
+            //     .collect();
             let mut new_row = vec![];
             for column in row.columns() {
-                new_row.push(convert_column_value_to_string(&row, column)?)
+                let row = convert_column_value_to_string(&row, column)?;
+                new_row.push(row.0);
+                headers.push(row.1);
             }
             records.push(new_row)
         }
         if headers.len() < 1 && records.len() < 1 {
             let columns = self.get_columns(database, table).await?;
             if !columns.is_empty() {
-                headers = columns.iter().map(|c| c.columns()[0].clone()).collect::<Vec<String>>();
+                headers = columns.iter().map(|c| Header::new(c.columns()[0].clone(), ColType::VarChar)).collect::<Vec<Header>>();
             }
         }
         Ok((headers, records))
@@ -396,41 +400,52 @@ impl Pool for SqlitePool {
 fn convert_column_value_to_string(
     row: &SqliteRow,
     column: &SqliteColumn,
-) -> anyhow::Result<String> {
+) -> anyhow::Result<(String, Header)> {
     let column_name = column.name();
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
-        Ok(value.unwrap_or_else(|| "NULL".to_string()))
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        Ok((value.unwrap_or_else(|| "NULL".to_string()), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i16> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i32> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i64> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f32> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Float);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f64> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Float);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Local>> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDateTime> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<bool> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Boolean);
+        Ok((get_or_null!(value), header))
     } else {
         anyhow::bail!(
             "column type not implemented: `{}` {}",

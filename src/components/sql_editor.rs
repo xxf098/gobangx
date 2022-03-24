@@ -269,6 +269,7 @@ impl Component for SqlEditorComponent {
                     database,
                     table,
                 } => {
+                    // let header_names = headers.into_iter().map(|h| h.name).collect();
                     self.table.update(rows, headers, database, table);
                     self.focus = Focus::Table;
                     self.query_result = None;

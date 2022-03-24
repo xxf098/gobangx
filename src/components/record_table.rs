@@ -3,7 +3,7 @@ use crate::components::command::CommandInfo;
 use crate::components::{TableComponent, TableFilterComponent};
 use crate::config::KeyConfig;
 use crate::event::Key;
-use crate::database::{Pool};
+use crate::database::{Pool, Header};
 use anyhow::Result;
 use database_tree::{Database, Table as DTable};
 use tui::{
@@ -38,7 +38,7 @@ impl RecordTableComponent {
     pub fn update(
         &mut self,
         rows: Vec<Vec<String>>,
-        headers: Vec<String>,
+        headers: Vec<Header>,
         database: Database,
         table: DTable,
     ) {

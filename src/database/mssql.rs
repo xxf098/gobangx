@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use database_tree::{Child, Database, Table, Schema};
 use futures::TryStreamExt;
 use itertools::Itertools;
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, ColType, Header};
 use crate::get_or_null;
 use crate::config::DatabaseType;
 
@@ -160,14 +160,16 @@ impl Pool for MssqlPool {
             let mut headers = vec![];
             let mut records = vec![];
             while let Some(row) = rows.try_next().await? {
-                headers = row
-                    .columns()
-                    .iter()
-                    .map(|column| column.name().to_string())
-                    .collect();
+                // headers = row
+                //     .columns()
+                //     .iter()
+                //     .map(|column| column.name().to_string())
+                //     .collect();
                 let mut new_row = vec![];
-                for column in row.columns() {
-                    new_row.push(convert_column_value_to_string(&row, column)?)
+                for column in row.columns().iter() {
+                    let row = convert_column_value_to_string(&row, column)?;
+                    new_row.push(row.0);
+                    headers.push(row.1);
                 }
                 records.push(new_row)
             }
@@ -249,7 +251,7 @@ impl Pool for MssqlPool {
         table: &Table,
         _page: u16,
         filter: Option<String>,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<String>>)> {
         // FIXME
         let query = if let Some(filter) = filter.as_ref() {
             format!(
@@ -273,14 +275,16 @@ impl Pool for MssqlPool {
         let mut headers = vec![];
         let mut records = vec![];
         while let Some(row) = rows.try_next().await? {
-            headers = row
-                .columns()
-                .iter()
-                .map(|column| column.name().to_string())
-                .collect();
+            // headers = row
+            //     .columns()
+            //     .iter()
+            //     .map(|column| Header::new(column.name().to_string()))
+            //     .collect();
             let mut new_row = vec![];
-            for column in row.columns() {
-                new_row.push(convert_column_value_to_string(&row, column)?)
+            for column in row.columns().iter() {
+                let row = convert_column_value_to_string(&row, column)?;
+                new_row.push(row.0);
+                headers.push(row.1);
             }
             records.push(new_row)
         }
@@ -440,33 +444,40 @@ impl Pool for MssqlPool {
 }
 
 
-fn convert_column_value_to_string(row: &MssqlRow, column: &MssqlColumn) -> anyhow::Result<String> {
+fn convert_column_value_to_string(row: &MssqlRow, column: &MssqlColumn) -> anyhow::Result<(String, Header)> {
     let column_name = column.name();
 
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
-        Ok(value.unwrap_or_else(|| "NULL".to_string()))
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        Ok((value.unwrap_or_else(|| "NULL".to_string()), header))
     // } else if let Ok(value) = row.try_get(column_name) {
     //     let value: Option<&str> = value;
     //     Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i8> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i16> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i32> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i64> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f32> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Float);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f64> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Float);
+        Ok((get_or_null!(value), header))
     // } else if let Ok(value) = row.try_get(column_name) {
     //     let value: Option<u8> = value;
     //     Ok(get_or_null!(value))
@@ -499,7 +510,8 @@ fn convert_column_value_to_string(row: &MssqlRow, column: &MssqlColumn) -> anyho
     //     Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<bool> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Boolean);
+        Ok((get_or_null!(value), header))
     } else {
         anyhow::bail!(
             "column type not implemented: `{}` {}",

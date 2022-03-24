@@ -27,7 +27,7 @@ pub trait Pool: Send + Sync {
         table: &Table,
         page: u16,
         filter: Option<String>,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)>;
+    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<String>>)>;
     async fn get_columns(
         &self,
         database: &Database,
@@ -55,7 +55,7 @@ pub trait Pool: Send + Sync {
 
 pub enum ExecuteResult {
     Read {
-        headers: Vec<String>,
+        headers: Vec<Header>,
         rows: Vec<Vec<String>>,
         database: Database,
         table: Table,
@@ -114,7 +114,7 @@ impl DatabaseType {
                 let result = pool.execute(&sql).await?;
                 match result {
                     ExecuteResult::Read{ headers, rows, .. } => {
-                        let index = headers.iter().position(|h| h.to_lowercase() == "key_name").unwrap_or(headers.len());
+                        let index = headers.iter().position(|h| h.name.to_lowercase() == "key_name").unwrap_or(headers.len());
                         let cols = rows.into_iter().flat_map(|row| row.get(index).filter(|c| *c == "PRIMARY").map(|_| row.get(index+2).map(|c| c.clone())).flatten()).collect();
                         return Ok(cols)
                     },
@@ -137,8 +137,8 @@ impl DatabaseType {
     }
 
     // handle null | handle value type
-    pub fn insert_rows(&self, database: &Database, table: &Table, headers: &Vec<String>, rows: &Vec<Vec<String>>) -> String {
-        let header_str = headers.join(", ");
+    pub fn insert_rows(&self, database: &Database, table: &Table, headers: &Vec<Header>, rows: &Vec<Vec<String>>) -> String {
+        let header_str = headers.iter().map(|h| h.to_string()).collect::<Vec<String>>().join(", ");
         match self {
             DatabaseType::Postgres => {
                 let mut sqls = vec![];
