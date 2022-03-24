@@ -134,10 +134,20 @@ impl DatabaseType {
         }
     }
 
+    // handle null | handle value type
     pub fn insert_rows(&self, database: &Database, table: &Table, headers: &Vec<String>, rows: &Vec<Vec<String>>) -> String {
+        let header_str = headers.join(", ");
         match self {
+            DatabaseType::Postgres => {
+                let mut sqls = vec![];
+                for row in rows {
+                    let row_str = row.join("', '");
+                    let sql = format!("INSERT INTO {}.{}.{} ({}) VALUES ('{}')", database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, header_str, row_str);
+                    sqls.push(sql)
+                }
+                sqls.join(";")
+            }
             DatabaseType::MySql => {
-                let header_str = headers.join(", ");
                 let mut sqls = vec![];
                 for row in rows {
                     let row_str = row.join("', '");
