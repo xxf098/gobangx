@@ -104,7 +104,7 @@ impl Store {
         self.sender.send(event).await.map_err(|e| anyhow::anyhow!(e))
     }
 
-    pub async fn dispatch_each(&self, events: Vec<Event>) -> anyhow::Result<()> {
+    pub async fn _dispatch_each(&self, events: Vec<Event>) -> anyhow::Result<()> {
         for event in events.into_iter() {
             if let Err(e) = self.sender.send(event).await.map_err(|e| anyhow::anyhow!(e)) {
                 return Err(e)

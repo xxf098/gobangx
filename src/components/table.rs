@@ -6,6 +6,7 @@ use crate::components::command::{self, CommandInfo};
 use crate::config::KeyConfig;
 use crate::event::{Key, Store, Event};
 use crate::database::{Pool};
+use crate::clipboard::copy_to_clipboard;
 use anyhow::Result;
 use database_tree::{Database, Table as DTable};
 use std::convert::From;
@@ -676,6 +677,15 @@ impl Component for TableComponent {
                 }
             }
            
+        }
+        if key == self.key_config.advanced_copy {
+            if let Some(rows) = self.selected_rows() {
+                if let Some((database, table)) = &self.table {
+                    let sql = pool.database_type().insert_rows(database, table, &self.headers, &rows);
+                    copy_to_clipboard(&sql)?;
+                }
+            }
+            return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
     }

@@ -133,6 +133,22 @@ impl DatabaseType {
             _ => unimplemented!(),
         }
     }
+
+    pub fn insert_rows(&self, database: &Database, table: &Table, headers: &Vec<String>, rows: &Vec<Vec<String>>) -> String {
+        match self {
+            DatabaseType::MySql => {
+                let header_str = headers.join(", ");
+                let mut sqls = vec![];
+                for row in rows {
+                    let row_str = row.join("', '");
+                    let sql = format!("INSERT INTO {}.{} ({}) VALUES ('{}')", database.name, table.name, header_str, row_str);
+                    sqls.push(sql)
+                }
+                sqls.join(";")
+            },
+            _ => unimplemented!(),
+        }
+    }
 }
 
 #[macro_export]
