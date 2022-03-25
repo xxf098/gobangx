@@ -410,7 +410,8 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
 
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
-        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        let col_type = if value.is_none() { ColType::Null } else { ColType::VarChar };
+        let header = Header::new(column_name.to_string(), col_type);
         Ok((value.unwrap_or_else(|| "NULL".to_string()), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;

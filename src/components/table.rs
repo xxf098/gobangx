@@ -5,7 +5,7 @@ use super::{
 use crate::components::command::{self, CommandInfo};
 use crate::config::KeyConfig;
 use crate::event::{Key, Store, Event};
-use crate::database::{Pool, Header};
+use crate::database::{Pool, Header, ColType};
 use crate::clipboard::copy_to_clipboard;
 use anyhow::Result;
 use database_tree::{Database, Table as DTable};
@@ -313,6 +313,10 @@ impl TableComponent {
         )
     }
 
+    fn is_null_column(&self, name: Option<&String>) -> bool {
+        self.headers.iter().filter(|h| name.filter(|n| h.col_type == ColType::Null && *n == &h.name).is_some()).count() > 0
+    }
+
     fn headers(&self, left: usize, right: usize) -> Vec<String> {
         let mut headers = self.headers.clone()[left..right].to_vec();
         headers.insert(0, "".into());
@@ -526,15 +530,18 @@ impl StatefulDrawableComponent for TableComponent {
                 .unwrap_or(0)
                 + 1;
             let cells = item.iter().enumerate().map(|(column_index, c)| {
-                Cell::from(c.to_string()).style(
-                    if self.is_selected_cell(row_index, column_index, selected_column_index) {
-                        Style::default().bg(Color::Blue)
-                    } else if self.is_number_column(row_index, column_index) {
-                        Style::default().add_modifier(Modifier::BOLD)
-                    } else {
-                        Style::default()
-                    },
-                )
+                let is_null = self.is_null_column(headers.get(column_index));
+                let value = if is_null { format!("<{}>", c) } else { c.to_string() };
+                let style = if self.is_selected_cell(row_index, column_index, selected_column_index) {
+                    Style::default().bg(Color::Blue)
+                } else if self.is_number_column(row_index, column_index) {
+                    Style::default().add_modifier(Modifier::BOLD)
+                } else if is_null {
+                    Style::default().fg(Color::DarkGray)
+                } else {
+                    Style::default()
+                };
+                Cell::from(value).style(style)
             });
             Row::new(cells).height(height as u16).bottom_margin(1)
         });

@@ -1,10 +1,9 @@
 use std::string::ToString;
 use std::convert::{From};
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum ColType {
     VarChar,
-    Text,
     Int,
     Float,
     Boolean,
@@ -14,6 +13,7 @@ pub enum ColType {
     Unknown,
 }
 
+#[derive(Debug)]
 pub struct Header {
     pub name: String,
     pub col_type: ColType, 
