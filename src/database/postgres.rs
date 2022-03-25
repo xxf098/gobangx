@@ -269,20 +269,22 @@ impl Pool for PostgresPool {
             )
         };
         let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
-        let mut headers = vec![];
+        let mut headers: Vec<Header> = vec![];
         let mut records = vec![];
         let mut json_records = None;
         while let Some(row) = rows.try_next().await? {
-            // headers = row
-            //     .columns()
-            //     .iter()
-            //     .map(|column| column.name().to_string())
-            //     .collect();
+            if records.len() == 0 {
+                headers = row
+                    .columns()
+                    .iter()
+                    .map(|column| column.name().into())
+                    .collect();
+            }
             let mut new_row = vec![];
-            for column in row.columns() {
+            for (idx, column) in row.columns().iter().enumerate() {
                 match convert_column_value_to_string(&row, column) {
                     Ok(v) => {
-                        headers.push(v.1);
+                        if records.len() == 0 { headers[idx] = v.1; };
                         new_row.push(v.0)
                     },
                     Err(_) => {
