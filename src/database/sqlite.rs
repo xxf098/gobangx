@@ -262,7 +262,7 @@ impl Pool for SqlitePool {
             for column in row.columns() {
                 let row = convert_column_value_to_string(&row, column)?;
                 new_row.push(row.0);
-                headers.push(row.1);
+                if records.len() == 0 { headers.push(row.1); }
             }
             records.push(new_row)
         }

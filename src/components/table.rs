@@ -530,7 +530,7 @@ impl StatefulDrawableComponent for TableComponent {
                 .unwrap_or(0)
                 + 1;
             let cells = item.iter().enumerate().map(|(column_index, c)| {
-                let is_null = self.is_null_column(headers.get(column_index));
+                let is_null = self.is_null_column(headers.get(column_index)) && c == "NULL";
                 let value = if is_null { format!("<{}>", c) } else { c.to_string() };
                 let style = if self.is_selected_cell(row_index, column_index, selected_column_index) {
                     Style::default().bg(Color::Blue)
