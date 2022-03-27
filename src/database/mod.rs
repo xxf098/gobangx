@@ -143,8 +143,12 @@ impl DatabaseType {
             DatabaseType::Postgres => {
                 let mut sqls = vec![];
                 for row in rows {
-                    let row_str = row.iter().map(|r| r.data.clone()).collect::<Vec<String>>().join("', '");
-                    let sql = format!("INSERT INTO {}.{}.{} ({}) VALUES ('{}')", database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, header_str, row_str);
+                    let mut row_str = String::new();
+                    for v in row {
+                        let s = if v.is_null { "NULL".to_string() } else { format!("'{}'", v.data) };
+                        row_str = if row_str.len() == 0 { s.to_string() } else { format!("{}, {}", row_str, s) };
+                    }
+                    let sql = format!("INSERT INTO {}.{} ({}) VALUES ({})", table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, header_str, row_str);
                     sqls.push(sql)
                 }
                 sqls.join(";")
@@ -152,8 +156,11 @@ impl DatabaseType {
             DatabaseType::MySql => {
                 let mut sqls = vec![];
                 for row in rows {
-                    let row_str = row.iter().map(|r| r.data.clone()).collect::<Vec<String>>().join("', '");
-                    let sql = format!("INSERT INTO {}.{} ({}) VALUES ('{}')", database.name, table.name, header_str, row_str);
+                    let mut row_str = String::new();
+                    for v in row {
+                        let s = if v.is_null { "NULL".to_string() } else { format!("'{}'", v.data) };
+                        row_str = if row_str.len() == 0 { s.to_string() } else { format!("{}, {}", row_str, s) };
+                    }                    let sql = format!("INSERT INTO {}.{} ({}) VALUES ({})", database.name, table.name, header_str, row_str);
                     sqls.push(sql)
                 }
                 sqls.join(";")

@@ -5,7 +5,7 @@ use super::{
 use crate::components::command::{self, CommandInfo};
 use crate::config::KeyConfig;
 use crate::event::{Key, Store, Event};
-use crate::database::{Pool, Header, ColType, Value};
+use crate::database::{Pool, Header, Value};
 use crate::clipboard::copy_to_clipboard;
 use anyhow::Result;
 use database_tree::{Database, Table as DTable};
