@@ -144,8 +144,14 @@ impl DatabaseType {
                 let mut sqls = vec![];
                 for row in rows {
                     let mut row_str = String::new();
-                    for v in row {
-                        let s = if v.is_null { "NULL".to_string() } else { format!("'{}'", v.data) };
+                    for (i, v) in row.iter().enumerate() {
+                        let s = if v.is_null { "NULL".to_string() } else {
+                            let mut s = format!("'{}'", v.data);
+                            if let Some(header) = headers.get(i) {
+                                if header.is_no_quote() { s = v.data.clone() };
+                            };
+                            s
+                        };
                         row_str = if row_str.len() == 0 { s.to_string() } else { format!("{}, {}", row_str, s) };
                     }
                     let sql = format!("INSERT INTO {}.{} ({}) VALUES ({})", table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, header_str, row_str);
@@ -157,10 +163,17 @@ impl DatabaseType {
                 let mut sqls = vec![];
                 for row in rows {
                     let mut row_str = String::new();
-                    for v in row {
-                        let s = if v.is_null { "NULL".to_string() } else { format!("'{}'", v.data) };
+                    for (i, v) in row.iter().enumerate() {
+                        let s = if v.is_null { "NULL".to_string() } else {
+                            let mut s = format!("'{}'", v.data);
+                            if let Some(header) = headers.get(i) {
+                                if header.is_no_quote() { s = v.data.clone() };
+                            };
+                            s
+                        };
                         row_str = if row_str.len() == 0 { s.to_string() } else { format!("{}, {}", row_str, s) };
-                    }                    let sql = format!("INSERT INTO {}.{} ({}) VALUES ({})", database.name, table.name, header_str, row_str);
+                    }                  
+                    let sql = format!("INSERT INTO {}.{} ({}) VALUES ({})", database.name, table.name, header_str, row_str);
                     sqls.push(sql)
                 }
                 sqls.join(";")

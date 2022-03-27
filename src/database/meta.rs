@@ -24,6 +24,15 @@ impl Header {
     pub fn new(name: String, typ: ColType) -> Self {
         Self { name, col_type: typ }
     }
+
+    pub fn is_number(&self) -> bool {
+        self.col_type == ColType::Int || self.col_type == ColType::Float
+    }
+
+    pub fn is_no_quote(&self) -> bool {
+        self.is_number() || self.col_type == ColType::Boolean
+    }
+
 }
 
 
