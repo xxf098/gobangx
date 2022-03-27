@@ -136,6 +136,7 @@ impl DatabaseType {
         }
     }
 
+
     // handle null | handle value type
     pub fn insert_rows(&self, database: &Database, table: &Table, headers: &Vec<Header>, rows: &Vec<Vec<Value>>) -> String {
         let header_str = headers.iter().map(|h| h.to_string()).collect::<Vec<String>>().join(", ");
@@ -143,17 +144,7 @@ impl DatabaseType {
             DatabaseType::Postgres => {
                 let mut sqls = vec![];
                 for row in rows {
-                    let mut row_str = String::new();
-                    for (i, v) in row.iter().enumerate() {
-                        let s = if v.is_null { "NULL".to_string() } else {
-                            let mut s = format!("'{}'", v.data);
-                            if let Some(header) = headers.get(i) {
-                                if header.is_no_quote() { s = v.data.clone() };
-                            };
-                            s
-                        };
-                        row_str = if row_str.len() == 0 { s.to_string() } else { format!("{}, {}", row_str, s) };
-                    }
+                    let row_str = convert_row_str(row, headers);
                     let sql = format!("INSERT INTO {}.{} ({}) VALUES ({})", table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, header_str, row_str);
                     sqls.push(sql)
                 }
@@ -162,17 +153,7 @@ impl DatabaseType {
             DatabaseType::MySql => {
                 let mut sqls = vec![];
                 for row in rows {
-                    let mut row_str = String::new();
-                    for (i, v) in row.iter().enumerate() {
-                        let s = if v.is_null { "NULL".to_string() } else {
-                            let mut s = format!("'{}'", v.data);
-                            if let Some(header) = headers.get(i) {
-                                if header.is_no_quote() { s = v.data.clone() };
-                            };
-                            s
-                        };
-                        row_str = if row_str.len() == 0 { s.to_string() } else { format!("{}, {}", row_str, s) };
-                    }                  
+                    let row_str = convert_row_str(row, headers);                  
                     let sql = format!("INSERT INTO {}.{} ({}) VALUES ({})", database.name, table.name, header_str, row_str);
                     sqls.push(sql)
                 }
@@ -181,6 +162,21 @@ impl DatabaseType {
             _ => unimplemented!(),
         }
     }
+}
+
+fn convert_row_str (row: &Vec<Value>, headers: &Vec<Header>) -> String {
+    let mut row_str = String::new();
+    for (i, v) in row.iter().enumerate() {
+        let s = if v.is_null { "NULL".to_string() } else {
+            let mut s = format!("'{}'", v.data);
+            if let Some(header) = headers.get(i) {
+                if header.is_no_quote() { s = v.data.clone() };
+            };
+            s
+        };
+        row_str = if row_str.len() == 0 { s.to_string() } else { format!("{}, {}", row_str, s) };
+    };
+    row_str
 }
 
 #[macro_export]
