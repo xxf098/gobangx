@@ -2,7 +2,6 @@ use crate::get_or_null;
 use crate::config::DatabaseType;
 use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType, Value};
 use async_trait::async_trait;
-use chrono::NaiveDateTime;
 use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
 use sqlx::sqlite::{SqliteColumn, SqlitePoolOptions, SqliteRow};
@@ -430,18 +429,18 @@ fn convert_column_value_to_string(
         let value: Option<f64> = value;
         let header = Header::new(column_name.to_string(), ColType::Float);
         Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<chrono::DateTime<chrono::Local>> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveDateTime> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<chrono::DateTime<chrono::Utc>> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<chrono::DateTime<chrono::Local>> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<NaiveDateTime> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<bool> = value;
         let header = Header::new(column_name.to_string(), ColType::Boolean);

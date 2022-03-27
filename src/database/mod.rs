@@ -159,6 +159,15 @@ impl DatabaseType {
                 }
                 sqls.join(";")
             },
+            DatabaseType::Sqlite => {
+                let mut sqls = vec![];
+                for row in rows {
+                    let row_str = convert_row_str(row, headers);                  
+                    let sql = format!("INSERT INTO {} ({}) VALUES ({})", table.name, header_str, row_str);
+                    sqls.push(sql)
+                }
+                sqls.join(";")
+            },
             _ => unimplemented!(),
         }
     }
