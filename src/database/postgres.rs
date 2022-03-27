@@ -556,10 +556,11 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
         let value: String = value;
         let header = Header::new(column_name.to_string(), ColType::VarChar);
         Ok((Value::new(value), header))
-    // } else if let Ok(value) = row.try_get(column_name) {
-    //     let value: Option<chrono::DateTime<chrono::Utc>> = value;
-    //     let header = Header::new(column_name.to_string(), ColType::Date);
-    //     Ok((get_or_null!(value), header))
+    } else if let Ok(value) = row.try_get(column_name) {
+        let value: Option<chrono::DateTime<chrono::Utc>> = value;
+        let header = Header::new(column_name.to_string(), ColType::Date);
+        let t = value.map(|t| t.to_string().strip_suffix(" UTC").unwrap().to_string());
+        Ok((get_or_null!(t), header))
     // } else if let Ok(value) = row.try_get(column_name) {
     //     let value: Option<chrono::DateTime<chrono::Local>> = value;
     //     let header = Header::new(column_name.to_string(), ColType::Date);

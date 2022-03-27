@@ -2,7 +2,7 @@ use crate::get_or_null;
 use crate::config::DatabaseType;
 use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType, Value};
 use async_trait::async_trait;
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime, SecondsFormat};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
 use sqlx::mysql::{MySqlColumn, MySqlPoolOptions, MySqlRow, MySql};
