@@ -1,6 +1,6 @@
 use crate::get_or_null;
 use crate::config::DatabaseType;
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType};
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType, Value};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Table};
@@ -231,7 +231,7 @@ impl Pool for MySqlPool {
         table: &Table,
         page: u16,
         filter: Option<String>,
-    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<String>>)> {
+    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<Value>>)> {
         let query = if let Some(filter) = filter {
             format!(
                 "SELECT * FROM `{database}`.`{table}` WHERE {filter} LIMIT {page}, {limit}",
@@ -405,14 +405,13 @@ impl Pool for MySqlPool {
     }
 }
 
-fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyhow::Result<(String, Header)> {
+fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyhow::Result<(Value, Header)> {
     let column_name = column.name();
 
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::VarChar };
-        let header = Header::new(column_name.to_string(), col_type);
-        Ok((value.unwrap_or_else(|| "NULL".to_string()), header))
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;
         let header = Header::new(column_name.to_string(), ColType::VarChar);
@@ -492,7 +491,7 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
             if let Ok(value) = Decode::<MySql>::decode(val) {
                 let value: &str = value;
                 let header = Header::new(column_name.to_string(), ColType::VarChar);
-                return Ok((value.to_string(), header))
+                return Ok((Value::new(value.to_string()), header))
             }
         }
         anyhow::bail!(

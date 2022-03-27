@@ -8,7 +8,7 @@ pub use mysql::MySqlPool;
 pub use postgres::PostgresPool;
 pub use sqlite::SqlitePool;
 pub use mssql::MssqlPool;
-pub use meta::{ColType, Header};
+pub use meta::{ColType, Header, Value};
 
 use async_trait::async_trait;
 use database_tree::{Child, Database, Table};
@@ -27,7 +27,7 @@ pub trait Pool: Send + Sync {
         table: &Table,
         page: u16,
         filter: Option<String>,
-    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<String>>)>;
+    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<Value>>)>;
     async fn get_columns(
         &self,
         database: &Database,
@@ -56,7 +56,7 @@ pub trait Pool: Send + Sync {
 pub enum ExecuteResult {
     Read {
         headers: Vec<Header>,
-        rows: Vec<Vec<String>>,
+        rows: Vec<Vec<Value>>,
         database: Database,
         table: Table,
     },
@@ -103,7 +103,7 @@ impl DatabaseType {
             let result = pool.execute(&sql).await?;
             match result {
                 ExecuteResult::Read{ rows, .. } => {
-                    let cols = rows.into_iter().flat_map(|row| row.into_iter().next()).collect();
+                    let cols = rows.into_iter().flat_map(|row| row.into_iter().next().map(|c| c.data)).collect();
                     return Ok(cols)
                 },
                 _ => {}
@@ -115,7 +115,7 @@ impl DatabaseType {
                 match result {
                     ExecuteResult::Read{ headers, rows, .. } => {
                         let index = headers.iter().position(|h| h.name.to_lowercase() == "key_name").unwrap_or(headers.len());
-                        let cols = rows.into_iter().flat_map(|row| row.get(index).filter(|c| *c == "PRIMARY").map(|_| row.get(index+2).map(|c| c.clone())).flatten()).collect();
+                        let cols = rows.into_iter().flat_map(|row| row.get(index).filter(|c| c.data == "PRIMARY").map(|_| row.get(index+2).map(|c| c.data.clone())).flatten()).collect();
                         return Ok(cols)
                     },
                     _ => {}
@@ -137,13 +137,13 @@ impl DatabaseType {
     }
 
     // handle null | handle value type
-    pub fn insert_rows(&self, database: &Database, table: &Table, headers: &Vec<Header>, rows: &Vec<Vec<String>>) -> String {
+    pub fn insert_rows(&self, database: &Database, table: &Table, headers: &Vec<Header>, rows: &Vec<Vec<Value>>) -> String {
         let header_str = headers.iter().map(|h| h.to_string()).collect::<Vec<String>>().join(", ");
         match self {
             DatabaseType::Postgres => {
                 let mut sqls = vec![];
                 for row in rows {
-                    let row_str = row.join("', '");
+                    let row_str = row.iter().map(|r| r.data.clone()).collect::<Vec<String>>().join("', '");
                     let sql = format!("INSERT INTO {}.{}.{} ({}) VALUES ('{}')", database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, header_str, row_str);
                     sqls.push(sql)
                 }
@@ -152,7 +152,7 @@ impl DatabaseType {
             DatabaseType::MySql => {
                 let mut sqls = vec![];
                 for row in rows {
-                    let row_str = row.join("', '");
+                    let row_str = row.iter().map(|r| r.data.clone()).collect::<Vec<String>>().join("', '");
                     let sql = format!("INSERT INTO {}.{} ({}) VALUES ('{}')", database.name, table.name, header_str, row_str);
                     sqls.push(sql)
                 }
@@ -166,6 +166,6 @@ impl DatabaseType {
 #[macro_export]
 macro_rules! get_or_null {
     ($value:expr) => {
-        $value.map_or("NULL".to_string(), |v| v.to_string())
+        $value.map_or(Value::default(), |v| Value::new(v.to_string()))
     };
 }

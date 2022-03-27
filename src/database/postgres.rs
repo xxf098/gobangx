@@ -1,6 +1,6 @@
 use crate::get_or_null;
 use crate::config::DatabaseType;
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType};
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType, Value};
 use async_trait::async_trait;
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Schema, Table};
@@ -247,7 +247,7 @@ impl Pool for PostgresPool {
         table: &Table,
         page: u16,
         filter: Option<String>,
-    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<String>>)> {
+    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<Value>>)> {
         let query = if let Some(filter) = filter.as_ref() {
             format!(
                 r#"SELECT * FROM "{database}"."{table_schema}"."{table}" WHERE {filter} LIMIT {limit} OFFSET {page}"#,
@@ -302,13 +302,13 @@ impl Pool for PostgresPool {
                                 .get(column.name())
                                 .unwrap()
                             {
-                                serde_json::Value::String(v) => new_row.push(v.to_string()),
-                                serde_json::Value::Null => new_row.push("NULL".to_string()),
+                                serde_json::Value::String(v) => new_row.push(Value::new(v.to_string())),
+                                serde_json::Value::Null => new_row.push(Value::default()),
                                 serde_json::Value::Array(v) => {
-                                    new_row.push(v.iter().map(|v| v.to_string()).join(","))
+                                    new_row.push(v.iter().map(|v| v.to_string()).join(",").into())
                                 }
-                                serde_json::Value::Number(v) => new_row.push(v.to_string()),
-                                serde_json::Value::Bool(v) => new_row.push(v.to_string()),
+                                serde_json::Value::Number(v) => new_row.push(Value::new(v.to_string())),
+                                serde_json::Value::Bool(v) => new_row.push(v.to_string().into()),
                                 others => {
                                     panic!(
                                         "column type not implemented: `{}` {}",
@@ -518,7 +518,7 @@ impl PostgresPool {
     }
 }
 
-fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Result<(String, Header)> {
+fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Result<(Value, Header)> {
     let column_name = column.name();
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<i16> = value;
@@ -544,14 +544,14 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
         let value: Option<&[u8]> = value;
         let col_type = if value.is_none() { ColType::Null } else { ColType::Int };
         let header = Header::new(column_name.to_string(), col_type);
-        Ok((value.map_or("NULL".to_string(), |values| {
+        Ok((value.map_or(Value::default(), |values| {
             format!(
                 "\\x{}",
                 values
                     .iter()
                     .map(|v| format!("{:02x}", v))
                     .collect::<String>()
-            )
+            ).into()
         }), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDate> = value;
@@ -561,7 +561,7 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
     } else if let Ok(value) = row.try_get(column_name) {
         let value: String = value;
         let header = Header::new(column_name.to_string(), ColType::VarChar);
-        Ok((value, header))
+        Ok((Value::new(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Utc>> = value;
         let col_type = if value.is_none() { ColType::Null } else { ColType::Date };
@@ -600,7 +600,7 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
         let value: Option<Vec<String>> = value;
         let col_type = if value.is_none() { ColType::Null } else { ColType::VarChar };
         let header = Header::new(column_name.to_string(), col_type);
-        Ok((value.map_or("NULL".to_string(), |v| v.join(",")), header))
+        Ok((value.map_or(Value::default(), |v| Value::new(v.join(","))), header))
     } else {
         anyhow::bail!(
             "column type not implemented: `{}` {}",

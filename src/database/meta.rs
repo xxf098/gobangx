@@ -1,4 +1,5 @@
 use std::string::ToString;
+use std::fmt;
 use std::convert::{From};
 
 #[derive(Clone, PartialEq, Debug)]
@@ -51,6 +52,57 @@ impl From<&str> for Header {
 
 // for cell value
 pub struct Value {
-    val: String,
-    is_null: bool,
+    pub data: String,
+    pub is_null: bool,
 }
+
+
+
+impl Value {
+    pub fn new(v: String) -> Self {
+        Self { data: v, is_null: false }
+    }
+}
+
+impl Clone for Value {
+
+    fn clone(&self) -> Self {
+        Self { data: self.data.clone(), is_null: self.is_null }
+    }
+}
+
+// impl From<String> for Value {
+
+//     fn from(v: String) -> Self {
+//         Self::new(v)
+//     }
+// }
+
+impl<S> From<S> for Value where S: AsRef<str> {
+
+    fn from(v: S) -> Self {
+        Self::new(v.as_ref().to_string())
+    }
+}
+
+// impl ToString for Value {
+
+//     fn to_string(&self) -> String {
+//         self.data.clone()
+//     }
+// }
+
+impl fmt::Display for Value {
+
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.data)
+    }
+}
+
+
+impl Default for Value {
+    fn default() -> Self {
+        Self { data: "NULL".to_string(), is_null: true }
+    }
+}
+

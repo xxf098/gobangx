@@ -3,7 +3,7 @@ use crate::clipboard::copy_to_clipboard;
 use crate::components::command::{self, CommandInfo};
 use crate::components::TableComponent;
 use crate::config::KeyConfig;
-use crate::database::{Pool, Header, ColType};
+use crate::database::{Pool, Header, ColType, Value};
 use crate::event::Key;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -72,8 +72,8 @@ impl PropertiesComponent {
             self.column_table.update(
                 columns
                     .iter()
-                    .map(|c| c.columns())
-                    .collect::<Vec<Vec<String>>>(),
+                    .map(|c| c.columns().into_iter().map(|c| Value::new(c)).collect::<Vec<_>>())
+                    .collect::<Vec<Vec<Value>>>(),
                 columns.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
@@ -85,8 +85,8 @@ impl PropertiesComponent {
             self.constraint_table.update(
                 constraints
                     .iter()
-                    .map(|c| c.columns())
-                    .collect::<Vec<Vec<String>>>(),
+                    .map(|c| c.columns().into_iter().map(|c| Value::new(c)).collect::<Vec<_>>())
+                    .collect::<Vec<Vec<Value>>>(),
                 constraints.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
@@ -98,8 +98,8 @@ impl PropertiesComponent {
             self.foreign_key_table.update(
                 foreign_keys
                     .iter()
-                    .map(|c| c.columns())
-                    .collect::<Vec<Vec<String>>>(),
+                    .map(|c| c.columns().into_iter().map(|c| Value::new(c)).collect::<Vec<_>>())
+                    .collect::<Vec<Vec<Value>>>(),
                 foreign_keys.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
@@ -111,8 +111,8 @@ impl PropertiesComponent {
             self.index_table.update(
                 indexes
                     .iter()
-                    .map(|c| c.columns())
-                    .collect::<Vec<Vec<String>>>(),
+                    .map(|c| c.columns().into_iter().map(|c| Value::new(c)).collect::<Vec<_>>())
+                    .collect::<Vec<Vec<Value>>>(),
                 indexes.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),

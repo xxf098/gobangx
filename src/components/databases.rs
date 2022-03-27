@@ -296,7 +296,7 @@ impl Component for DatabasesComponent {
                 match result {
                     ExecuteResult::Read{ rows, .. } => {
                         if rows.len() > 0 && rows[0].len() > 1 {
-                            copy_to_clipboard(&rows[0][1])?;
+                            copy_to_clipboard(&rows[0][1].to_string())?;
                         }
                     },
                     _ => {}
