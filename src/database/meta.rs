@@ -59,12 +59,11 @@ impl From<&str> for Header {
 }
 
 // for cell value
+#[derive(Debug)]
 pub struct Value {
     pub data: String,
     pub is_null: bool,
 }
-
-
 
 impl Value {
     pub fn new(v: String) -> Self {
@@ -90,6 +89,13 @@ impl<S> From<S> for Value where S: AsRef<str> {
 
     fn from(v: S) -> Self {
         Self::new(v.as_ref().to_string())
+    }
+}
+
+impl<S> PartialEq<S> for Value where S: AsRef<str> {
+
+    fn eq(&self, other: &S) -> bool {
+        self.is_null == false && self.data == other.as_ref()
     }
 }
 

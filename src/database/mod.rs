@@ -82,11 +82,37 @@ impl DatabaseType {
         }
     }
 
-    pub fn show_schema(&self, database: &Database, table: &Table) -> String {
+    pub async fn show_schema(&self, pool: &Box<dyn Pool>, database: &Database, table: &Table) -> anyhow::Result<String> {
         match self {
-            DatabaseType::MySql => format!("show create table {}.{}", database.name, table.name),
-            DatabaseType::Sqlite => format!("select name, sql from sqlite_schema where name = '{}';", table.name),
+            DatabaseType::MySql => {
+                let sql = format!("show create table {}.{}", database.name, table.name);
+                let result = pool.execute(&sql).await?;
+                return self.table_ddl(result)
+            },
+            DatabaseType::Sqlite => { 
+                let sql = format!("select name, sql from sqlite_schema where name = '{}';", table.name);
+                let result = pool.execute(&sql).await?;
+                return self.table_ddl(result)
+            },
             _ => unimplemented!(),
+        }
+    }
+
+    fn table_ddl(&self, result: ExecuteResult) -> anyhow::Result<String> {
+        match self {
+            DatabaseType::MySql | DatabaseType::Sqlite => {
+                let mut s = String::new();
+                match result {
+                    ExecuteResult::Read{ rows, .. } => {
+                        if rows.len() > 0 && rows[0].len() > 1 {
+                            s = rows[0][1].to_string();
+                        }                        
+                    },
+                    _ => {},
+                };
+                Ok(s)
+            },
+            _ => unreachable!(),
         }
     }
 
