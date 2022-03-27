@@ -408,48 +408,39 @@ fn convert_column_value_to_string(
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::VarChar };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i16> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Int };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Int);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i32> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Int };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Int);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i64> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Int };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Int);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f32> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Float };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(),  ColType::Float);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f64> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Float };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Float);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Date };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Date);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Local>> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Date };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Date);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDateTime> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Date };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Date);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<bool> = value;

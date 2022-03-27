@@ -10,7 +10,6 @@ pub enum ColType {
     Boolean,
     Date,
     Json,
-    Null,
     Unknown,
 }
 

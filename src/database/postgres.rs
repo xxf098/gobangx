@@ -522,28 +522,23 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
     let column_name = column.name();
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<i16> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Int };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Int);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i32> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Int };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Int);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i64> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Int };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Int);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<rust_decimal::Decimal> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Int };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Int);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<&[u8]> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Int };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Int);
         Ok((value.map_or(Value::default(), |values| {
             format!(
                 "\\x{}",
@@ -555,8 +550,7 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
         }), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDate> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Date };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Date);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: String = value;
@@ -564,33 +558,27 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
         Ok((Value::new(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Date };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Date);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Local>> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Date };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Date);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDateTime> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Date };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Date);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveDate> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Date };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Date);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<NaiveTime> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::Date };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::Date);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<serde_json::Value> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::VarChar };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get::<Option<bool>, _>(column_name) {
         let value: Option<bool> = value;
@@ -598,8 +586,7 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
         Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<Vec<String>> = value;
-        let col_type = if value.is_none() { ColType::Null } else { ColType::VarChar };
-        let header = Header::new(column_name.to_string(), col_type);
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
         Ok((value.map_or(Value::default(), |v| Value::new(v.join(","))), header))
     } else {
         anyhow::bail!(
