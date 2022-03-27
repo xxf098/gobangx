@@ -16,6 +16,7 @@ use crate::config::DatabaseType;
 
 pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
 pub const MYSQL_KEYWORDS: [&str; 1] = ["int"];
+pub const POSTGRES_KEYWORDS: [&str; 1] = ["group"];
 
 #[async_trait]
 pub trait Pool: Send + Sync {
@@ -178,6 +179,9 @@ impl DatabaseType {
             DatabaseType::MySql => {
                 MYSQL_KEYWORDS.iter().find(|kw| **kw == w.to_lowercase()).is_some()
             },
+            DatabaseType::Postgres => {
+                POSTGRES_KEYWORDS.iter().find(|kw| **kw == w.to_lowercase()).is_some()
+            },
             _ => false,
         }
     }
@@ -187,6 +191,11 @@ impl DatabaseType {
             DatabaseType::MySql => {
                 headers.iter().map(|h| {
                     if self.is_keywords(&h.name) { format!("`{}`", h.to_string()) } else { h.to_string() }
+                }).collect::<Vec<String>>().join(", ")
+            },
+            DatabaseType::Postgres => {
+                headers.iter().map(|h| {
+                    if self.is_keywords(&h.name) { format!("\"{}\"", h.to_string()) } else { h.to_string() }
                 }).collect::<Vec<String>>().join(", ")
             },
             _ => headers.iter().map(|h| h.to_string()).collect::<Vec<String>>().join(", ")
