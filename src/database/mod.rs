@@ -15,6 +15,7 @@ use database_tree::{Child, Database, Table};
 use crate::config::DatabaseType;
 
 pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
+pub const MYSQL_KEYWORDS: [&str; 1] = ["int"];
 
 #[async_trait]
 pub trait Pool: Send + Sync {
@@ -139,7 +140,7 @@ impl DatabaseType {
 
     // handle null | handle value type
     pub fn insert_rows(&self, database: &Database, table: &Table, headers: &Vec<Header>, rows: &Vec<Vec<Value>>) -> String {
-        let header_str = headers.iter().map(|h| h.to_string()).collect::<Vec<String>>().join(", ");
+        let header_str = self.insert_headers(headers);
         match self {
             DatabaseType::Postgres => {
                 let mut sqls = vec![];
@@ -169,6 +170,26 @@ impl DatabaseType {
                 sqls.join(";")
             },
             _ => unimplemented!(),
+        }
+    }
+
+    fn is_keywords(&self, w: &str) -> bool {
+        match self {
+            DatabaseType::MySql => {
+                MYSQL_KEYWORDS.iter().find(|kw| **kw == w.to_lowercase()).is_some()
+            },
+            _ => false,
+        }
+    }
+
+    fn insert_headers(&self, headers: &Vec<Header>) -> String {
+        match self {
+            DatabaseType::MySql => {
+                headers.iter().map(|h| {
+                    if self.is_keywords(&h.name) { format!("`{}`", h.to_string()) } else { h.to_string() }
+                }).collect::<Vec<String>>().join(", ")
+            },
+            _ => headers.iter().map(|h| h.to_string()).collect::<Vec<String>>().join(", ")
         }
     }
 }
