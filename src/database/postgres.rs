@@ -2,7 +2,7 @@ use crate::get_or_null;
 use crate::config::DatabaseType;
 use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType, Value};
 use async_trait::async_trait;
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+// use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Schema, Table};
 use futures::TryStreamExt;
 use itertools::Itertools;
@@ -163,7 +163,7 @@ impl Pool for PostgresPool {
                 for column in row.columns() {
                     let row = convert_column_value_to_string(&row, column)?;                 
                     new_row.push(row.0);
-                    headers.push(row.1);
+                    if records.len() == 0 { headers.push(row.1); };
                 }
                 records.push(new_row)
             }
@@ -295,7 +295,7 @@ impl Pool for PostgresPool {
                             );
                         }
                         if let Some(json_records) = &json_records {
-                            headers.push(Header::new(column.name().to_string(), ColType::Json));
+                            if records.len() == 0 { headers.push(Header::new(column.name().to_string(), ColType::Json)); }
                             match json_records
                                 .get(records.len())
                                 .unwrap()
@@ -548,34 +548,34 @@ fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Res
                     .collect::<String>()
             ).into()
         }), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveDate> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<NaiveDate> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: String = value;
         let header = Header::new(column_name.to_string(), ColType::VarChar);
         Ok((Value::new(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<chrono::DateTime<chrono::Local>> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveDateTime> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveDate> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveTime> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<chrono::DateTime<chrono::Utc>> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<chrono::DateTime<chrono::Local>> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<NaiveDateTime> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<NaiveDate> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<NaiveTime> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<serde_json::Value> = value;
         let header = Header::new(column_name.to_string(), ColType::VarChar);
