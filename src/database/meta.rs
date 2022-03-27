@@ -49,4 +49,8 @@ impl From<&str> for Header {
     }
 }
 
-// from sql column
+// for cell value
+pub struct Value {
+    val: String,
+    is_null: bool,
+}
