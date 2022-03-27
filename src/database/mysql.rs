@@ -2,7 +2,7 @@ use crate::get_or_null;
 use crate::config::DatabaseType;
 use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType, Value};
 use async_trait::async_trait;
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime, SecondsFormat};
 use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
 use sqlx::mysql::{MySqlColumn, MySqlPoolOptions, MySqlRow, MySql};
@@ -164,7 +164,7 @@ impl Pool for MySqlPool {
                 for column in row.columns() {
                     let row = convert_column_value_to_string(&row, column)?;
                     new_row.push(row.0);
-                    headers.push(row.1);
+                    if records.len() == 0 { headers.push(row.1); };
                 }
                 records.push(new_row)
             }
@@ -475,7 +475,8 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<chrono::DateTime<chrono::Utc>> = value;
         let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
+        let t = value.map(|t| t.to_string().strip_suffix(" UTC").unwrap().to_string());
+        Ok((get_or_null!(t), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<serde_json::Value> = value;
         let header = Header::new(column_name.to_string(), ColType::Date);
@@ -488,6 +489,10 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
         let index = column.ordinal();
         if let Ok(val) = row.try_get_raw(index) {
             // https://docs.rs/sqlx-core/0.5.11/src/sqlx_core/mysql/types/str.rs.html
+            // match val.format() {
+            //     MySqlValueFormat::Binary => {},
+            //     MySqlValueFormat::Text => {},
+            // }
             if let Ok(value) = Decode::<MySql>::decode(val) {
                 let value: &str = value;
                 let header = Header::new(column_name.to_string(), ColType::VarChar);
