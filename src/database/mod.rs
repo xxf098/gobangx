@@ -8,7 +8,7 @@ pub use mysql::MySqlPool;
 pub use postgres::PostgresPool;
 pub use sqlite::SqlitePool;
 pub use mssql::MssqlPool;
-pub use meta::{ColType, Header, Value};
+pub use meta::{ColType, Header, Value, ColumnMeta, ColumnConstraint};
 
 use async_trait::async_trait;
 use database_tree::{Child, Database, Table};
@@ -17,6 +17,7 @@ use crate::config::DatabaseType;
 pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
 pub const MYSQL_KEYWORDS: [&str; 1] = ["int"];
 pub const POSTGRES_KEYWORDS: [&str; 1] = ["group"];
+const INDENT: &str = "    ";
 
 #[async_trait]
 pub trait Pool: Send + Sync {
@@ -35,6 +36,14 @@ pub trait Pool: Send + Sync {
         database: &Database,
         table: &Table,
     ) -> anyhow::Result<Vec<Box<dyn TableRow>>>;
+
+    async fn get_columns2(
+        &self,
+        _database: &Database,
+        _table: &Table,
+    ) -> anyhow::Result<Vec<ColumnMeta>> {
+        anyhow::bail!("just for postgress")
+    }
     async fn get_constraints(
         &self,
         database: &Database,
@@ -93,6 +102,9 @@ impl DatabaseType {
                 let sql = format!("select name, sql from sqlite_schema where name = '{}';", table.name);
                 let result = pool.execute(&sql).await?;
                 return self.table_ddl(result)
+            },
+            DatabaseType::Postgres => {
+                postgres_table_ddl(pool, database, table).await
             },
             _ => unimplemented!(),
         }
@@ -227,6 +239,37 @@ impl DatabaseType {
             _ => headers.iter().map(|h| h.to_string()).collect::<Vec<String>>().join(", ")
         }
     }
+}
+
+// TODO: getPrimaryKeyColumns getIndexDefs getForeignDefs getPolicyDefs getTableCheckConstraints getUniqueConstraints
+async fn postgres_table_ddl(pool: &Box<dyn Pool>, database: &Database, table: &Table) -> anyhow::Result<String> {
+    let columns = pool.get_columns2(database, table).await?;
+    let mut ddl = format!("CREATE TABLE {}.{} (", table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name);
+    for (i, col) in columns.iter().enumerate() {
+        if i > 0 {
+            ddl = format!("{},", ddl);
+        }
+        ddl = format!("{}\n{}", ddl, INDENT);
+        ddl = format!("{} \"{}\" {}", ddl, col.name, col.get_data_type());
+        if col.length > 0 {
+            ddl = format!("{}({})", ddl, col.length);
+        }
+        if !col.nullable {
+            ddl = format!("{} NOT NULL", ddl);
+        }
+        if col.default.is_some() && col.default.as_ref().unwrap().len() > 0 && !col.is_auto_increment {
+            ddl = format!("{} DEFAULT {}", ddl, col.default.as_ref().unwrap());
+        }
+        if col.identity_generation.is_some() && col.identity_generation.as_ref().unwrap().len() > 0{
+            ddl = format!("{} GENERATED {} AS IDENTITY", ddl, col.identity_generation.as_ref().unwrap())
+        }
+        if col.check.is_some() {
+            let check = col.check.as_ref().unwrap();
+            ddl =  format!("{} CONSTRAINT {} {}", ddl, check.name, check.definition);
+        }
+    }
+    ddl = format!("{}\n);\n", ddl);
+    Ok(ddl.trim_end().to_string())
 }
 
 fn convert_row_str (row: &Vec<Value>, headers: &Vec<Header>) -> String {

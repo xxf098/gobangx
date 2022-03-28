@@ -1,6 +1,6 @@
 use crate::get_or_null;
 use crate::config::DatabaseType;
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType, Value};
+use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType, Value, ColumnMeta, ColumnConstraint};
 use async_trait::async_trait;
 // use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Schema, Table};
@@ -482,6 +482,14 @@ impl Pool for PostgresPool {
     fn database_type(&self) -> DatabaseType {
         DatabaseType::Postgres
     }
+
+    async fn get_columns2(
+        &self,
+        _database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<ColumnMeta>> {
+        self.get_column_metas(table).await
+    }
 }
 
 impl PostgresPool {
@@ -516,6 +524,96 @@ impl PostgresPool {
             sqlx::query_as(query.as_str()).fetch_all(&self.pool).await?;
         Ok(json.iter().map(|v| v.clone().0).collect())
     }
+
+    async fn get_column_metas(&self, table: &Table) -> anyhow::Result<Vec<ColumnMeta>> {
+        let query = r#"WITH
+        columns AS (
+          SELECT
+            s.column_name,
+            s.column_default,
+            s.is_nullable,
+            s.character_maximum_length,
+            CASE
+            WHEN s.data_type IN ('ARRAY', 'USER-DEFINED') THEN format_type(f.atttypid, f.atttypmod)
+            ELSE s.data_type
+            END,
+            s.identity_generation
+          FROM pg_attribute f
+          JOIN pg_class c ON c.oid = f.attrelid JOIN pg_type t ON t.oid = f.atttypid
+          LEFT JOIN pg_attrdef d ON d.adrelid = c.oid AND d.adnum = f.attnum
+          LEFT JOIN pg_namespace n ON n.oid = c.relnamespace
+          LEFT JOIN information_schema.columns s ON s.column_name = f.attname AND s.table_name = c.relname AND s.table_schema = n.nspname
+          WHERE c.relkind = 'r'::char
+          AND n.nspname = $1
+          AND c.relname = $2
+          AND f.attnum > 0
+          ORDER BY f.attnum
+        ),
+        column_constraints AS (
+          SELECT att.attname column_name, tmp.name, tmp.type , tmp.definition
+          FROM (
+            SELECT unnest(con.conkey) AS conkey,
+                   pg_get_constraintdef(con.oid, true) AS definition,
+                   cls.oid AS relid,
+                   con.conname AS name,
+                   con.contype AS type
+            FROM   pg_constraint con
+            JOIN   pg_namespace nsp ON nsp.oid = con.connamespace
+            JOIN   pg_class cls ON cls.oid = con.conrelid
+            WHERE  nsp.nspname = $1
+            AND    cls.relname = $2
+            AND    array_length(con.conkey, 1) = 1
+          ) tmp
+          JOIN pg_attribute att ON tmp.conkey = att.attnum AND tmp.relid = att.attrelid
+        ),
+        check_constraints AS (
+          SELECT column_name, name, definition
+          FROM   column_constraints
+          WHERE  type = 'c'
+        )
+      SELECT    columns.*, checks.name, checks.definition
+      FROM      columns
+      LEFT JOIN check_constraints checks USING (column_name);"#;
+        let schema = table.schema.clone().unwrap_or_else(|| "public".to_string());
+        let mut rows = sqlx::query(query)
+                .bind(&schema)
+                .bind(&table.name)
+                .fetch(&self.pool);
+        let mut columns: Vec<ColumnMeta> = vec![];
+        while let Some(row) = rows.try_next().await? {
+            let column_name: Option<String> = row.try_get("column_name")?;
+            let column_default: Option<String> = row.try_get("column_default")?;
+            let is_nullable: Option<String> = row.try_get("is_nullable")?;
+            let max_len: Option<i32> = row.try_get("character_maximum_length")?;
+            let data_type: Option<String> = row.try_get("data_type")?;
+            let identity_generation: Option<String> = row.try_get("identity_generation")?;
+            let check_name: Option<String> = row.try_get("name")?;
+            let check_definition: Option<String> = row.try_get("definition")?;
+            let max_len = max_len.unwrap_or(0);
+            let column_name = column_name.map(|m| m.trim_matches('"').to_string()).unwrap_or("".to_string());
+            let mut is_auto_increment = false;
+            if column_default.as_ref().filter(|c| c.starts_with("nextval(")).is_some() {
+                is_auto_increment = true;
+            }
+            let nullable = is_nullable.map(|s| s == "YES").is_some();
+            let data_type = data_type.unwrap_or("".to_string());
+            let check = if check_name.is_some() && check_definition.is_some() {
+                Some(ColumnConstraint{ definition: check_definition.unwrap(), name: check_name.unwrap() })
+            } else { None };
+            columns.push(ColumnMeta {
+                name: column_name,
+                default: column_default,
+                nullable: nullable,
+                length: max_len,
+                data_type: data_type,
+                identity_generation: identity_generation,
+                is_auto_increment: is_auto_increment,
+                check: check, 
+            });
+        };
+        Ok(columns)
+    }
+
 }
 
 fn convert_column_value_to_string(row: &PgRow, column: &PgColumn) -> anyhow::Result<(Value, Header)> {

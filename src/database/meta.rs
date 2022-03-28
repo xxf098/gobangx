@@ -120,3 +120,35 @@ impl Default for Value {
     }
 }
 
+
+
+pub struct ColumnConstraint {
+	pub(crate) definition: String,
+	pub(crate) name:       String,
+}
+
+
+pub struct ColumnMeta {
+    pub(crate) name: String,
+    pub(crate) data_type: String,
+    pub(crate) length: i32,
+    pub(crate) nullable: bool,
+    pub(crate) default: Option<String>,
+    pub(crate) is_auto_increment: bool,
+    pub(crate) identity_generation: Option<String>,
+    pub(crate) check: Option<ColumnConstraint>,
+}
+
+impl ColumnMeta {
+
+    pub fn get_data_type(&self) -> String {
+        match self.data_type.as_ref() {
+            "smallint" => if self.is_auto_increment { "smallserial".to_string() } else { self.data_type.clone() },
+            "integer" => if self.is_auto_increment { "serial".to_string() } else { self.data_type.clone() },
+            "bigint" => if self.is_auto_increment { "bigserial".to_string() } else { self.data_type.clone() },
+            "timestamp without time zone" => return "timestamp".to_string(),
+            "time without time zone" => "time".to_string(),
+            _ => self.data_type.clone()
+        }
+    }
+}
