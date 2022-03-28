@@ -85,7 +85,7 @@ impl DatabaseType {
 
     pub fn drop_table(&self, database: &Database, table: &Table) -> String {
         match self {
-            DatabaseType::Postgres => format!("drop table {}.{}.{}", database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()),table.name),
+            DatabaseType::Postgres => format!("drop table {}.{}.{}", database.name, table.pg_schema(),table.name),
             DatabaseType::MySql => format!("drop table {}.{}", database.name, table.name),
             _ => format!("drop table {}", table.name),
         }
@@ -106,10 +106,38 @@ impl DatabaseType {
             DatabaseType::Postgres => {
                 let columns = pool.get_columns2(database, table).await?;
                 let pkey_cols = self.primary_key_columns(pool, database, table).await?;
-                postgres_table_ddl(table, columns, pkey_cols).await
+                let indexes = self.postgres_index(pool, table).await?;
+                postgres_table_ddl(table, columns, pkey_cols, indexes).await
             },
             _ => unimplemented!(),
         }
+    }
+
+    async fn postgres_index(&self, pool: &Box<dyn Pool>, table: &Table) -> anyhow::Result<Vec<String>> {
+        let sql = format!(r#"WITH
+        unique_and_pk_constraints AS (
+          SELECT con.conname AS name
+          FROM   pg_constraint con
+          JOIN   pg_namespace nsp ON nsp.oid = con.connamespace
+          JOIN   pg_class cls ON cls.oid = con.conrelid
+          WHERE  con.contype IN ('p', 'u')
+          AND    nsp.nspname = '{schema}'
+          AND    cls.relname = '{table}'
+        )
+      SELECT indexName, indexdef
+      FROM   pg_indexes
+      WHERE  schemaname = '{schema}'
+      AND    tablename = '{table}'
+      AND    indexName NOT IN (SELECT name FROM unique_and_pk_constraints)"#, schema=table.pg_schema(), table=table.name);
+      let result = pool.execute(&sql).await?;
+      match result {
+          ExecuteResult::Read{ rows, .. } => {
+            let indexes = rows.iter().map(|v| v[1].to_string()).collect::<Vec<_>>();
+            Ok(indexes)
+          },
+          _ => Ok(vec![]),
+      }
+      
     }
 
     fn table_ddl(&self, result: ExecuteResult) -> anyhow::Result<String> {
@@ -244,8 +272,8 @@ impl DatabaseType {
 }
 
 // TODO: getIndexDefs getForeignDefs getPolicyDefs getTableCheckConstraints getUniqueConstraints
-async fn postgres_table_ddl(table: &Table, columns: Vec<ColumnMeta>, pkey_cols: Vec<String>) -> anyhow::Result<String> {
-    let mut ddl = format!("CREATE TABLE {}.{} (", table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name);
+async fn postgres_table_ddl(table: &Table, columns: Vec<ColumnMeta>, pkey_cols: Vec<String>, index_defs: Vec<String>) -> anyhow::Result<String> {
+    let mut ddl = format!("CREATE TABLE {}.{} (", table.pg_schema(), table.name);
     for (i, col) in columns.iter().enumerate() {
         if i > 0 {
             ddl = format!("{},", ddl);
@@ -275,6 +303,9 @@ async fn postgres_table_ddl(table: &Table, columns: Vec<ColumnMeta>, pkey_cols: 
         ddl = format!("{} PRIMARY KEY (\"{}\")", ddl, pkey);
     }
     ddl = format!("{}\n);\n", ddl);
+    for index_def in index_defs {
+        ddl = format!("{}{};\n", ddl, index_def)
+    }
     Ok(ddl.trim_end().to_string())
 }
 
