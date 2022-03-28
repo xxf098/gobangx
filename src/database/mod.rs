@@ -104,7 +104,9 @@ impl DatabaseType {
                 return self.table_ddl(result)
             },
             DatabaseType::Postgres => {
-                postgres_table_ddl(pool, database, table).await
+                let columns = pool.get_columns2(database, table).await?;
+                let pkey_cols = self.primary_key_columns(pool, database, table).await?;
+                postgres_table_ddl(table, columns, pkey_cols).await
             },
             _ => unimplemented!(),
         }
@@ -241,9 +243,8 @@ impl DatabaseType {
     }
 }
 
-// TODO: getPrimaryKeyColumns getIndexDefs getForeignDefs getPolicyDefs getTableCheckConstraints getUniqueConstraints
-async fn postgres_table_ddl(pool: &Box<dyn Pool>, database: &Database, table: &Table) -> anyhow::Result<String> {
-    let columns = pool.get_columns2(database, table).await?;
+// TODO: getIndexDefs getForeignDefs getPolicyDefs getTableCheckConstraints getUniqueConstraints
+async fn postgres_table_ddl(table: &Table, columns: Vec<ColumnMeta>, pkey_cols: Vec<String>) -> anyhow::Result<String> {
     let mut ddl = format!("CREATE TABLE {}.{} (", table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name);
     for (i, col) in columns.iter().enumerate() {
         if i > 0 {
@@ -267,6 +268,11 @@ async fn postgres_table_ddl(pool: &Box<dyn Pool>, database: &Database, table: &T
             let check = col.check.as_ref().unwrap();
             ddl =  format!("{} CONSTRAINT {} {}", ddl, check.name, check.definition);
         }
+    }
+    if pkey_cols.len() > 0 {
+        ddl = format!("{},\n{}", ddl, INDENT);
+        let pkey = pkey_cols.join("\", \"");
+        ddl = format!("{} PRIMARY KEY (\"{}\")", ddl, pkey);
     }
     ddl = format!("{}\n);\n", ddl);
     Ok(ddl.trim_end().to_string())
