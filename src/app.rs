@@ -24,7 +24,7 @@ pub enum Focus {
     Table,
     ConnectionList,
 }
-pub struct App {
+pub struct App<'a> {
     record_table: RecordTableComponent,
     properties: PropertiesComponent,
     sql_editor: SqlEditorComponent,
@@ -32,7 +32,7 @@ pub struct App {
     tab: TabComponent,
     help: HelpComponent,
     databases: DatabasesComponent,
-    connections: ConnectionsComponent,
+    connections: ConnectionsComponent<'a>,
     pool: Option<Box<dyn Pool>>,
     left_main_chunk_percentage: u16,
     pub config: Config,
@@ -40,19 +40,19 @@ pub struct App {
     pub store: Store,
 }
 
-impl App {
-    pub fn new(config: Config, sender: mpsc::Sender<Event>) -> App {
+impl<'a> App<'a> {
+    pub fn new(config: &'a Config, sender: mpsc::Sender<Event>) -> App<'a> {
         let store = Store::new(sender);
         Self {
             config: config.clone(),
-            connections: ConnectionsComponent::new(config.key_config.clone(), config.conn, config.theme_config.clone()),
+            connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.theme_config),
             record_table: RecordTableComponent::new(config.key_config.clone(), config.theme_config.clone()),
             properties: PropertiesComponent::new(config.key_config.clone(), config.theme_config.clone()),
             sql_editor: SqlEditorComponent::new(config.key_config.clone(), config.theme_config.clone()),
             tab: TabComponent::new(config.key_config.clone()),
             help: HelpComponent::new(config.key_config.clone()),
             databases: DatabasesComponent::new(config.key_config.clone(), config.theme_config.clone()),
-            error: ErrorComponent::new(config.key_config),
+            error: ErrorComponent::new(config.key_config.clone()),
             focus: Focus::ConnectionList,
             pool: None,
             left_main_chunk_percentage: 15,
@@ -438,7 +438,8 @@ mod test {
     #[test]
     fn test_extend_or_shorten_widget_width() {
         let events = Events::new(250);
-        let mut app = App::new(Config::default(), events.sender());
+        let c = Config::default();
+        let mut app = App::new(&c, events.sender());
         assert_eq!(
             app.extend_or_shorten_widget_width(Key::Char('>')).unwrap(),
             EventState::Consumed

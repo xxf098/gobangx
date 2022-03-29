@@ -21,7 +21,7 @@ use crossterm::{
 use std::io;
 use tui::{backend::CrosstermBackend, Terminal};
 
-// TODO: alias
+// TODO: SQL meta, edit cell
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let value = crate::cli::parse();
@@ -33,7 +33,7 @@ async fn main() -> anyhow::Result<()> {
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
     let mut events = event::Events::new(250);
-    let mut app = App::new(config.clone(), events.sender());
+    let mut app = App::new(&config, events.sender());
     app.update_databases_internal(connection.as_ref()).await?;
 
     terminal.clear()?;

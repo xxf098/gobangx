@@ -12,15 +12,15 @@ use tui::{
     Frame,
 };
 
-pub struct ConnectionsComponent {
-    connections: Vec<Connection>,
+pub struct ConnectionsComponent<'a> {
+    connections: &'a Vec<Connection>,
     state: ListState,
-    key_config: KeyConfig,
-    theme: ThemeConfig, // TODO: & ref
+    key_config: &'a KeyConfig,
+    theme: &'a ThemeConfig, // TODO: & ref
 }
 
-impl ConnectionsComponent {
-    pub fn new(key_config: KeyConfig, connections: Vec<Connection>, theme_config: ThemeConfig) -> Self {
+impl<'a> ConnectionsComponent<'a> {
+    pub fn new(key_config: &'a KeyConfig, connections: &'a Vec<Connection>, theme: &'a ThemeConfig) -> Self {
         let mut state = ListState::default();
         if !connections.is_empty() {
             state.select(Some(0));
@@ -29,7 +29,7 @@ impl ConnectionsComponent {
             connections,
             key_config,
             state,
-            theme: theme_config,
+            theme,
         }
     }
 
@@ -83,13 +83,13 @@ impl ConnectionsComponent {
     }
 }
 
-impl StatefulDrawableComponent for ConnectionsComponent {
+impl<'a> StatefulDrawableComponent for ConnectionsComponent<'a> {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
         let width = 80;
         let height = 20;
         let conns = &self.connections;
         let mut connections: Vec<ListItem> = Vec::new();
-        for c in conns {
+        for c in conns.iter() {
             connections.push(
                 ListItem::new(vec![Spans::from(Span::raw(c.database_url_with_name()?))])
                     .style(Style::default()),
@@ -113,7 +113,7 @@ impl StatefulDrawableComponent for ConnectionsComponent {
     }
 }
 
-impl Component for ConnectionsComponent {
+impl<'a> Component for ConnectionsComponent<'a> {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {
