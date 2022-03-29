@@ -1,8 +1,6 @@
 <div align="center">
 
-![gobang](./resources/logo.png)
-
-gobang is currently in alpha
+gobangx is based on [gobang](https://github.com/TaKO8Ki/gobang)
 
 A cross-platform TUI database management tool written in Rust
 
@@ -105,6 +103,9 @@ If you want to add connections, you need to edit your config file. For more info
 | <kbd>g</kbd> , <kbd>G</kbd> | Scroll to top/bottom |
 | <kbd>H</kbd>, <kbd>J</kbd>, <kbd>K</kbd>, <kbd>L</kbd> | Extend selection by one cell left/down/up/right |
 | <kbd>y</kbd> | Copy a cell value |
+| <kbd>Y</kbd> | Copy `CREATE TABLE` or `INSERT INTO` sql |
+| <kbd>D</kbd> | Delete row by primary key or `id` |
+| <kbd>=</kbd>, <kbd>-</kbd>, <kbd>0</kbd> | expand, shorten, reset column width |
 | <kbd>←</kbd>, <kbd>→</kbd> | Move focus to left/right |
 | <kbd>c</kbd> | Move focus to connections |
 | <kbd>/</kbd> | Filter |
