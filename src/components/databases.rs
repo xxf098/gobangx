@@ -3,7 +3,7 @@ use super::{
     EventState,
 };
 use crate::components::command::{self, CommandInfo};
-use crate::config::{Connection, KeyConfig};
+use crate::config::{Connection, KeyConfig, ThemeConfig};
 use crate::database::{Pool};
 use crate::event::{Key, Store};
 use crate::clipboard::copy_to_clipboard;
@@ -42,10 +42,17 @@ pub struct DatabasesComponent {
     scroll: VerticalScroll,
     focus: Focus,
     key_config: KeyConfig,
+    theme: ThemeConfig,
+}
+
+impl Default for DatabasesComponent {
+    fn default() -> Self {
+        Self::new(KeyConfig::default(), ThemeConfig::default())
+    }
 }
 
 impl DatabasesComponent {
-    pub fn new(key_config: KeyConfig) -> Self {
+    pub fn new(key_config: KeyConfig, theme: ThemeConfig) -> Self {
         Self {
             tree: DatabaseTree::default(),
             filter: DatabaseFilterComponent::new(),
@@ -53,6 +60,7 @@ impl DatabasesComponent {
             scroll: VerticalScroll::new(false, false),
             focus: Focus::Tree,
             key_config,
+            theme,
         }
     }
 
@@ -80,6 +88,7 @@ impl DatabasesComponent {
     }
 
     fn tree_item_to_span(
+        &self,
         item: DatabaseTreeItem,
         selected: bool,
         width: u16,
@@ -112,7 +121,7 @@ impl DatabasesComponent {
                     Span::styled(
                         format!("{}{}{}", indent_str, arrow, first),
                         if selected {
-                            Style::default().bg(Color::Blue)
+                            Style::default().bg(self.theme.color)
                         } else {
                             Style::default()
                         },
@@ -120,15 +129,15 @@ impl DatabasesComponent {
                     Span::styled(
                         middle.to_string(),
                         if selected {
-                            Style::default().bg(Color::Blue).fg(Color::Blue)
+                            Style::default().bg(self.theme.color).fg(self.theme.color)
                         } else {
-                            Style::default().fg(Color::Blue)
+                            Style::default().fg(self.theme.color)
                         },
                     ),
                     Span::styled(
                         format!("{:w$}", last.to_string(), w = width as usize),
                         if selected {
-                            Style::default().bg(Color::Blue)
+                            Style::default().bg(self.theme.color)
                         } else {
                             Style::default()
                         },
@@ -140,7 +149,7 @@ impl DatabasesComponent {
         Spans::from(Span::styled(
             format!("{}{}{:w$}", indent_str, arrow, name, w = width as usize),
             if selected {
-                Style::default().bg(Color::Blue)
+                Style::default().bg(self.theme.color)
             } else {
                 Style::default()
             },
@@ -189,7 +198,7 @@ impl DatabasesComponent {
         let items = tree
             .iterate(self.scroll.get_top(), tree_height)
             .map(|(item, selected)| {
-                Self::tree_item_to_span(
+                self.tree_item_to_span(
                     item.clone(),
                     selected,
                     area.width,
@@ -315,8 +324,9 @@ mod test {
     #[test]
     fn test_tree_database_tree_item_to_span() {
         const WIDTH: u16 = 10;
+        let dc = DatabasesComponent::default();
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_database(
                     &Database {
                         name: "foo".to_string(),
@@ -336,7 +346,7 @@ mod test {
         );
 
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_database(
                     &Database {
                         name: "foo".to_string(),
@@ -358,8 +368,9 @@ mod test {
     #[test]
     fn test_tree_table_tree_item_to_span() {
         const WIDTH: u16 = 10;
+        let dc = DatabasesComponent::default();
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),
@@ -385,7 +396,7 @@ mod test {
         );
 
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),
@@ -413,8 +424,9 @@ mod test {
     #[test]
     fn test_filterd_tree_item_to_span() {
         const WIDTH: u16 = 10;
+        let dc = DatabasesComponent::default();
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),
@@ -440,7 +452,7 @@ mod test {
         );
 
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),

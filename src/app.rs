@@ -51,7 +51,7 @@ impl App {
             sql_editor: SqlEditorComponent::new(config.key_config.clone()),
             tab: TabComponent::new(config.key_config.clone()),
             help: HelpComponent::new(config.key_config.clone()),
-            databases: DatabasesComponent::new(config.key_config.clone()),
+            databases: DatabasesComponent::new(config.key_config.clone(), config.theme_config.clone()),
             error: ErrorComponent::new(config.key_config),
             focus: Focus::ConnectionList,
             pool: None,

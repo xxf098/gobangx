@@ -143,7 +143,8 @@ fn deserialize_color<'de, D>(deserializer: D) -> Result<Color, D::Error> where D
         "yellow" => Color::Yellow,
         "blue" => Color::Blue,
         "magenta" => Color::Magenta,
-        "cyan" => Color::Cyan,        
+        "cyan" => Color::Cyan,
+        x if x.parse::<u8>().is_ok() => Color::Indexed(x.parse::<u8>().unwrap()),
         _ => Color::Blue,
     };
    Ok(color)
