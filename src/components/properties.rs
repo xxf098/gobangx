@@ -30,18 +30,18 @@ impl std::fmt::Display for Focus {
     }
 }
 
-pub struct PropertiesComponent {
+pub struct PropertiesComponent<'a> {
     column_table: TableComponent,
     constraint_table: TableComponent,
     foreign_key_table: TableComponent,
     index_table: TableComponent,
     focus: Focus,
-    key_config: KeyConfig,
-    theme: ThemeConfig,
+    key_config: &'a KeyConfig,
+    theme: &'a ThemeConfig,
 }
 
-impl PropertiesComponent {
-    pub fn new(key_config: KeyConfig, theme: ThemeConfig) -> Self {
+impl<'a> PropertiesComponent<'a> {
+    pub fn new(key_config: &'a KeyConfig, theme: &'a ThemeConfig) -> Self {
         Self {
             column_table: TableComponent::new(key_config.clone(), theme.clone()),
             constraint_table: TableComponent::new(key_config.clone(), theme.clone()),
@@ -139,7 +139,7 @@ impl PropertiesComponent {
     }
 }
 
-impl StatefulDrawableComponent for PropertiesComponent {
+impl<'a> StatefulDrawableComponent for PropertiesComponent<'a> {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let layout = Layout::default()
             .direction(Direction::Horizontal)
@@ -174,7 +174,7 @@ impl StatefulDrawableComponent for PropertiesComponent {
 }
 
 #[async_trait]
-impl Component for PropertiesComponent {
+impl<'a> Component for PropertiesComponent<'a> {
     fn commands(&self, out: &mut Vec<CommandInfo>) {
         out.push(CommandInfo::new(command::toggle_property_tabs(
             &self.key_config,
