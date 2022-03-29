@@ -35,24 +35,24 @@ pub enum Focus {
     Tree,
 }
 
-pub struct DatabasesComponent {
+pub struct DatabasesComponent<'a> {
     tree: DatabaseTree,
     filter: DatabaseFilterComponent,
     filterd_tree: Option<DatabaseTree>,
     scroll: VerticalScroll,
     focus: Focus,
-    key_config: KeyConfig,
-    theme: ThemeConfig,
+    key_config: &'a KeyConfig,
+    theme: &'a ThemeConfig,
 }
 
-impl Default for DatabasesComponent {
-    fn default() -> Self {
-        Self::new(KeyConfig::default(), ThemeConfig::default())
-    }
-}
+// impl Default for DatabasesComponent {
+//     fn default() -> Self {
+//         Self::new(KeyConfig::default(), ThemeConfig::default())
+//     }
+// }
 
-impl DatabasesComponent {
-    pub fn new(key_config: KeyConfig, theme: ThemeConfig) -> Self {
+impl<'a> DatabasesComponent<'a> {
+    pub fn new(key_config: &'a KeyConfig, theme: &'a ThemeConfig) -> Self {
         Self {
             tree: DatabaseTree::default(),
             filter: DatabaseFilterComponent::new(),
@@ -217,7 +217,7 @@ impl DatabasesComponent {
     }
 }
 
-impl DrawableComponent for DatabasesComponent {
+impl<'a> DrawableComponent for DatabasesComponent<'a> {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
@@ -230,7 +230,7 @@ impl DrawableComponent for DatabasesComponent {
 }
 
 #[async_trait]
-impl Component for DatabasesComponent {
+impl<'a> Component for DatabasesComponent<'a> {
     fn commands(&self, out: &mut Vec<CommandInfo>) {
         out.push(CommandInfo::new(command::expand_collapse(&self.key_config)))
     }
@@ -318,13 +318,15 @@ fn tree_nav(tree: &mut DatabaseTree, key: Key, key_config: &KeyConfig) -> bool {
 
 #[cfg(test)]
 mod test {
-    use super::{Color, Database, DatabaseTreeItem, DatabasesComponent, Span, Spans, Style};
+    use super::{Color, Database, DatabaseTreeItem, DatabasesComponent, Span, Spans, Style, KeyConfig, ThemeConfig};
     use database_tree::Table;
 
     #[test]
     fn test_tree_database_tree_item_to_span() {
         const WIDTH: u16 = 10;
-        let dc = DatabasesComponent::default();
+        let key = KeyConfig::default(); 
+        let theme = ThemeConfig::default();
+        let dc = DatabasesComponent::new(&key, &theme);
         assert_eq!(
             dc.tree_item_to_span(
                 DatabaseTreeItem::new_database(
@@ -368,7 +370,9 @@ mod test {
     #[test]
     fn test_tree_table_tree_item_to_span() {
         const WIDTH: u16 = 10;
-        let dc = DatabasesComponent::default();
+        let key = KeyConfig::default(); 
+        let theme = ThemeConfig::default();
+        let dc = DatabasesComponent::new(&key, &theme);
         assert_eq!(
             dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(
@@ -424,7 +428,9 @@ mod test {
     #[test]
     fn test_filterd_tree_item_to_span() {
         const WIDTH: u16 = 10;
-        let dc = DatabasesComponent::default();
+        let key = KeyConfig::default(); 
+        let theme = ThemeConfig::default();
+        let dc = DatabasesComponent::new(&key, &theme);
         assert_eq!(
             dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(
