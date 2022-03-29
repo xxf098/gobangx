@@ -46,9 +46,9 @@ impl App {
         Self {
             config: config.clone(),
             connections: ConnectionsComponent::new(config.key_config.clone(), config.conn, config.theme_config.clone()),
-            record_table: RecordTableComponent::new(config.key_config.clone()),
-            properties: PropertiesComponent::new(config.key_config.clone()),
-            sql_editor: SqlEditorComponent::new(config.key_config.clone()),
+            record_table: RecordTableComponent::new(config.key_config.clone(), config.theme_config.clone()),
+            properties: PropertiesComponent::new(config.key_config.clone(), config.theme_config.clone()),
+            sql_editor: SqlEditorComponent::new(config.key_config.clone(), config.theme_config.clone()),
             tab: TabComponent::new(config.key_config.clone()),
             help: HelpComponent::new(config.key_config.clone()),
             databases: DatabasesComponent::new(config.key_config.clone(), config.theme_config.clone()),

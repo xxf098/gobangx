@@ -1,12 +1,12 @@
 use super::{Component, EventState, MovableComponent};
 use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
+use crate::config::{KeyConfig, ThemeConfig};
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Color, Style},
+    style::{Style},
     widgets::{Block, Borders, Clear, List, ListItem, ListState},
     Frame,
 };
@@ -18,15 +18,17 @@ const ALL_RESERVED_WORDS: &[&str] = &[
 
 pub struct CompletionComponent {
     key_config: KeyConfig,
+    theme: ThemeConfig,
     state: ListState,
     word: String,
     candidates: Vec<String>,
 }
 
 impl CompletionComponent {
-    pub fn new(key_config: KeyConfig, word: impl Into<String>, all: bool) -> Self {
+    pub fn new(key_config: KeyConfig, theme: ThemeConfig, word: impl Into<String>, all: bool) -> Self {
         Self {
             key_config,
+            theme,
             state: ListState::default(),
             word: word.into(),
             candidates: if all {
@@ -114,7 +116,7 @@ impl MovableComponent for CompletionComponent {
             }
             let candidate_list = List::new(candidates.clone())
                 .block(Block::default().borders(Borders::ALL))
-                .highlight_style(Style::default().bg(Color::Blue))
+                .highlight_style(Style::default().bg(self.theme.color))
                 .style(Style::default());
 
             let area = Rect::new(
@@ -150,12 +152,12 @@ impl Component for CompletionComponent {
 
 #[cfg(test)]
 mod test {
-    use super::{CompletionComponent, KeyConfig};
+    use super::{CompletionComponent, KeyConfig, ThemeConfig};
 
     #[test]
     fn test_filterd_candidates_lowercase() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "an", false)
+            CompletionComponent::new(KeyConfig::default(), ThemeConfig::default(),"an", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"AND".to_string()]
@@ -165,7 +167,7 @@ mod test {
     #[test]
     fn test_filterd_candidates_uppercase() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "AN", false)
+            CompletionComponent::new(KeyConfig::default(), ThemeConfig::default(), "AN", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"AND".to_string()]
@@ -175,14 +177,14 @@ mod test {
     #[test]
     fn test_filterd_candidates_multiple_candidates() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "n", false)
+            CompletionComponent::new(KeyConfig::default(), ThemeConfig::default(), "n", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"NOT".to_string(), &"NULL".to_string()]
         );
 
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "N", false)
+            CompletionComponent::new(KeyConfig::default(), ThemeConfig::default(), "N", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"NOT".to_string(), &"NULL".to_string()]

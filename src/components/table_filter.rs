@@ -3,7 +3,7 @@ use super::{
     StatefulDrawableComponent,
 };
 use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
+use crate::config::{KeyConfig, ThemeConfig};
 use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
@@ -19,6 +19,7 @@ use unicode_width::UnicodeWidthStr;
 
 pub struct TableFilterComponent {
     key_config: KeyConfig,
+    theme: ThemeConfig,
     pub table: Option<Table>,
     input: Vec<char>,
     input_idx: usize,
@@ -27,14 +28,15 @@ pub struct TableFilterComponent {
 }
 
 impl TableFilterComponent {
-    pub fn new(key_config: KeyConfig) -> Self {
+    pub fn new(key_config: KeyConfig, theme: ThemeConfig) -> Self {
         Self {
             key_config: key_config.clone(),
             table: None,
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position: 0,
-            completion: CompletionComponent::new(key_config, "", false),
+            completion: CompletionComponent::new(key_config, theme.clone(),"", false),
+            theme,
         }
     }
 
@@ -136,7 +138,7 @@ impl StatefulDrawableComponent for TableFilterComponent {
                 self.table
                     .as_ref()
                     .map_or("-".to_string(), |table| table.name.to_string()),
-                Style::default().fg(Color::Blue),
+                Style::default().fg(self.theme.color),
             ),
             Span::from(format!(
                 " {}",
@@ -261,11 +263,11 @@ impl Component for TableFilterComponent {
 
 #[cfg(test)]
 mod test {
-    use super::{KeyConfig, TableFilterComponent};
+    use super::{KeyConfig, TableFilterComponent, ThemeConfig};
 
     #[test]
     fn test_complete() {
-        let mut filter = TableFilterComponent::new(KeyConfig::default());
+        let mut filter = TableFilterComponent::new(KeyConfig::default(), ThemeConfig::default());
         filter.input_idx = 2;
         filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
         filter.completion.update("an");
@@ -278,7 +280,7 @@ mod test {
 
     #[test]
     fn test_complete_end() {
-        let mut filter = TableFilterComponent::new(KeyConfig::default());
+        let mut filter = TableFilterComponent::new(KeyConfig::default(), ThemeConfig::default());
         filter.input_idx = 9;
         filter.input = vec!['a', 'b', ' ', 'c', 'd', 'e', 'f', ' ', 'i'];
         filter.completion.update('i');
@@ -291,7 +293,7 @@ mod test {
 
     #[test]
     fn test_complete_no_candidates() {
-        let mut filter = TableFilterComponent::new(KeyConfig::default());
+        let mut filter = TableFilterComponent::new(KeyConfig::default(), ThemeConfig::default());
         filter.input_idx = 2;
         filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
         filter.completion.update("foo");

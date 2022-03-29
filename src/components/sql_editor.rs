@@ -3,7 +3,7 @@ use super::{
     StatefulDrawableComponent, TableComponent,
 };
 use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
+use crate::config::{KeyConfig, ThemeConfig};
 use crate::database::{ExecuteResult, Pool};
 use crate::event::{Key, Store};
 use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
@@ -46,13 +46,13 @@ pub struct SqlEditorComponent {
 }
 
 impl SqlEditorComponent {
-    pub fn new(key_config: KeyConfig) -> Self {
+    pub fn new(key_config: KeyConfig, theme: ThemeConfig) -> Self {
         Self {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position_x: 0,
-            table: TableComponent::new(key_config.clone()),
-            completion: CompletionComponent::new(key_config.clone(), "", true),
+            table: TableComponent::new(key_config.clone(), theme.clone()),
+            completion: CompletionComponent::new(key_config.clone(), theme, "", true),
             focus: Focus::Editor,
             paragraph_state: ParagraphState::default(),
             query_result: None,

@@ -2,7 +2,7 @@ use super::{Component, EventState, StatefulDrawableComponent};
 use crate::clipboard::copy_to_clipboard;
 use crate::components::command::{self, CommandInfo};
 use crate::components::TableComponent;
-use crate::config::KeyConfig;
+use crate::config::{KeyConfig, ThemeConfig};
 use crate::database::{Pool, Header, ColType, Value};
 use crate::event::Key;
 use anyhow::Result;
@@ -37,17 +37,19 @@ pub struct PropertiesComponent {
     index_table: TableComponent,
     focus: Focus,
     key_config: KeyConfig,
+    theme: ThemeConfig,
 }
 
 impl PropertiesComponent {
-    pub fn new(key_config: KeyConfig) -> Self {
+    pub fn new(key_config: KeyConfig, theme: ThemeConfig) -> Self {
         Self {
-            column_table: TableComponent::new(key_config.clone()),
-            constraint_table: TableComponent::new(key_config.clone()),
-            foreign_key_table: TableComponent::new(key_config.clone()),
-            index_table: TableComponent::new(key_config.clone()),
+            column_table: TableComponent::new(key_config.clone(), theme.clone()),
+            constraint_table: TableComponent::new(key_config.clone(), theme.clone()),
+            foreign_key_table: TableComponent::new(key_config.clone(), theme.clone()),
+            index_table: TableComponent::new(key_config.clone(), theme.clone()),
             focus: Focus::Column,
             key_config,
+            theme,
         }
     }
 
@@ -149,7 +151,7 @@ impl StatefulDrawableComponent for PropertiesComponent {
             .iter()
             .map(|(f, c)| {
                 ListItem::new(c.to_string()).style(if *f == self.focus {
-                    Style::default().bg(Color::Blue)
+                    Style::default().bg(self.theme.color)
                 } else {
                     Style::default()
                 })

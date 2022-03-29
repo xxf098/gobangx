@@ -3,7 +3,7 @@ use super::{
     StatefulDrawableComponent, TableStatusComponent,
 };
 use crate::components::command::{self, CommandInfo};
-use crate::config::KeyConfig;
+use crate::config::{KeyConfig, ThemeConfig};
 use crate::event::{Key, Store, Event};
 use crate::database::{Pool, Header, Value};
 use crate::clipboard::copy_to_clipboard;
@@ -33,11 +33,12 @@ pub struct TableComponent {
     column_page_start: AtomicUsize,
     scroll: VerticalScroll,
     key_config: KeyConfig,
+    theme: ThemeConfig,
     area_width: u16,
 }
 
 impl TableComponent {
-    pub fn new(key_config: KeyConfig) -> Self {
+    pub fn new(key_config: KeyConfig, theme: ThemeConfig) -> Self {
         Self {
             selected_row: TableState::default(),
             headers: vec![],
@@ -51,6 +52,7 @@ impl TableComponent {
             eod: false,
             key_config,
             area_width: 0,
+            theme,
         }
     }
 
@@ -512,7 +514,7 @@ impl StatefulDrawableComponent for TableComponent {
             self.calculate_cell_widths(self.area_width);
         let header_cells = headers.iter().enumerate().map(|(column_index, h)| {
             Cell::from(h.to_string()).style(if selected_column_index == column_index {
-                Style::default().fg(Color::Blue).add_modifier(Modifier::BOLD)
+                Style::default().fg(self.theme.color).add_modifier(Modifier::BOLD)
             } else {
                 Style::default()
             })
@@ -528,7 +530,7 @@ impl StatefulDrawableComponent for TableComponent {
             let cells = item.iter().enumerate().map(|(column_index, c)| {
                 let value = if c.is_null { format!("<{}>", "NULL") } else { c.to_string() };
                 let style = if self.is_selected_cell(row_index, column_index, selected_column_index) {
-                    Style::default().bg(Color::Blue)
+                    Style::default().bg(self.theme.color)
                 } else if self.is_number_column(row_index, column_index) {
                     Style::default().add_modifier(Modifier::BOLD)
                 } else if c.is_null {
@@ -694,19 +696,19 @@ impl Component for TableComponent {
 
 #[cfg(test)]
 mod test {
-    use super::{KeyConfig, TableComponent};
+    use super::{KeyConfig, ThemeConfig, TableComponent};
     use tui::layout::Constraint;
 
     #[test]
     fn test_headers() {
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["a", "b", "c"].into_iter().map(|h| h.into()).collect();
         assert_eq!(component.headers(1, 2), vec!["", "b"])
     }
 
     #[test]
     fn test_rows() {
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
             vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
@@ -726,7 +728,7 @@ mod test {
         // 1  a  b  c
         // 2 |d  e| f
 
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
@@ -751,7 +753,7 @@ mod test {
         // 1  a  b  c
         // 2  d |e  f|
 
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
@@ -776,7 +778,7 @@ mod test {
         // 1  a |b| c
         // 2  d |e| f
 
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
             vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
@@ -800,7 +802,7 @@ mod test {
         // 1  a |b| c
         // 2  d |e| f
 
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
             vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
@@ -814,7 +816,7 @@ mod test {
 
     #[test]
     fn test_is_number_column() {
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
@@ -831,7 +833,7 @@ mod test {
         // 1 |a| b c
         // 2  d  e f
 
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
@@ -847,7 +849,7 @@ mod test {
         // 1 |a  b| c
         // 2 |d  e| f
 
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
@@ -864,7 +866,7 @@ mod test {
         // 1 |a| b c
         // 2  d  e f
 
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
@@ -885,7 +887,7 @@ mod test {
         // 1 |a  b| c
         // 2 |d  e| f
 
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
@@ -907,7 +909,7 @@ mod test {
 
     #[test]
     fn test_calculate_cell_widths_when_sum_of_cell_widths_is_greater_than_table_width() {
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["aaaaa", "bbbbb", "ccccc"]
@@ -933,7 +935,7 @@ mod test {
 
     #[test]
     fn test_calculate_cell_widths_when_sum_of_cell_widths_is_less_than_table_width() {
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["aaaaa", "bbbbb", "ccccc"]
@@ -967,7 +969,7 @@ mod test {
 
     #[test]
     fn test_calculate_cell_widths_when_component_has_multiple_rows() {
-        let mut component = TableComponent::new(KeyConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["aaaaa", "bbbbb", "ccccc"]
