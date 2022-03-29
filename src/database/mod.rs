@@ -103,12 +103,12 @@ impl DatabaseType {
         match self {
             DatabaseType::MySql => {
                 let sql = format!("show create table {}.{}", database.name, table.name);
-                let result = pool.execute(&sql).await?;
+                let result = pool.query(&sql).await?;
                 return self.table_ddl(result)
             },
             DatabaseType::Sqlite => { 
                 let sql = format!("select name, sql from sqlite_schema where name = '{}';", table.name);
-                let result = pool.execute(&sql).await?;
+                let result = pool.query(&sql).await?;
                 return self.table_ddl(result)
             },
             DatabaseType::Postgres => {
@@ -139,14 +139,9 @@ impl DatabaseType {
       WHERE  schemaname = '{schema}'
       AND    tablename = '{table}'
       AND    indexName NOT IN (SELECT name FROM unique_and_pk_constraints)"#, schema=table.pg_schema(), table=table.name);
-      let result = pool.execute(&sql).await?;
-      match result {
-          ExecuteResult::Read{ rows, .. } => {
-            let indexes = rows.iter().map(|v| v[1].to_string()).collect::<Vec<_>>();
-            Ok(indexes)
-          },
-          _ => Ok(vec![]),
-      }
+      let result = pool.query(&sql).await?;
+      let indexes = result.rows.iter().map(|v| v[1].to_string()).collect::<Vec<_>>();
+      Ok(indexes)
     }
 
     async fn postgres_foreign(&self, pool: &Box<dyn Pool>, table: &Table) -> anyhow::Result<Vec<String>> {
@@ -201,18 +196,14 @@ impl DatabaseType {
         }
     }
 
-    fn table_ddl(&self, result: ExecuteResult) -> anyhow::Result<String> {
+    fn table_ddl(&self, result: QueryResult) -> anyhow::Result<String> {
         match self {
             DatabaseType::MySql | DatabaseType::Sqlite => {
                 let mut s = String::new();
-                match result {
-                    ExecuteResult::Read{ rows, .. } => {
-                        if rows.len() > 0 && rows[0].len() > 1 {
-                            s = rows[0][1].to_string();
-                        }                        
-                    },
-                    _ => {},
-                };
+                let rows = result.rows;
+                if rows.len() > 0 && rows[0].len() > 1 {
+                    s = rows[0][1].to_string();
+                }  
                 Ok(s)
             },
             _ => unreachable!(),
