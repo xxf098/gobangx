@@ -7,6 +7,7 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::{Path, PathBuf};
 use url::Url;
+use tui::style::Color;
 
 #[cfg(test)]
 use serde::Serialize;
@@ -121,6 +122,18 @@ pub struct KeyConfig {
     pub shorten_column_width: Key,
     pub reset_column_width: Key,
     pub delete: Key, // drop table/ delete record by primary key
+}
+
+#[derive(Debug, Clone)]
+pub struct ThemeConfig {
+    color: Color,
+}
+
+impl Default for ThemeConfig {
+
+    fn default() -> Self {
+        Self { color: Color::Blue }
+    }
 }
 
 impl Default for KeyConfig {
