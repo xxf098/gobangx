@@ -45,7 +45,7 @@ impl App {
         let store = Store::new(sender);
         Self {
             config: config.clone(),
-            connections: ConnectionsComponent::new(config.key_config.clone(), config.conn),
+            connections: ConnectionsComponent::new(config.key_config.clone(), config.conn, config.theme_config.clone()),
             record_table: RecordTableComponent::new(config.key_config.clone()),
             properties: PropertiesComponent::new(config.key_config.clone()),
             sql_editor: SqlEditorComponent::new(config.key_config.clone()),

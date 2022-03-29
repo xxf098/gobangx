@@ -1,7 +1,7 @@
 use crate::log::LogLevel;
 use crate::Key;
 use crate::cli::CliConfig;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use std::fmt;
 use std::fs::File;
 use std::io::{BufReader, Read};
@@ -19,6 +19,8 @@ pub struct Config {
     pub key_config: KeyConfig,
     #[serde(default)]
     pub log_level: LogLevel,
+    #[serde(default)]
+    pub theme_config: ThemeConfig,
 }
 
 // TODO: Oracle, SQL Server
@@ -62,6 +64,8 @@ impl Default for Config {
             }],
             key_config: KeyConfig::default(),
             log_level: LogLevel::default(),
+            theme_config: ThemeConfig
+            ::default(),
         }
     }
 }
@@ -124,9 +128,25 @@ pub struct KeyConfig {
     pub delete: Key, // drop table/ delete record by primary key
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct ThemeConfig {
-    color: Color,
+    #[serde(deserialize_with = "deserialize_color")]
+    pub color: Color,
+}
+
+// https://brokenco.de/2020/08/03/serde-deserialize-with-string.html
+fn deserialize_color<'de, D>(deserializer: D) -> Result<Color, D::Error> where D: Deserializer<'de> {
+    let buf = String::deserialize(deserializer)?;
+    let color = match buf.as_ref() {
+        "red" => Color::Red,
+        "green" => Color::Green,
+        "yellow" => Color::Yellow,
+        "blue" => Color::Blue,
+        "magenta" => Color::Magenta,
+        "cyan" => Color::Cyan,        
+        _ => Color::Blue,
+    };
+   Ok(color)
 }
 
 impl Default for ThemeConfig {

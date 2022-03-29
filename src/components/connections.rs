@@ -1,12 +1,12 @@
 use super::{Component, EventState, StatefulDrawableComponent};
 use crate::components::command::CommandInfo;
-use crate::config::{Connection, KeyConfig};
+use crate::config::{Connection, KeyConfig, ThemeConfig};
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Color, Style},
+    style::{Style},
     text::{Span, Spans},
     widgets::{Block, Borders, Clear, List, ListItem, ListState},
     Frame,
@@ -16,10 +16,11 @@ pub struct ConnectionsComponent {
     connections: Vec<Connection>,
     state: ListState,
     key_config: KeyConfig,
+    theme: ThemeConfig, // TODO: & ref
 }
 
 impl ConnectionsComponent {
-    pub fn new(key_config: KeyConfig, connections: Vec<Connection>) -> Self {
+    pub fn new(key_config: KeyConfig, connections: Vec<Connection>, theme_config: ThemeConfig) -> Self {
         let mut state = ListState::default();
         if !connections.is_empty() {
             state.select(Some(0));
@@ -28,6 +29,7 @@ impl ConnectionsComponent {
             connections,
             key_config,
             state,
+            theme: theme_config,
         }
     }
 
@@ -95,7 +97,7 @@ impl StatefulDrawableComponent for ConnectionsComponent {
         }
         let connections = List::new(connections)
             .block(Block::default().borders(Borders::ALL).title("Connections"))
-            .highlight_style(Style::default().bg(Color::Blue))
+            .highlight_style(Style::default().bg(self.theme.color))
             .style(Style::default());
 
         let area = Rect::new(
