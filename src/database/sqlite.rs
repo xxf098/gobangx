@@ -1,6 +1,6 @@
 use crate::get_or_null;
 use crate::config::DatabaseType;
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType, Value};
+use super::{ExecuteResult, QueryResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType, Value};
 use async_trait::async_trait;
 use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
@@ -188,6 +188,36 @@ impl Pool for SqlitePool {
 
         let result = sqlx::query(query).execute(&self.pool).await?;
         Ok(ExecuteResult::Write {
+            updated_rows: result.rows_affected(),
+        })
+    }
+
+    async fn query(&self, query: &String) -> anyhow::Result<QueryResult> {
+        let query = query.trim();
+        if query.to_uppercase().starts_with("SELECT") {
+            let mut rows = sqlx::query(query).fetch(&self.pool);
+            let mut headers = vec![];
+            let mut records = vec![];
+            while let Some(row) = rows.try_next().await? {
+                let mut new_row = vec![];
+                for column in row.columns() {
+                    let row = convert_column_value_to_string(&row, column)?;
+                    new_row.push(row.0);
+                    if records.len() == 0 { headers.push(row.1); };
+                }
+                records.push(new_row)
+            }
+            return Ok(QueryResult {
+                headers,
+                rows: records,
+                updated_rows: 0,
+            });
+        }
+
+        let result = sqlx::query(query).execute(&self.pool).await?;
+        Ok(QueryResult {
+            headers: vec![],
+            rows: vec![],
             updated_rows: result.rows_affected(),
         })
     }

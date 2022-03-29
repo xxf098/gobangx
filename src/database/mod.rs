@@ -23,6 +23,7 @@ const INDENT: &str = "    ";
 #[async_trait]
 pub trait Pool: Send + Sync {
     async fn execute(&self, query: &String) -> anyhow::Result<ExecuteResult>;
+    async fn query(&self, query: &String) -> anyhow::Result<QueryResult>;
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>>;
     async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Child>>;
     async fn get_records(
@@ -65,7 +66,6 @@ pub trait Pool: Send + Sync {
     fn database_type(&self) -> DatabaseType;
 }
 
-// TODO: refactor
 pub enum ExecuteResult {
     Read {
         headers: Vec<Header>,
@@ -76,6 +76,12 @@ pub enum ExecuteResult {
     Write {
         updated_rows: u64,
     },
+}
+
+pub struct QueryResult {
+    pub headers: Vec<Header>,
+    pub rows: Vec<Vec<Value>>,
+    pub updated_rows: u64,
 }
 
 pub trait TableRow: std::marker::Send {
@@ -225,27 +231,17 @@ impl DatabaseType {
                     USING (table_schema, table_name, constraint_name)
             WHERE constraint_type = 'PRIMARY KEY' AND tc.table_schema='{}' AND tc.table_name='{}' ORDER BY kcu.ordinal_position"#, 
                 table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name);
-            let result = pool.execute(&sql).await?;
-            match result {
-                ExecuteResult::Read{ rows, .. } => {
-                    let cols = rows.into_iter().flat_map(|row| row.into_iter().next().map(|c| c.data)).collect();
-                    return Ok(cols)
-                },
-                _ => {}
-            };
+            let result = pool.query(&sql).await?;
+            let cols = result.rows.into_iter().flat_map(|row| row.into_iter().next().map(|c| c.data)).collect();
+            return Ok(cols)
             },
             DatabaseType::MySql => {
                 let sql = format!("SHOW INDEX FROM {}.{}", database.name, table.name);
-                let result = pool.execute(&sql).await?;
-                match result {
-                    ExecuteResult::Read{ headers, rows, .. } => {
-                        let index = headers.iter().position(|h| h.name.to_lowercase() == "key_name").unwrap_or(headers.len());
-                        let cols = rows.into_iter().flat_map(|row| row.get(index).filter(|c| c.data == "PRIMARY").map(|_| row.get(index+2).map(|c| c.data.clone())).flatten()).collect();
-                        return Ok(cols)
-                    },
-                    _ => {}
-                };
-
+                let result = pool.query(&sql).await?;
+                let headers = result.headers;
+                let index = headers.iter().position(|h| h.name.to_lowercase() == "key_name").unwrap_or(headers.len());
+                let cols = result.rows.into_iter().flat_map(|row| row.get(index).filter(|c| c.data == "PRIMARY").map(|_| row.get(index+2).map(|c| c.data.clone())).flatten()).collect();
+                return Ok(cols)
             },
             _ => {},
         };

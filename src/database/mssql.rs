@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use database_tree::{Child, Database, Table, Schema};
 use futures::TryStreamExt;
 use itertools::Itertools;
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, ColType, Header, Value};
+use super::{ExecuteResult, QueryResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, ColType, Header, Value};
 use crate::get_or_null;
 use crate::config::DatabaseType;
 
@@ -194,6 +194,10 @@ impl Pool for MssqlPool {
         Ok(ExecuteResult::Write {
             updated_rows: result.rows_affected(),
         })
+    }
+
+    async fn query(&self, _query: &String) -> anyhow::Result<QueryResult> {
+        unimplemented!()
     }
 
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
