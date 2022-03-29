@@ -147,6 +147,9 @@ database = "bar"
 [[conn]]
 type = "sqlite"
 path = "/path/to/baz.db"
+
+[theme_config]
+color = "red"
 ```
 
 ## Contribution
