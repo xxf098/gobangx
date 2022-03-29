@@ -575,7 +575,7 @@ impl PostgresPool {
       SELECT    columns.*, checks.name, checks.definition
       FROM      columns
       LEFT JOIN check_constraints checks USING (column_name);"#;
-        let schema = table.schema.clone().unwrap_or_else(|| "public".to_string());
+        let schema = table.pg_schema();
         let mut rows = sqlx::query(query)
                 .bind(&schema)
                 .bind(&table.name)

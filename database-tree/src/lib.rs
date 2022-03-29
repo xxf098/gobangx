@@ -58,3 +58,11 @@ pub struct Table {
     pub engine: Option<String>,
     pub schema: Option<String>,
 }
+
+
+impl Table {
+
+    pub fn pg_schema(&self) -> String {
+        self.schema.clone().unwrap_or_else(|| "public".to_string())
+    }
+}
