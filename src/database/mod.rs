@@ -64,6 +64,7 @@ pub trait Pool: Send + Sync {
     fn database_type(&self) -> DatabaseType;
 }
 
+// TODO: refactor
 pub enum ExecuteResult {
     Read {
         headers: Vec<Header>,
@@ -107,7 +108,8 @@ impl DatabaseType {
                 let columns = pool.get_columns2(database, table).await?;
                 let pkey_cols = self.primary_key_columns(pool, database, table).await?;
                 let indexes = self.postgres_index(pool, table).await?;
-                postgres_table_ddl(table, columns, pkey_cols, indexes).await
+                let foreign_defs = self.postgres_foreign(pool, table).await?;
+                postgres_table_ddl(table, columns, pkey_cols, indexes, foreign_defs).await
             },
             _ => unimplemented!(),
         }
@@ -137,7 +139,36 @@ impl DatabaseType {
           },
           _ => Ok(vec![]),
       }
-      
+    }
+
+    async fn postgres_foreign(&self, pool: &Box<dyn Pool>, table: &Table) -> anyhow::Result<Vec<String>> {
+        let sql = format!(r#"SELECT
+        tc.table_schema, tc.constraint_name, tc.table_name, kcu.column_name,
+        ccu.table_schema AS foreign_table_schema,
+        ccu.table_name AS foreign_table_name,
+        ccu.column_name AS foreign_column_name,
+        rc.update_rule AS foreign_update_rule,
+        rc.delete_rule AS foreign_delete_rule
+    FROM
+        information_schema.table_constraints AS tc
+        JOIN information_schema.key_column_usage AS kcu
+            ON tc.constraint_name = kcu.constraint_name
+        JOIN information_schema.constraint_column_usage AS ccu
+            ON tc.constraint_name = ccu.constraint_name
+        JOIN information_schema.referential_constraints AS rc
+            ON tc.constraint_name = rc.constraint_name
+    WHERE constraint_type = 'FOREIGN KEY' AND tc.table_schema='{schema}' AND tc.table_name='{table}'"#, schema=table.pg_schema(), table=table.name);
+        let result = pool.execute(&sql).await?;
+        match result {
+            ExecuteResult::Read{ rows, .. } => {
+              let indexes = rows.iter().map(|v| {
+                    format!("ALTER TABLE ONLY {}.{} ADD CONSTRAINT {} FOREIGN KEY ({}) REFERENCES {}.{}({}) ON UPDATE {} ON DELETE {}",
+                        v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8])
+              }).collect::<Vec<_>>();
+              Ok(indexes)
+            },
+            _ => Ok(vec![]),
+        }
     }
 
     fn table_ddl(&self, result: ExecuteResult) -> anyhow::Result<String> {
@@ -272,7 +303,7 @@ impl DatabaseType {
 }
 
 // TODO: getIndexDefs getForeignDefs getPolicyDefs getTableCheckConstraints getUniqueConstraints
-async fn postgres_table_ddl(table: &Table, columns: Vec<ColumnMeta>, pkey_cols: Vec<String>, index_defs: Vec<String>) -> anyhow::Result<String> {
+async fn postgres_table_ddl(table: &Table, columns: Vec<ColumnMeta>, pkey_cols: Vec<String>, index_defs: Vec<String>, foreign_defs: Vec<String>) -> anyhow::Result<String> {
     let mut ddl = format!("CREATE TABLE {}.{} (", table.pg_schema(), table.name);
     for (i, col) in columns.iter().enumerate() {
         if i > 0 {
@@ -305,6 +336,9 @@ async fn postgres_table_ddl(table: &Table, columns: Vec<ColumnMeta>, pkey_cols: 
     ddl = format!("{}\n);\n", ddl);
     for index_def in index_defs {
         ddl = format!("{}{};\n", ddl, index_def)
+    }
+    for foreign_def in foreign_defs {
+        ddl = format!("{}{};\n", ddl, foreign_def)
     }
     Ok(ddl.trim_end().to_string())
 }
