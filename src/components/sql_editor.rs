@@ -33,20 +33,20 @@ pub enum Focus {
     Table,
 }
 
-pub struct SqlEditorComponent {
+pub struct SqlEditorComponent<'a> {
     input: Vec<char>,
     input_cursor_position_x: u16,
     input_idx: usize,
     table: TableComponent,
     query_result: Option<QueryResult>,
     completion: CompletionComponent,
-    key_config: KeyConfig,
+    key_config: &'a KeyConfig,
     paragraph_state: ParagraphState,
     focus: Focus,
 }
 
-impl SqlEditorComponent {
-    pub fn new(key_config: KeyConfig, theme: ThemeConfig) -> Self {
+impl<'a> SqlEditorComponent<'a> {
+    pub fn new(key_config: &'a KeyConfig, theme: ThemeConfig) -> Self {
         Self {
             input: Vec::new(),
             input_idx: 0,
@@ -140,7 +140,7 @@ impl SqlEditorComponent {
     }
 }
 
-impl StatefulDrawableComponent for SqlEditorComponent {
+impl<'a> StatefulDrawableComponent for SqlEditorComponent<'a> {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let layout = Layout::default()
             .direction(Direction::Vertical)
@@ -201,7 +201,7 @@ impl StatefulDrawableComponent for SqlEditorComponent {
 }
 
 #[async_trait]
-impl Component for SqlEditorComponent {
+impl<'a> Component for SqlEditorComponent<'a> {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: Key) -> Result<EventState> {

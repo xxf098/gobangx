@@ -27,7 +27,7 @@ pub enum Focus {
 pub struct App<'a> {
     record_table: RecordTableComponent,
     properties: PropertiesComponent<'a>,
-    sql_editor: SqlEditorComponent,
+    sql_editor: SqlEditorComponent<'a>,
     focus: Focus,
     tab: TabComponent<'a>,
     help: HelpComponent<'a>,
@@ -48,7 +48,7 @@ impl<'a> App<'a> {
             connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.theme_config),
             record_table: RecordTableComponent::new(config.key_config.clone(), config.theme_config.clone()),
             properties: PropertiesComponent::new(&config.key_config, &config.theme_config),
-            sql_editor: SqlEditorComponent::new(config.key_config.clone(), config.theme_config.clone()),
+            sql_editor: SqlEditorComponent::new(&config.key_config, config.theme_config.clone()),
             tab: TabComponent::new(&config.key_config),
             help: HelpComponent::new(&config.key_config),
             databases: DatabasesComponent::new(config.key_config.clone(), config.theme_config.clone()),
