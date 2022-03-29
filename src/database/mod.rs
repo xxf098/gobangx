@@ -10,6 +10,7 @@ pub use sqlite::SqlitePool;
 pub use mssql::MssqlPool;
 pub use meta::{ColType, Header, Value, ColumnMeta, ColumnConstraint};
 
+use std::collections::HashMap;
 use async_trait::async_trait;
 use database_tree::{Child, Database, Table};
 use crate::config::DatabaseType;
@@ -109,7 +110,8 @@ impl DatabaseType {
                 let pkey_cols = self.primary_key_columns(pool, database, table).await?;
                 let indexes = self.postgres_index(pool, table).await?;
                 let foreign_defs = self.postgres_foreign(pool, table).await?;
-                postgres_table_ddl(table, columns, pkey_cols, indexes, foreign_defs).await
+                let unique_constraints = self.postgres_unique(pool, table).await?;
+                postgres_table_ddl(table, columns, pkey_cols, indexes, foreign_defs, unique_constraints).await
             },
             _ => unimplemented!(),
         }
@@ -168,6 +170,28 @@ impl DatabaseType {
               Ok(indexes)
             },
             _ => Ok(vec![]),
+        }
+    }
+
+    async fn postgres_unique(&self, pool: &Box<dyn Pool>, table: &Table) -> anyhow::Result<HashMap<String, String>> {
+        let sql = format!(r#"SELECT con.conname, pg_get_constraintdef(con.oid)
+            FROM   pg_constraint con
+            JOIN   pg_namespace nsp ON nsp.oid = con.connamespace
+            JOIN   pg_class cls ON cls.oid = con.conrelid
+            WHERE  con.contype = 'u'
+            AND    nsp.nspname = '{}'
+            AND    cls.relname = '{}';"#, table.pg_schema(), table.name);
+        let result = pool.execute(&sql).await?;
+        match result {
+            ExecuteResult::Read{ rows, .. } => {
+                let mut hm = HashMap::new();
+                let _indexes = rows.iter().map(|v| {
+                    let val = format!("ALTER TABLE {} ADD CONSTRAINT {} {};", table.name, v[0], v[1]);
+                    hm.insert(v[0].data.clone(), val)
+                }).collect::<Vec<_>>();
+                Ok(hm)
+            },
+            _ => Ok(HashMap::new()),
         }
     }
 
@@ -303,7 +327,7 @@ impl DatabaseType {
 }
 
 // TODO: getIndexDefs getForeignDefs getPolicyDefs getTableCheckConstraints getUniqueConstraints
-async fn postgres_table_ddl(table: &Table, columns: Vec<ColumnMeta>, pkey_cols: Vec<String>, index_defs: Vec<String>, foreign_defs: Vec<String>) -> anyhow::Result<String> {
+async fn postgres_table_ddl(table: &Table, columns: Vec<ColumnMeta>, pkey_cols: Vec<String>, index_defs: Vec<String>, foreign_defs: Vec<String>, unique_constraints: HashMap<String, String>) -> anyhow::Result<String> {
     let mut ddl = format!("CREATE TABLE {}.{} (", table.pg_schema(), table.name);
     for (i, col) in columns.iter().enumerate() {
         if i > 0 {
@@ -339,6 +363,9 @@ async fn postgres_table_ddl(table: &Table, columns: Vec<ColumnMeta>, pkey_cols: 
     }
     for foreign_def in foreign_defs {
         ddl = format!("{}{};\n", ddl, foreign_def)
+    }
+    for (_, constraint_def) in unique_constraints {
+        ddl = format!("{}{};\n", ddl, constraint_def)
     }
     Ok(ddl.trim_end().to_string())
 }
