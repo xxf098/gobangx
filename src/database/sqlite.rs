@@ -149,29 +149,13 @@ impl TableRow for Index {
 
 #[async_trait]
 impl Pool for SqlitePool {
-    async fn execute(&self, query: &String) -> anyhow::Result<ExecuteResult> {
+    async fn execute(&self, query: &str) -> anyhow::Result<ExecuteResult> {
         let query = query.trim();
         if query.to_uppercase().starts_with("SELECT") {
-            let mut rows = sqlx::query(query).fetch(&self.pool);
-            let mut headers = vec![];
-            let mut records = vec![];
-            while let Some(row) = rows.try_next().await? {
-                // headers = row
-                //     .columns()
-                //     .iter()
-                //     .map(|column| column.name().to_string())
-                //     .collect();
-                let mut new_row = vec![];
-                for column in row.columns() {
-                    let row = convert_column_value_to_string(&row, column)?;
-                    new_row.push(row.0);
-                    if records.len() == 0 { headers.push(row.1); };
-                }
-                records.push(new_row)
-            }
+            let result = self.query(query).await?;
             return Ok(ExecuteResult::Read {
-                headers,
-                rows: records,
+                headers: result.headers,
+                rows: result.rows,
                 database: Database {
                     name: "-".to_string(),
                     children: Vec::new(),
@@ -192,7 +176,7 @@ impl Pool for SqlitePool {
         })
     }
 
-    async fn query(&self, query: &String) -> anyhow::Result<QueryResult> {
+    async fn query(&self, query: &str) -> anyhow::Result<QueryResult> {
         let query = query.trim();
         if query.to_uppercase().starts_with("SELECT") {
             let mut rows = sqlx::query(query).fetch(&self.pool);

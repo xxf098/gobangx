@@ -153,7 +153,7 @@ impl TableRow for Index {
 #[async_trait]
 impl Pool for MssqlPool {
 
-    async fn execute(&self, query: &String) -> anyhow::Result<ExecuteResult> {
+    async fn execute(&self, query: &str) -> anyhow::Result<ExecuteResult> {
         let query = query.trim();
         if query.to_uppercase().starts_with("SELECT") {
             let mut rows = sqlx::query(query).fetch(&self.pool);
@@ -196,7 +196,7 @@ impl Pool for MssqlPool {
         })
     }
 
-    async fn query(&self, _query: &String) -> anyhow::Result<QueryResult> {
+    async fn query(&self, _query: &str) -> anyhow::Result<QueryResult> {
         unimplemented!()
     }
 

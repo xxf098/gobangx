@@ -22,8 +22,8 @@ const INDENT: &str = "    ";
 
 #[async_trait]
 pub trait Pool: Send + Sync {
-    async fn execute(&self, query: &String) -> anyhow::Result<ExecuteResult>;
-    async fn query(&self, query: &String) -> anyhow::Result<QueryResult>;
+    async fn execute(&self, query: &str) -> anyhow::Result<ExecuteResult>;
+    async fn query(&self, query: &str) -> anyhow::Result<QueryResult>;
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>>;
     async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Child>>;
     async fn get_records(
