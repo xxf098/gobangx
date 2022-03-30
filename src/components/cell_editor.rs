@@ -11,15 +11,18 @@ pub struct CellEditorComponent {
     key_config: KeyConfig,
     value: String,
     paragraph_state: ParagraphState,
+    input_cursor_position_x: u16,
 }
 
 impl CellEditorComponent {
 
     pub fn new(key_config: KeyConfig, value: String) -> Self {
+        let input_cursor_position_x = value.len() as u16;
         Self { 
             key_config, 
             value: value,
-            paragraph_state: ParagraphState::default(), 
+            paragraph_state: ParagraphState::default(),
+            input_cursor_position_x,
         }
     }
 }
@@ -32,6 +35,12 @@ impl StatefulDrawableComponent for CellEditorComponent {
             .wrap(Wrap { trim: true })
             .block(Block::default().borders(Borders::TOP));
         f.render_stateful_widget(editor, area, &mut self.paragraph_state);
+        let x = area.x
+        .saturating_add(
+            self.input_cursor_position_x % area.width.saturating_sub(2),
+        )
+        .min(area.right().saturating_sub(2));
+        f.set_cursor(x, area.y+1);
         Ok(())
     }
 }
