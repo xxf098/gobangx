@@ -361,6 +361,7 @@ impl TableComponent {
         &mut self,
         area_width: u16,
     ) -> (usize, Vec<String>, Vec<Vec<Value>>, Vec<Constraint>) {
+        // TODO: reduce clone
         let headers = if self.rows.is_empty() && !self.headers.is_empty() { vec![self.headers.iter().map(|h| h.to_string().into()).collect::<Vec<Value>>().clone()] } else { vec![] };
         let rows = if self.rows.is_empty() && !self.headers.is_empty() { &headers } else { &self.rows };
         if rows.is_empty() {
@@ -485,23 +486,21 @@ impl TableComponent {
         )
     }
 
-    async fn primary_key_value(&self, pool: &Box<dyn Pool>) -> anyhow::Result<(String, Value)> {
-        if let Some((database, table)) = &self.table {
-            let database_type = pool.database_type();
-            let columns = database_type.primary_key_columns(pool, &database, &table).await?;
-            if  let Some(primary_key) = columns.iter().next() {
-                if let Some(index) = self.headers.iter().position(|h| h.name == *primary_key) {
-                    if let Some(value) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.get(index).map(|s| s.clone()))).flatten().flatten() {
-                        return Ok((primary_key.to_string(), value))
-                    }
+    async fn primary_key_value(&self, pool: &Box<dyn Pool>, database: &Database, table: &DTable) -> anyhow::Result<(String, Value)> {
+        let database_type = pool.database_type();
+        let columns = database_type.primary_key_columns(pool, &database, &table).await?;
+        if  let Some(primary_key) = columns.iter().next() {
+            if let Some(index) = self.headers.iter().position(|h| h.name == *primary_key) {
+                if let Some(value) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.get(index).map(|s| s.clone()))).flatten().flatten() {
+                    return Ok((primary_key.to_string(), value))
                 }
-            } else {
-                // primary_key not found, delete by id
-                if self.headers.iter().next().map(|h| h.name.to_lowercase() == "id" || h.name.to_lowercase().ends_with("_id") ).unwrap_or_default() {
-                    if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
-                        let col = self.headers.iter().next().unwrap();
-                        return Ok((col.name.clone(), id))
-                    }
+            }
+        } else {
+            // TODO: limit 1, primary_key not found, delete by id
+            if self.headers.iter().next().map(|h| h.name.to_lowercase() == "id" || h.name.to_lowercase().ends_with("_id") ).unwrap_or_default() {
+                if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
+                    let col = self.headers.iter().next().unwrap();
+                    return Ok((col.name.clone(), id))
                 }
             }
         }
@@ -715,7 +714,7 @@ impl Component for TableComponent {
         // delete by primary_key
         if key == self.key_config.delete {
             if let Some((database, table)) = &self.table {
-                let (primary_key, value) = self.primary_key_value(pool).await?;
+                let (primary_key, value) = self.primary_key_value(pool, database, table).await?;
                 let sql = pool.database_type().delete_row_by_column(&database, &table, &primary_key, &value.data);
                 pool.execute(&sql).await?;
                 store.dispatch(Event::RedrawTable(true)).await?;
@@ -735,8 +734,14 @@ impl Component for TableComponent {
         if key == self.key_config.enter && self.focus == Focus::Editor {
             self.focus = Focus::Status;
             let value = self.cell_editor.value();
-            self.set_selected_cell(value);
-            return Ok(EventState::Consumed);
+            self.set_selected_cell(value.clone());
+            if let Some((database, table)) = &self.table {
+                let (pkey, pval) = self.primary_key_value(pool, database, table).await?;
+                let header = &self.headers[self.selected_column];
+                let sql = pool.database_type().update_row_by_column(database, table, &pkey, &pval.data, &header, &Value::new(value));
+                pool.execute(&sql).await?;
+                return Ok(EventState::Consumed)
+            }
         }
         Ok(EventState::NotConsumed)
     }

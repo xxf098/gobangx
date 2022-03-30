@@ -248,6 +248,16 @@ impl DatabaseType {
         }
     }
 
+    pub fn update_row_by_column(&self, database: &Database, table: &Table, pkey: &str, pval: &str, header: &Header, val: &Value) -> String {
+        // TODO: NULL header type
+        match self {
+            DatabaseType::MySql => format!("UPDATE {}.{} SET {} = '{}' where {} = '{}'", database.name, table.name, header.name, val.data, pkey, pval),
+            DatabaseType::Sqlite => format!("UPDATE {} SET {} = '{}' where {} = '{}'", table.name, header.name, val.data, pkey, pval),
+            DatabaseType::Postgres => format!("UPDATE {}.{}.{} SET {} = '{}' where {} = '{}'", database.name, table.pg_schema(), header.name, val.data, table.name, pkey, pval),
+            _ => unimplemented!(),
+        }
+    }
+
 
     // handle null | handle value type
     pub fn insert_rows(&self, database: &Database, table: &Table, headers: &Vec<Header>, rows: &Vec<Vec<Value>>) -> String {
