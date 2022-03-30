@@ -484,6 +484,30 @@ impl TableComponent {
             constraints,
         )
     }
+
+    async fn primary_key_value(&self, pool: &Box<dyn Pool>) -> anyhow::Result<(String, Value)> {
+        if let Some((database, table)) = &self.table {
+            let database_type = pool.database_type();
+            let columns = database_type.primary_key_columns(pool, &database, &table).await?;
+            if  let Some(primary_key) = columns.iter().next() {
+                if let Some(index) = self.headers.iter().position(|h| h.name == *primary_key) {
+                    if let Some(value) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.get(index).map(|s| s.clone()))).flatten().flatten() {
+                        return Ok((primary_key.to_string(), value))
+                    }
+                }
+            } else {
+                // primary_key not found, delete by id
+                if self.headers.iter().next().map(|h| h.name.to_lowercase() == "id" || h.name.to_lowercase().ends_with("_id") ).unwrap_or_default() {
+                    if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
+                        let col = self.headers.iter().next().unwrap();
+                        return Ok((col.name.clone(), id))
+                    }
+                }
+            }
+        }
+        anyhow::bail!("primary key not found")
+    }
+
 }
 
 impl StatefulDrawableComponent for TableComponent {
@@ -691,31 +715,12 @@ impl Component for TableComponent {
         // delete by primary_key
         if key == self.key_config.delete {
             if let Some((database, table)) = &self.table {
-                let database_type = pool.database_type();
-                let columns = database_type.primary_key_columns(pool, &database, &table).await?;
-                if  let Some(primary_key) = columns.iter().next() {
-                    if let Some(index) = self.headers.iter().position(|h| h.name == *primary_key) {
-                        if let Some(value) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.get(index).map(|s| s.clone()))).flatten().flatten() {
-                            let sql = pool.database_type().delete_row_by_column(&database, &table, primary_key, &value.data);
-                            pool.execute(&sql).await?;
-                            store.dispatch(Event::RedrawTable(true)).await?;
-                            return Ok(EventState::Consumed)
-                        }
-                    }
-                } else {
-                    // primary_key not found, delete by id
-                    if self.headers.iter().next().map(|h| h.name.to_lowercase() == "id" || h.name.to_lowercase().ends_with("_id") ).unwrap_or_default() {
-                        if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
-                            let col = self.headers.iter().next().unwrap();
-                            let sql = pool.database_type().delete_row_by_column(&database, &table, &col.name, &id.data);
-                            pool.execute(&sql).await?;
-                            store.dispatch(Event::RedrawTable(true)).await?;
-                            return Ok(EventState::Consumed)
-                        }
-                    }
-                }
+                let (primary_key, value) = self.primary_key_value(pool).await?;
+                let sql = pool.database_type().delete_row_by_column(&database, &table, &primary_key, &value.data);
+                pool.execute(&sql).await?;
+                store.dispatch(Event::RedrawTable(true)).await?;
+                return Ok(EventState::Consumed)
             }
-           
         }
         if key == self.key_config.advanced_copy {
             if let Some(rows) = self.selected_rows() {
