@@ -74,6 +74,7 @@ impl TableComponent {
             self.selected_row.select(Some(0))
         }
         self.headers = headers;
+        self.constraint_adjust = vec![0; self.headers.len()];
         self.rows = rows;
         self.selected_column = 0;
         self.selection_area_corner = None;
@@ -436,10 +437,7 @@ impl TableComponent {
             constraints.push(Constraint::Min(10));
         }
         constraints.insert(0, Constraint::Length(number_column_width));
-        if self.constraint_adjust.len() < 1 {
-            self.constraint_adjust = vec![0; constraints.len()];
-        }
-        for (i, adjust) in self.constraint_adjust.iter().enumerate() {
+        for (i, adjust) in self.constraint_adjust[far_left_column_index..far_right_column_index].iter().enumerate() {
             if *adjust > 0 {
                 match constraints[i] {
                     Constraint::Length(l) => { constraints[i] = Constraint::Length(l+*adjust) },
