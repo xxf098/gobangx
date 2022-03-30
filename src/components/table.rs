@@ -21,6 +21,7 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 use async_trait::async_trait;
 
+#[derive(PartialEq)]
 pub enum Focus {
     Status,
     Editor,
@@ -41,12 +42,14 @@ pub struct TableComponent {
     key_config: KeyConfig,
     theme: ThemeConfig,
     area_width: u16,
+    cell_editor: CellEditorComponent,
 }
 
 impl TableComponent {
     pub fn new(key_config: KeyConfig, theme: ThemeConfig) -> Self {
         Self {
             selected_row: TableState::default(),
+            cell_editor: CellEditorComponent::new("".to_string()),
             headers: vec![],
             rows: vec![],
             table: None,
@@ -595,8 +598,7 @@ impl StatefulDrawableComponent for TableComponent {
                 .draw(f, chunks[1], focused)?;
             }
             _ => {
-                CellEditorComponent::new(self.key_config.clone(), self.selected_cell().unwrap_or("".to_string()))
-                    .draw(f, chunks[1], focused)?;
+                self.cell_editor.draw(f, chunks[1], focused)?;
             },
         };
 
@@ -661,10 +663,14 @@ impl Component for TableComponent {
             return Ok(EventState::Consumed);
         } else if key == self.key_config.edit_cell {
             self.focus = Focus::Editor;
+            self.cell_editor.update(self.selected_cell().unwrap_or("".to_string()));
             return Ok(EventState::Consumed);
         } else if key == self.key_config.exit_popup {
             self.focus = Focus::Status;
             return Ok(EventState::Consumed);
+        }
+        if self.focus == Focus::Editor {
+            return self.cell_editor.event(key)
         }
         Ok(EventState::NotConsumed)
     }
