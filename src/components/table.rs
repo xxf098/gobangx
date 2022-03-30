@@ -277,6 +277,13 @@ impl TableComponent {
             .map(|cell| cell.to_string())
     }
 
+    // TODO:
+    pub fn set_selected_cell(&mut self, v: String) -> Option<()> {
+        let row = self.rows.get_mut(self.selected_row.selected()?)?;
+        row[self.selected_column] = Value::new(v);
+        Some(())
+    }
+
     pub fn selected_rows(&self) -> Option<Vec<Vec<Value>>> {
         if let Some((_x, y)) = self.selection_area_corner {
             let selected_row_index = self.selected_row.selected()?;
@@ -668,6 +675,14 @@ impl Component for TableComponent {
         } else if key == self.key_config.exit_popup {
             self.focus = Focus::Status;
             return Ok(EventState::Consumed);
+        } else if key == self.key_config.enter {
+            if self.focus == Focus::Editor {
+                self.focus = Focus::Status;
+                let value = self.cell_editor.value();
+                self.set_selected_cell(value);
+                // TODO: update database
+                return Ok(EventState::Consumed);
+            }
         }
         if self.focus == Focus::Editor {
             return self.cell_editor.event(key)

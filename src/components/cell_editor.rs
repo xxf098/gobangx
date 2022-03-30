@@ -31,6 +31,10 @@ impl CellEditorComponent {
         self.input_cursor_position_x = self.input_idx as u16;
         self.input = input.chars().collect();
     }
+
+    pub fn value(&self) -> String {
+        self.input.iter().collect::<String>()
+    }
 }
 
 
