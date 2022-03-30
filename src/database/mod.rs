@@ -260,7 +260,7 @@ impl DatabaseType {
                     let sql = format!("INSERT INTO {}.{} ({}) VALUES ({})", table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, header_str, row_str);
                     sqls.push(sql)
                 }
-                sqls.join(";")
+                sqls.join(";\n")
             }
             DatabaseType::MySql => {
                 let mut sqls = vec![];
@@ -269,7 +269,7 @@ impl DatabaseType {
                     let sql = format!("INSERT INTO {}.{} ({}) VALUES ({})", database.name, table.name, header_str, row_str);
                     sqls.push(sql)
                 }
-                sqls.join(";")
+                sqls.join(";\n")
             },
             DatabaseType::Sqlite => {
                 let mut sqls = vec![];
@@ -278,7 +278,7 @@ impl DatabaseType {
                     let sql = format!("INSERT INTO {} ({}) VALUES ({})", table.name, header_str, row_str);
                     sqls.push(sql)
                 }
-                sqls.join(";")
+                sqls.join(";\n")
             },
             _ => unimplemented!(),
         }

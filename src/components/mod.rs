@@ -8,6 +8,7 @@ pub mod help;
 pub mod properties;
 pub mod record_table;
 pub mod sql_editor;
+pub mod cell_editor;
 pub mod tab;
 pub mod table;
 pub mod table_filter;

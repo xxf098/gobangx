@@ -263,12 +263,12 @@ impl TableComponent {
     }
 
     pub fn selected_rows(&self) -> Option<Vec<Vec<Value>>> {
-        if let Some((x, y)) = self.selection_area_corner {
+        if let Some((_x, y)) = self.selection_area_corner {
             let selected_row_index = self.selected_row.selected()?;
             return Some(
                 self.rows[y.min(selected_row_index)..y.max(selected_row_index) + 1]
                     .iter()
-                    .map(|row| row[x.min(self.selected_column)..x.max(self.selected_column) + 1].to_vec())
+                    .map(|row| row.clone())
                     .collect()
             );
         }
@@ -685,7 +685,7 @@ impl Component for TableComponent {
             if let Some(rows) = self.selected_rows() {
                 if let Some((database, table)) = &self.table {
                     let sql = pool.database_type().insert_rows(database, table, &self.headers, &rows);
-                    copy_to_clipboard(&sql)?;
+                    copy_to_clipboard(sql.trim())?;
                 }
             }
             return Ok(EventState::Consumed);
