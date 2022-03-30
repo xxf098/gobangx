@@ -2,6 +2,7 @@ use super::{Component, EventState, StatefulDrawableComponent};
 use crate::components::command::CommandInfo;
 use crate::config::{Connection, KeyConfig, ThemeConfig};
 use crate::event::Key;
+use crate::clipboard::copy_to_clipboard;
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -134,6 +135,12 @@ impl<'a> Component for ConnectionsComponent<'a> {
             return Ok(EventState::Consumed);
         } else if key == self.key_config.scroll_to_bottom {
             self.scroll_to_bottom();
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.copy {
+            if let Some(c) = self.selected_connection() {
+                let s = c.database_url_with_name()?;
+                copy_to_clipboard(&s)?;
+            }
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)

@@ -675,14 +675,6 @@ impl Component for TableComponent {
         } else if key == self.key_config.exit_popup {
             self.focus = Focus::Status;
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.enter {
-            if self.focus == Focus::Editor {
-                self.focus = Focus::Status;
-                let value = self.cell_editor.value();
-                self.set_selected_cell(value);
-                // TODO: update database
-                return Ok(EventState::Consumed);
-            }
         }
         if self.focus == Focus::Editor {
             return self.cell_editor.event(key)
@@ -732,6 +724,13 @@ impl Component for TableComponent {
                     copy_to_clipboard(sql.trim())?;
                 }
             }
+            return Ok(EventState::Consumed);
+        }
+
+        if key == self.key_config.enter && self.focus == Focus::Editor {
+            self.focus = Focus::Status;
+            let value = self.cell_editor.value();
+            self.set_selected_cell(value);
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
