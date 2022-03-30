@@ -34,6 +34,7 @@ pub use table::TableComponent;
 pub use table_filter::TableFilterComponent;
 pub use table_status::TableStatusComponent;
 pub use table_value::TableValueComponent;
+pub use cell_editor::CellEditorComponent;
 
 #[cfg(debug_assertions)]
 pub use debug::DebugComponent;

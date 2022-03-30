@@ -1,6 +1,6 @@
 use super::{
     utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
-    StatefulDrawableComponent, TableStatusComponent,
+    StatefulDrawableComponent, TableStatusComponent, CellEditorComponent,
 };
 use crate::components::command::{self, CommandInfo};
 use crate::config::{KeyConfig, ThemeConfig};
@@ -21,11 +21,17 @@ use tui::{
 use unicode_width::UnicodeWidthStr;
 use async_trait::async_trait;
 
+pub enum Focus {
+    Status,
+    Editor,
+}
+
 pub struct TableComponent {
     pub headers: Vec<Header>,
     pub rows: Vec<Vec<Value>>,
     pub eod: bool,
     pub selected_row: TableState,
+    pub focus: Focus,
     constraint_adjust: Vec<u16>, // adjust constraints
     table: Option<(Database, DTable)>,
     selected_column: usize,
@@ -53,6 +59,7 @@ impl TableComponent {
             key_config,
             area_width: 0,
             theme,
+            focus: Focus::Status,
         }
     }
 
@@ -257,6 +264,10 @@ impl TableComponent {
                     .join("\n"),
             );
         }
+        self.selected_cell()
+    }
+
+    pub fn selected_cell(&self) -> Option<String> {
         self.rows
             .get(self.selected_row.selected()?)?
             .get(self.selected_column)
@@ -565,21 +576,29 @@ impl StatefulDrawableComponent for TableComponent {
         // TableValueComponent::new(self.selected_cells().unwrap_or_default())
         //     .draw(f, chunks[0], focused)?;
 
-        TableStatusComponent::new(
-            if self.rows.is_empty() {
-                None
-            } else {
-                Some(self.rows.len())
+        match self.focus {
+            Focus::Status => {
+                TableStatusComponent::new(
+                    if self.rows.is_empty() {
+                        None
+                    } else {
+                        Some(self.rows.len())
+                    },
+                    if self.headers.is_empty() {
+                        None
+                    } else {
+                        Some(self.headers.len())
+                    },
+                    self.selected_cells(),
+                    self.table.as_ref().map(|t| t.1.clone()),
+                )
+                .draw(f, chunks[1], focused)?;
+            }
+            _ => {
+                CellEditorComponent::new(self.key_config.clone(), self.selected_cell().unwrap_or("".to_string()))
+                    .draw(f, chunks[1], focused)?;
             },
-            if self.headers.is_empty() {
-                None
-            } else {
-                Some(self.headers.len())
-            },
-            self.selected_cells(),
-            self.table.as_ref().map(|t| t.1.clone()),
-        )
-        .draw(f, chunks[1], focused)?;
+        };
 
         self.scroll.draw(f, chunks[0]);
         Ok(())
@@ -639,6 +658,12 @@ impl Component for TableComponent {
             return Ok(EventState::Consumed);
         } else if key == self.key_config.reset_column_width {
             self.reset_column();
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.edit_cell {
+            self.focus = Focus::Editor;
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.exit_popup {
+            self.focus = Focus::Status;
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)

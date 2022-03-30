@@ -126,6 +126,7 @@ pub struct KeyConfig {
     pub shorten_column_width: Key,
     pub reset_column_width: Key,
     pub delete: Key, // drop table/ delete record by primary key
+    pub edit_cell: Key, // edit table cell
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -199,6 +200,7 @@ impl Default for KeyConfig {
             shorten_column_width: Key::Char('-'),
             reset_column_width: Key::Char('0'),
             delete: Key::Char('D'),
+            edit_cell: Key::Char('i'),
         }
     }
 }
