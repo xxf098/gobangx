@@ -35,6 +35,23 @@ impl CellEditorComponent {
     pub fn value(&self) -> String {
         self.input.iter().collect::<String>()
     }
+
+    fn move_cursor_left(&mut self) {
+        if !self.input.is_empty() && self.input_idx > 0 {
+            self.input_idx -= 1;
+            self.input_cursor_position_x = self
+                .input_cursor_position_x
+                .saturating_sub(compute_character_width(self.input[self.input_idx]));
+        }
+    }
+
+    fn move_cursor_right(&mut self) {
+        if self.input_idx < self.input.len() {
+            let next_c = self.input[self.input_idx];
+            self.input_idx += 1;
+            self.input_cursor_position_x += compute_character_width(next_c);
+        }
+    }
 }
 
 
@@ -76,20 +93,11 @@ impl Component for CellEditorComponent {
                 return Ok(EventState::Consumed);
             }
             Key::Left => {
-                if !self.input.is_empty() && self.input_idx > 0 {
-                    self.input_idx -= 1;
-                    self.input_cursor_position_x = self
-                        .input_cursor_position_x
-                        .saturating_sub(compute_character_width(self.input[self.input_idx]));
-                }
+                self.move_cursor_left();
                 return Ok(EventState::Consumed);
             }
             Key::Right => {
-                if self.input_idx < self.input.len() {
-                    let next_c = self.input[self.input_idx];
-                    self.input_idx += 1;
-                    self.input_cursor_position_x += compute_character_width(next_c);
-                }
+                self.move_cursor_right();
                 return Ok(EventState::Consumed);
             }
             _ => (),

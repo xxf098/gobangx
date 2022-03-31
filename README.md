@@ -105,6 +105,7 @@ If you want to add connections, you need to edit your config file. For more info
 | <kbd>y</kbd> | Copy a cell value |
 | <kbd>Y</kbd> | Copy `CREATE TABLE` or `INSERT INTO` sql |
 | <kbd>D</kbd> | Delete row by primary key or `id` |
+| <kbd>C</kbd> | Change current cell value, set value to `NULL` with `<NULL>` |
 | <kbd>=</kbd>, <kbd>-</kbd>, <kbd>0</kbd> | expand, shorten, reset column width |
 | <kbd>←</kbd>, <kbd>→</kbd> | Move focus to left/right |
 | <kbd>c</kbd> | Move focus to connections |
