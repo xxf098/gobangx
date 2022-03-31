@@ -20,6 +20,7 @@ use tui::{
 };
 use unicode_width::UnicodeWidthStr;
 use async_trait::async_trait;
+const NULL: &str = "<NULL>";
 
 #[derive(PartialEq)]
 pub enum Focus {
@@ -280,7 +281,8 @@ impl TableComponent {
     // TODO:
     pub fn set_selected_cell(&mut self, v: String) -> Option<()> {
         let row = self.rows.get_mut(self.selected_row.selected()?)?;
-        row[self.selected_column] = Value::new(v);
+        let value = if v == NULL { Value::default() } else { Value::new(v) };
+        row[self.selected_column] = value;
         Some(())
     }
 
@@ -646,6 +648,12 @@ impl Component for TableComponent {
     }
 
     fn event(&mut self, key: Key) -> Result<EventState> {
+        if self.focus == Focus::Editor {
+            let state = self.cell_editor.event(key)?;
+            if state == EventState::Consumed {
+                return Ok(EventState::Consumed)
+            }
+        }
         if key == self.key_config.scroll_left {
             self.previous_column();
             return Ok(EventState::Consumed);
@@ -699,9 +707,7 @@ impl Component for TableComponent {
             self.focus = Focus::Status;
             return Ok(EventState::Consumed);
         }
-        if self.focus == Focus::Editor {
-            return self.cell_editor.event(key)
-        }
+        
         Ok(EventState::NotConsumed)
     }
 
@@ -733,12 +739,13 @@ impl Component for TableComponent {
 
         if key == self.key_config.enter && self.focus == Focus::Editor {
             self.focus = Focus::Status;
-            let value = self.cell_editor.value();
-            self.set_selected_cell(value.clone());
             if let Some((database, table)) = &self.table {
                 let (pkey, pval) = self.primary_key_value(pool, database, table).await?;
                 let header = &self.headers[self.selected_column];
-                let sql = pool.database_type().update_row_by_column(database, table, &pkey, &pval.data, &header, &Value::new(value));
+                let v = self.cell_editor.value();
+                let value = if v == NULL { Value::default() } else { Value::new(v.clone()) };
+                let sql = pool.database_type().update_row_by_column(database, table, &pkey, &pval.data, &header, &value);
+                self.set_selected_cell(v);
                 pool.execute(&sql).await?;
                 return Ok(EventState::Consumed)
             }

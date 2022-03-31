@@ -250,10 +250,12 @@ impl DatabaseType {
 
     pub fn update_row_by_column(&self, database: &Database, table: &Table, pkey: &str, pval: &str, header: &Header, val: &Value) -> String {
         // TODO: NULL header type
+        let mut v = if header.is_no_quote() { header.name.clone() } else { format!("'{}'", header.name) };
+        if val.is_null { v = "NULL".to_string() };
         match self {
-            DatabaseType::MySql => format!("UPDATE {}.{} SET {} = '{}' where {} = '{}'", database.name, table.name, header.name, val.data, pkey, pval),
-            DatabaseType::Sqlite => format!("UPDATE {} SET {} = '{}' where {} = '{}'", table.name, header.name, val.data, pkey, pval),
-            DatabaseType::Postgres => format!("UPDATE {}.{}.{} SET {} = '{}' where {} = '{}'", database.name, table.pg_schema(), header.name, val.data, table.name, pkey, pval),
+            DatabaseType::MySql => format!("UPDATE {}.{} SET {} = {} where {} = '{}'", database.name, table.name, header.name, v, pkey, pval),
+            DatabaseType::Sqlite => format!("UPDATE {} SET {} = {} where {} = '{}'", table.name, header.name, v, pkey, pval),
+            DatabaseType::Postgres => format!("UPDATE {}.{}.{} SET {} = {} where {} = '{}'", database.name, table.pg_schema(), header.name, v, table.name, pkey, pval),
             _ => unimplemented!(),
         }
     }
