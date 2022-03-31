@@ -70,7 +70,8 @@ impl CellEditorComponent {
 
     pub fn update(&mut self, input: String) {
         self.input_idx = input.len();
-        self.input_cursor_position_x = self.input_idx as u16;
+        let pos: usize = input.chars().map(|c| compute_character_width(c) as usize).sum();
+        self.input_cursor_position_x = pos as u16;
         self.input = input.chars().collect();
     }
 
@@ -96,7 +97,7 @@ impl CellEditorComponent {
     }
 
     fn char_kind(&self) -> CharKind {
-        CharKind::new_at(&self.input, self.input_idx.saturating_sub(1))
+        CharKind::new_at(&self.input, self.input_idx)
     }
 
     fn move_cursor_one(&mut self, dir: CursorDir) {
@@ -106,7 +107,6 @@ impl CellEditorComponent {
         }
     }
 
-    
     fn move_cursor_by_word(&mut self, dir: CursorDir) {
         self.move_cursor_one(dir);
         let mut prev = self.char_kind();
@@ -119,7 +119,7 @@ impl CellEditorComponent {
             match dir {
                 CursorDir::Right if CharKind::at_word_start(&prev, &current) => return,
                 CursorDir::Left if CharKind::at_word_start(&prev, &current) => {
-                    // self.move_cursor_one(CursorDir::Right);
+                    self.move_cursor_one(CursorDir::Right);
                     return
                 }
                 _ => {}
