@@ -68,6 +68,8 @@ pub enum Key {
     F12,
     Char(char),
     Ctrl(char),
+    CtrlLeft,
+    CtrlRight,
     Alt(char),
     Unknown,
 }
@@ -108,6 +110,8 @@ impl fmt::Display for Key {
             Key::Char(' ') => write!(f, "<Space>"),
             Key::Alt(c) => write!(f, "<Alt+{}>", c),
             Key::Ctrl(c) => write!(f, "<Ctrl+{}>", c),
+            Key::CtrlLeft => write!(f, "<Ctrl+\u{2190}>"),
+            Key::CtrlRight => write!(f, "<Ctrl+\u{2192}>"),
             Key::Char(c) => write!(f, "{}", c),
             Key::Left => write!(f, "\u{2190}"),  //←
             Key::Right => write!(f, "\u{2192}"), //→
@@ -141,8 +145,16 @@ impl From<event::KeyEvent> for Key {
             } => Key::Backspace,
             event::KeyEvent {
                 code: event::KeyCode::Left,
+                modifiers: event::KeyModifiers::CONTROL,
+            } => Key::CtrlLeft,
+            event::KeyEvent {
+                code: event::KeyCode::Left,
                 ..
             } => Key::Left,
+            event::KeyEvent {
+                code: event::KeyCode::Right,
+                modifiers: event::KeyModifiers::CONTROL,
+            } => Key::CtrlRight,            
             event::KeyEvent {
                 code: event::KeyCode::Right,
                 ..

@@ -6,6 +6,48 @@ use crate::components::command::CommandInfo;
 use crate::event::Key;
 use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum CursorDir {
+    Left,
+    Right,
+    // Up,
+    // Down,
+}
+
+
+#[derive(PartialEq)]
+enum CharKind {
+    Ident,
+    Punc,
+    Space,
+}
+
+impl CharKind {
+    
+    fn new_at(row: &[char], x: usize) -> Self {
+        row.get(x).map(|c| {
+            if c.is_ascii_whitespace() {
+                CharKind::Space
+            } else if *c == '_' || c.is_ascii_alphanumeric() {
+                CharKind::Ident
+            } else {
+                CharKind::Punc
+            }
+        })
+        .unwrap_or(CharKind::Space)
+    }
+
+    fn at_word_start(left: &CharKind, right: &CharKind) -> bool {
+        matches!(
+            (left, right),
+            (&CharKind::Space, &CharKind::Ident)
+                | (&CharKind::Space, &CharKind::Punc)
+                | (&CharKind::Punc, &CharKind::Ident)
+                | (&CharKind::Ident, &CharKind::Punc)
+        )
+    }
+
+}
 
 pub struct CellEditorComponent {
     input: Vec<char>,
@@ -50,6 +92,41 @@ impl CellEditorComponent {
             let next_c = self.input[self.input_idx];
             self.input_idx += 1;
             self.input_cursor_position_x += compute_character_width(next_c);
+        }
+    }
+
+    fn char_kind(&self) -> CharKind {
+        CharKind::new_at(&self.input, self.input_idx.saturating_sub(1))
+    }
+
+    fn move_cursor_one(&mut self, dir: CursorDir) {
+        match dir {
+            CursorDir::Left => self.move_cursor_left(),
+            CursorDir::Right => self.move_cursor_right(),
+        }
+    }
+
+    
+    fn move_cursor_by_word(&mut self, dir: CursorDir) {
+        self.move_cursor_one(dir);
+        let mut prev = self.char_kind();
+        self.move_cursor_one(dir);
+        let mut current = self.char_kind();
+        loop {
+            if self.input_idx < 1 || self.input_idx >= self.input.len() || self.input.is_empty() {
+                return
+            }
+            match dir {
+                CursorDir::Right if CharKind::at_word_start(&prev, &current) => return,
+                CursorDir::Left if CharKind::at_word_start(&prev, &current) => {
+                    // self.move_cursor_one(CursorDir::Right);
+                    return
+                }
+                _ => {}
+            };
+            prev = current;
+            self.move_cursor_one(dir);
+            current = self.char_kind();
         }
     }
 }
@@ -98,6 +175,14 @@ impl Component for CellEditorComponent {
             }
             Key::Right => {
                 self.move_cursor_right();
+                return Ok(EventState::Consumed);
+            }
+            Key::CtrlLeft => {
+                self.move_cursor_by_word(CursorDir::Left);
+                return Ok(EventState::Consumed);
+            }
+            Key::CtrlRight => {
+                self.move_cursor_by_word(CursorDir::Right);
                 return Ok(EventState::Consumed);
             }
             _ => (),
