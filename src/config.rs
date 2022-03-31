@@ -200,7 +200,7 @@ impl Default for KeyConfig {
             shorten_column_width: Key::Char('-'),
             reset_column_width: Key::Char('0'),
             delete: Key::Char('D'),
-            edit_cell: Key::Char('i'),
+            edit_cell: Key::Char('C'),
         }
     }
 }
