@@ -241,9 +241,9 @@ impl DatabaseType {
 
     pub fn delete_row_by_column(&self, database: &Database, table: &Table, col: &str, val: &str) -> String {
         match self {
-            DatabaseType::MySql => format!("delete from {}.{} where {} = '{}'", database.name, table.name, col, val),
-            DatabaseType::Sqlite => format!("delete from {} where {} = '{}'", table.name, col, val),
-            DatabaseType::Postgres => format!("delete from {}.{}.{} where {} = '{}'", database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, col, val),
+            DatabaseType::MySql => format!("delete from `{}`.`{}` where {} = '{}'", database.name, table.name, col, val),
+            DatabaseType::Sqlite => format!("delete from `{}` where {} = '{}'", table.name, col, val),
+            DatabaseType::Postgres => format!(r#"delete from "{}"."{}"."{}" where {} = '{}'"#, database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, col, val),
             _ => unimplemented!(),
         }
     }
@@ -253,9 +253,9 @@ impl DatabaseType {
         let mut v = if header.is_no_quote() { header.name.clone() } else { format!("'{}'", header.name) };
         if val.is_null { v = "NULL".to_string() };
         match self {
-            DatabaseType::MySql => format!("UPDATE {}.{} SET {} = {} where {} = '{}'", database.name, table.name, header.name, v, pkey, pval),
-            DatabaseType::Sqlite => format!("UPDATE {} SET {} = {} where {} = '{}'", table.name, header.name, v, pkey, pval),
-            DatabaseType::Postgres => format!("UPDATE {}.{}.{} SET {} = {} where {} = '{}'", database.name, table.pg_schema(), header.name, v, table.name, pkey, pval),
+            DatabaseType::MySql => format!("UPDATE `{}`.`{}` SET {} = {} where {} = '{}'", database.name, table.name, header.name, v, pkey, pval),
+            DatabaseType::Sqlite => format!("UPDATE {} SET `{}` = {} where {} = '{}'", table.name, header.name, v, pkey, pval),
+            DatabaseType::Postgres => format!(r#"UPDATE "{}"."{}"."{}" SET {} = {} where {} = '{}'"#, database.name, table.pg_schema(), header.name, v, table.name, pkey, pval),
             _ => unimplemented!(),
         }
     }
