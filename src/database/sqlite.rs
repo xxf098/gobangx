@@ -245,19 +245,23 @@ impl Pool for SqlitePool {
         table: &Table,
         page: u16,
         filter: Option<String>,
+        orderby: Option<String>,
     ) -> anyhow::Result<(Vec<Header>, Vec<Vec<Value>>)> {
+        let orderby = if orderby.is_none() { "".to_string() } else { format!("ORDER BY {}", orderby.unwrap()) };
         let query = if let Some(filter) = filter {
             format!(
-                "SELECT * FROM `{table}` WHERE {filter} LIMIT {page}, {limit}",
+                "SELECT * FROM `{table}` WHERE {filter} {orderby} LIMIT {page}, {limit}",
                 table = table.name,
                 filter = filter,
+                orderby = orderby,
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
         } else {
             format!(
-                "SELECT * FROM `{}` LIMIT {page}, {limit}",
+                "SELECT * FROM `{}` {orderby} LIMIT {page}, {limit}",
                 table.name,
+                orderby = orderby,
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )

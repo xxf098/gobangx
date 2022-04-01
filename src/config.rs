@@ -127,6 +127,8 @@ pub struct KeyConfig {
     pub reset_column_width: Key,
     pub delete: Key, // drop table/ delete record by primary key
     pub edit_cell: Key, // edit table cell
+    pub orderby_asc: Key,
+    pub orderby_desc: Key,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -201,6 +203,8 @@ impl Default for KeyConfig {
             reset_column_width: Key::Char('0'),
             delete: Key::Char('D'),
             edit_cell: Key::Char('C'),
+            orderby_asc: Key::Char('o'),
+            orderby_desc: Key::Char('O'),
         }
     }
 }

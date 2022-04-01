@@ -263,22 +263,26 @@ impl Pool for PostgresPool {
         table: &Table,
         page: u16,
         filter: Option<String>,
+        orderby: Option<String>,
     ) -> anyhow::Result<(Vec<Header>, Vec<Vec<Value>>)> {
+        let orderby = if orderby.is_none() { "".to_string() } else { format!("ORDER BY {}", orderby.unwrap()) };
         let query = if let Some(filter) = filter.as_ref() {
             format!(
-                r#"SELECT * FROM "{database}"."{table_schema}"."{table}" WHERE {filter} LIMIT {limit} OFFSET {page}"#,
+                r#"SELECT * FROM "{database}"."{table_schema}"."{table}" WHERE {filter} {orderby} LIMIT {limit} OFFSET {page}"#,
                 database = database.name,
                 table = table.name,
                 filter = filter,
+                orderby = orderby,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE
             )
         } else {
             format!(
-                r#"SELECT * FROM "{database}"."{table_schema}"."{table}" LIMIT {limit} OFFSET {page}"#,
+                r#"SELECT * FROM "{database}"."{table_schema}"."{table}" {orderby} LIMIT {limit} OFFSET {page}"#,
                 database = database.name,
                 table = table.name,
+                orderby = orderby,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 page = page,
                 limit = RECORDS_LIMIT_PER_PAGE

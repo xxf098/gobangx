@@ -200,7 +200,7 @@ impl<'a> App<'a> {
         Ok(())
     }
 
-    async fn update_record_table(&mut self, focus: bool) -> anyhow::Result<()> {
+    async fn update_record_table(&mut self, focus: bool, orderby: Option<String>) -> anyhow::Result<()> {
         if let Some((database, table, _)) = self.databases.tree().selected_table() {
             let (headers, records) = self
                 .pool
@@ -215,6 +215,7 @@ impl<'a> App<'a> {
                     } else {
                         Some(self.record_table.filter.input_str())
                     },
+                    orderby,
                 )
                 .await?;
             self.record_table
@@ -244,7 +245,12 @@ impl<'a> App<'a> {
                 return Ok(EventState::Consumed)
             },
             Event::RedrawTable(focus) => {
-                self.update_record_table(focus).await?;
+                self.update_record_table(focus, None).await?;
+                return Ok(EventState::Consumed)
+            },
+            Event::OrderByTable(order) => {
+                let orderby = if order.len() > 0 { Some(order) } else { None };
+                self.update_record_table(true, orderby).await?;
                 return Ok(EventState::Consumed)
             }
             _ => {},
@@ -285,7 +291,7 @@ impl<'a> App<'a> {
                             .pool
                             .as_ref()
                             .unwrap()
-                            .get_records(&database, &table, 0, None)
+                            .get_records(&database, &table, 0, None, None)
                             .await?;
                         self.record_table
                             .update(records, headers, database.clone(), table.clone());
@@ -313,7 +319,7 @@ impl<'a> App<'a> {
 
                         if key == self.config.key_config.enter && self.record_table.filter_focused()
                         {
-                            self.update_record_table(true).await?;
+                            self.update_record_table(true, None).await?;
                         }
 
                         if self.record_table.table.eod {
@@ -338,6 +344,7 @@ impl<'a> App<'a> {
                                             } else {
                                                 Some(self.record_table.filter.input_str())
                                             },
+                                            None,
                                         )
                                         .await?;
                                     if !records.is_empty() {

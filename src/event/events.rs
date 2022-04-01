@@ -18,11 +18,12 @@ impl Default for EventConfig {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub enum Event {
     Input(Key),
     RedrawDatabase(bool),
     RedrawTable(bool),
+    OrderByTable(String),
     Tick,
 }
 

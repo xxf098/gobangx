@@ -44,6 +44,7 @@ pub struct TableComponent {
     theme: ThemeConfig,
     area_width: u16,
     cell_editor: CellEditorComponent,
+    orderby_status: Option<String>
 }
 
 impl TableComponent {
@@ -64,6 +65,7 @@ impl TableComponent {
             area_width: 0,
             theme,
             focus: Focus::Status,
+            orderby_status: None,
         }
     }
 
@@ -734,6 +736,28 @@ impl Component for TableComponent {
                     copy_to_clipboard(sql.trim())?;
                 }
             }
+            return Ok(EventState::Consumed);
+        }
+
+        if key == self.key_config.orderby_desc {
+            let header = &self.headers[self.selected_column];
+            let mut orderby = format!("{} desc", header.name);
+            if self.orderby_status.as_deref() == Some(&orderby) {
+                orderby = String::new();
+                self.orderby_status = None;
+            } else { self.orderby_status = Some(orderby.clone()) };
+            store.dispatch(Event::OrderByTable(orderby)).await?;
+            return Ok(EventState::Consumed);
+        }
+
+        if key == self.key_config.orderby_asc {
+            let header = &self.headers[self.selected_column];
+            let mut orderby = format!("{} asc", header.name);
+            if self.orderby_status.as_deref() == Some(&orderby) {
+                orderby = String::new();
+                self.orderby_status = None;
+            } else { self.orderby_status = Some(orderby.clone()) };
+            store.dispatch(Event::OrderByTable(orderby)).await?;
             return Ok(EventState::Consumed);
         }
 

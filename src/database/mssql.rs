@@ -255,6 +255,7 @@ impl Pool for MssqlPool {
         table: &Table,
         _page: u16,
         filter: Option<String>,
+        _orderby: Option<String>,
     ) -> anyhow::Result<(Vec<Header>, Vec<Vec<Value>>)> {
         // FIXME
         let query = if let Some(filter) = filter.as_ref() {

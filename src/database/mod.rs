@@ -32,6 +32,7 @@ pub trait Pool: Send + Sync {
         table: &Table,
         page: u16,
         filter: Option<String>,
+        orderby: Option<String>,
     ) -> anyhow::Result<(Vec<Header>, Vec<Vec<Value>>)>;
     async fn get_columns(
         &self,
