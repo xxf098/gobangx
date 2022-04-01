@@ -143,7 +143,8 @@ database = "bar"
 type = "sqlite"
 path = "/path/to/baz.db"
 
-[theme_config]
+[theme]
+# support: red,green,yellow,blue,magenta,cyan or color code 
 color = "red"
 ```
 

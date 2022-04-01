@@ -20,7 +20,7 @@ pub struct Config {
     #[serde(default)]
     pub log_level: LogLevel,
     #[serde(default)]
-    pub theme_config: ThemeConfig,
+    pub theme: ThemeConfig,
 }
 
 // TODO: Oracle, SQL Server
@@ -64,8 +64,7 @@ impl Default for Config {
             }],
             key_config: KeyConfig::default(),
             log_level: LogLevel::default(),
-            theme_config: ThemeConfig
-            ::default(),
+            theme: ThemeConfig::default(),
         }
     }
 }

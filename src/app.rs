@@ -46,13 +46,13 @@ impl<'a> App<'a> {
         let store = Store::new(sender);
         Self {
             config: config.clone(),
-            connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.theme_config),
-            record_table: RecordTableComponent::new(config.key_config.clone(), config.theme_config.clone()),
-            properties: PropertiesComponent::new(&config.key_config, &config.theme_config),
-            sql_editor: SqlEditorComponent::new(&config.key_config, config.theme_config.clone()),
+            connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.theme),
+            record_table: RecordTableComponent::new(config.key_config.clone(), config.theme.clone()),
+            properties: PropertiesComponent::new(&config.key_config, &config.theme),
+            sql_editor: SqlEditorComponent::new(&config.key_config, config.theme.clone()),
             tab: TabComponent::new(&config.key_config),
             help: HelpComponent::new(&config.key_config),
-            databases: DatabasesComponent::new(&config.key_config, &config.theme_config),
+            databases: DatabasesComponent::new(&config.key_config, &config.theme),
             error: ErrorComponent::new(&config.key_config),
             focus: Focus::ConnectionList,
             pool: None,
