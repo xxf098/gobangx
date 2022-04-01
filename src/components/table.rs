@@ -81,6 +81,7 @@ impl TableComponent {
         headers: Vec<Header>,
         database: Database,
         table: DTable,
+        selected_column: usize,
     ) {
         self.selected_row.select(None);
         if !rows.is_empty() {
@@ -89,7 +90,7 @@ impl TableComponent {
         self.headers = headers;
         self.constraint_adjust = vec![0; self.headers.len()];
         self.rows = rows;
-        self.selected_column = 0;
+        self.selected_column = selected_column;
         self.selection_area_corner = None;
         self.column_page_start = AtomicUsize::new(0);
         self.scroll = VerticalScroll::new(false, false);
@@ -746,7 +747,7 @@ impl Component for TableComponent {
                 orderby = String::new();
                 self.orderby_status = None;
             } else { self.orderby_status = Some(orderby.clone()) };
-            store.dispatch(Event::OrderByTable(orderby)).await?;
+            store.dispatch(Event::OrderByTable((orderby, self.selected_column))).await?;
             return Ok(EventState::Consumed);
         }
 
@@ -757,7 +758,7 @@ impl Component for TableComponent {
                 orderby = String::new();
                 self.orderby_status = None;
             } else { self.orderby_status = Some(orderby.clone()) };
-            store.dispatch(Event::OrderByTable(orderby)).await?;
+            store.dispatch(Event::OrderByTable((orderby, self.selected_column))).await?;
             return Ok(EventState::Consumed);
         }
 

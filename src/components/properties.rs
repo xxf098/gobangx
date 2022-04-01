@@ -79,6 +79,7 @@ impl<'a> PropertiesComponent<'a> {
                 columns.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
+                0,
             );
         }
         self.constraint_table.reset();
@@ -92,6 +93,7 @@ impl<'a> PropertiesComponent<'a> {
                 constraints.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
+                0,
             );
         }
         self.foreign_key_table.reset();
@@ -105,6 +107,7 @@ impl<'a> PropertiesComponent<'a> {
                 foreign_keys.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
+                0,
             );
         }
         self.index_table.reset();
@@ -118,6 +121,7 @@ impl<'a> PropertiesComponent<'a> {
                 indexes.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
+                0,
             );
         }
         Ok(())

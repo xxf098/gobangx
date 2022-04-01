@@ -200,7 +200,7 @@ impl<'a> App<'a> {
         Ok(())
     }
 
-    async fn update_record_table(&mut self, focus: bool, orderby: Option<String>) -> anyhow::Result<()> {
+    async fn update_record_table(&mut self, focus: bool, orderby: Option<String>, selected_column: usize) -> anyhow::Result<()> {
         if let Some((database, table, _)) = self.databases.tree().selected_table() {
             let (headers, records) = self
                 .pool
@@ -219,7 +219,7 @@ impl<'a> App<'a> {
                 )
                 .await?;
             self.record_table
-                .update(records, headers, database.clone(), table.clone());
+                .update(records, headers, database.clone(), table.clone(), selected_column);
             if focus { self.record_table.focus = crate::components::record_table::Focus::Table; }
         }
         Ok(())
@@ -245,12 +245,12 @@ impl<'a> App<'a> {
                 return Ok(EventState::Consumed)
             },
             Event::RedrawTable(focus) => {
-                self.update_record_table(focus, None).await?;
+                self.update_record_table(focus, None, 0).await?;
                 return Ok(EventState::Consumed)
             },
-            Event::OrderByTable(order) => {
+            Event::OrderByTable((order, selected_column)) => {
                 let orderby = if order.len() > 0 { Some(order) } else { None };
-                self.update_record_table(true, orderby).await?;
+                self.update_record_table(true, orderby, selected_column).await?;
                 return Ok(EventState::Consumed)
             }
             _ => {},
@@ -294,7 +294,7 @@ impl<'a> App<'a> {
                             .get_records(&database, &table, 0, None, None)
                             .await?;
                         self.record_table
-                            .update(records, headers, database.clone(), table.clone());
+                            .update(records, headers, database.clone(), table.clone(), 0);
                         self.properties
                             .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
                             .await?;
@@ -319,7 +319,7 @@ impl<'a> App<'a> {
 
                         if key == self.config.key_config.enter && self.record_table.filter_focused()
                         {
-                            self.update_record_table(true, None).await?;
+                            self.update_record_table(true, None, 0).await?;
                         }
 
                         if self.record_table.table.eod {

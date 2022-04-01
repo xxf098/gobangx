@@ -41,8 +41,9 @@ impl RecordTableComponent {
         headers: Vec<Header>,
         database: Database,
         table: DTable,
+        selected_column: usize,
     ) {
-        self.table.update(rows, headers, database, table.clone());
+        self.table.update(rows, headers, database, table.clone(), selected_column);
         self.filter.table = Some(table);
     }
 

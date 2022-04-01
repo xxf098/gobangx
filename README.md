@@ -16,13 +16,6 @@ A cross-platform TUI database management tool written in Rust
 - Multiple Database support (MySQL, PostgreSQL, SQLite)
 - Intuitive keyboard only control
 
-## TODOs
-
-- [ ] SQL editor
-- [ ] Custom key bindings
-- [ ] Custom theme settings
-- [ ] Support the other databases
-
 ## What does "gobang" come from?
 
 gobang means a Japanese game played on goban, a go board. The appearance of goban looks like table structure. And I live in Kyoto, Japan. In Kyoto city, streets are laid out on a grid (We call it “goban no me no youna (碁盤の目のような)”). They are why I named this project "gobang".
@@ -106,6 +99,7 @@ If you want to add connections, you need to edit your config file. For more info
 | <kbd>Y</kbd> | Copy `CREATE TABLE` or `INSERT INTO` sql |
 | <kbd>D</kbd> | Delete row by primary key or `id` |
 | <kbd>C</kbd> | Change current cell value, set value to `NULL` with `<NULL>` |
+| <kbd>o</kbd>, <kbd>O</kbd> | Order column asc/desc |
 | <kbd>=</kbd>, <kbd>-</kbd>, <kbd>0</kbd> | expand, shorten, reset column width |
 | <kbd>←</kbd>, <kbd>→</kbd> | Move focus to left/right |
 | <kbd>c</kbd> | Move focus to connections |

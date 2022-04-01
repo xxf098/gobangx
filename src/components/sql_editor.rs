@@ -270,7 +270,7 @@ impl<'a> Component for SqlEditorComponent<'a> {
                     table,
                 } => {
                     // let header_names = headers.into_iter().map(|h| h.name).collect();
-                    self.table.update(rows, headers, database, table);
+                    self.table.update(rows, headers, database, table, 0);
                     self.focus = Focus::Table;
                     self.query_result = None;
                 }

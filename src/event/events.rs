@@ -23,7 +23,7 @@ pub enum Event {
     Input(Key),
     RedrawDatabase(bool),
     RedrawTable(bool),
-    OrderByTable(String),
+    OrderByTable((String, usize)),
     Tick,
 }
 
