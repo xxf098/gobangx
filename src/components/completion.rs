@@ -48,6 +48,14 @@ impl CompletionComponent {
         self.state.select(Some(0))
     }
 
+    pub fn update_candidates(&mut self, candidates: &[String]) {
+        for candidate in candidates {
+            if self.candidates.iter().find(|x| *x == candidate).is_none() {
+                self.candidates.push(candidate.clone())
+            }
+        }
+    }
+
     fn next(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {

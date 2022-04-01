@@ -51,6 +51,10 @@ impl TableFilterComponent {
         self.input_cursor_position = 0;
     }
 
+    pub fn update_candidates(&mut self, candidates: &[String]) {
+        self.completion.update_candidates(candidates)
+    }
+
     fn update_completion(&mut self) {
         let input = &self
             .input

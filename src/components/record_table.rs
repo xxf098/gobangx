@@ -43,8 +43,10 @@ impl RecordTableComponent {
         table: DTable,
         selected_column: usize,
     ) {
+        let candidates = headers.iter().map(|h| h.name.clone()).collect::<Vec<_>>();
         self.table.update(rows, headers, database, table.clone(), selected_column);
         self.filter.table = Some(table);
+        self.filter.update_candidates(&candidates);
     }
 
     pub fn reset(&mut self) {
