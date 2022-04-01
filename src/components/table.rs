@@ -348,20 +348,24 @@ impl TableComponent {
         headers.into_iter().map(|h| h.to_string()).collect()
     }
 
-    // TODO: no clone
     fn rows(&self, left: usize, right: usize) -> Vec<Vec<Value>> {
-        let rows = self
+        let mut rows = self
             .rows
             .iter()
-            .map(|row| row.to_vec())
+            .map(|row| row[left..right].to_vec())
             .collect::<Vec<Vec<Value>>>();
-        let mut new_rows: Vec<Vec<Value>> =
-            rows.iter().map(|row| row[left..right].to_vec()).collect();
-        for (index, row) in new_rows.iter_mut().enumerate() {
+        // let mut new_rows: Vec<Vec<Value>> =
+        //     rows.iter().map(|row| row[left..right].to_vec()).collect();
+        for (index, row) in rows.iter_mut().enumerate() {
             row.insert(0, (index + 1).to_string().into())
         }
-        new_rows
+        rows
     }
+
+    // ref cell
+    // fn rows_ref(&self, left: usize, right: usize) -> Vec<Vec<Value>> {
+
+    // }
 
     fn calculate_cell_widths(
         &mut self,
