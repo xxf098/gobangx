@@ -129,6 +129,22 @@ impl CellEditorComponent {
             current = self.char_kind();
         }
     }
+
+    fn delete_word(&mut self) {
+        let mut x = self.input_idx.min(self.input.len()-1);
+        let row = &self.input;
+        while x > 0 && (row[x].is_ascii_alphanumeric() || row[x] == '_') {
+            x -= 1;
+        }
+
+        // while x > 0 && !row[x - 1].is_ascii_whitespace() {
+        //     x -= 1;
+        // }
+
+        self.input_cursor_position_x = self.input_cursor_position_x - (self.input_idx -x) as u16; 
+        self.input_idx = x;
+        self.input = row[..x].to_owned();
+    }
 }
 
 
@@ -184,6 +200,12 @@ impl Component for CellEditorComponent {
             Key::CtrlRight => {
                 self.move_cursor_by_word(CursorDir::Right);
                 return Ok(EventState::Consumed);
+            }
+            Key::Ctrl(c) => {
+                if c == 'w' {
+                    self.delete_word();
+                    return Ok(EventState::Consumed);
+                }
             }
             _ => (),
         }
