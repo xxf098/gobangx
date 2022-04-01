@@ -1,6 +1,7 @@
 use std::string::ToString;
 use std::fmt;
 use std::convert::{From};
+use unicode_width::UnicodeWidthStr;
 
 #[derive(Clone, PartialEq, Debug)]
 pub enum ColType {
@@ -31,6 +32,10 @@ impl Header {
 
     pub fn is_no_quote(&self) -> bool {
         self.is_number() || self.col_type == ColType::Boolean
+    }
+
+    pub fn width(&self) -> usize {
+        self.name.width()
     }
 
 }
@@ -68,6 +73,10 @@ pub struct Value {
 impl Value {
     pub fn new(v: String) -> Self {
         Self { data: v, is_null: false }
+    }
+
+    pub fn width(&self) -> usize {
+        self.data.width()
     }
 }
 

@@ -348,6 +348,7 @@ impl TableComponent {
         headers.into_iter().map(|h| h.to_string()).collect()
     }
 
+    // TODO: no clone
     fn rows(&self, left: usize, right: usize) -> Vec<Vec<Value>> {
         let rows = self
             .rows
@@ -366,7 +367,6 @@ impl TableComponent {
         &mut self,
         area_width: u16,
     ) -> (usize, Vec<String>, Vec<Vec<Value>>, Vec<Constraint>) {
-        // TODO: reduce clone
         let headers = if self.rows.is_empty() && !self.headers.is_empty() { vec![self.headers.iter().map(|h| h.to_string().into()).collect::<Vec<Value>>().clone()] } else { vec![] };
         let rows = if self.rows.is_empty() && !self.headers.is_empty() { &headers } else { &self.rows };
         if rows.is_empty() {
@@ -383,11 +383,7 @@ impl TableComponent {
         loop {
             let length = rows
                 .iter()
-                .map(|row| {
-                    row.get(column_index)
-                        .map_or(String::new(), |cell| cell.to_string())
-                        .width()
-                })
+                .map(|row| { row.get(column_index).map_or(0, |cell| cell.width()) })
                 .collect::<Vec<usize>>()
                 .iter()
                 .max()
@@ -395,7 +391,7 @@ impl TableComponent {
                     *v.max(
                         &self.headers
                             .get(column_index)
-                            .map_or(3, |header| header.to_string().width()),
+                            .map_or(3, |header| header.width()),
                     )
                     .clamp(&3, &20)
                 });
@@ -421,11 +417,7 @@ impl TableComponent {
         {
             let length = rows
                 .iter()
-                .map(|row| {
-                    row.get(column_index)
-                        .map_or(String::new(), |cell| cell.to_string())
-                        .width()
-                })
+                .map(|row| { row.get(column_index).map_or(0, |cell| cell.width()) })
                 .collect::<Vec<usize>>()
                 .iter()
                 .max()
@@ -433,7 +425,7 @@ impl TableComponent {
                     *v.max(
                         self.headers
                             .iter()
-                            .map(|header| header.to_string().width())
+                            .map(|header| header.width())
                             .collect::<Vec<usize>>()
                             .get(column_index)
                             .unwrap_or(&3),
