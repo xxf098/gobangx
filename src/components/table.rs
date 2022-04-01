@@ -794,7 +794,8 @@ mod test {
             vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
             vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
-        assert_eq!(component.rows(1, 2), vec![vec!["1", "b"], vec!["2", "e"]],)
+        let rows = component.rows(1, 2).iter().map(|row|  row.iter().map(|cell|  cell.read().unwrap().clone()).collect::<Vec<_>>()).collect::<Vec<_>>();
+        assert_eq!(rows, vec![vec!["1", "b"], vec!["2", "e"]],)
     }
 
     #[test]
@@ -1003,6 +1004,7 @@ mod test {
             component.calculate_cell_widths(10);
         assert_eq!(selected_column_index, 1);
         assert_eq!(headers, vec!["", "1", "2"]);
+        let rows = rows.iter().map(|row|  row.iter().map(|cell|  cell.read().unwrap().clone()).collect::<Vec<_>>()).collect::<Vec<_>>();
         assert_eq!(rows, vec![vec!["1", "aaaaa", "bbbbb"], vec!["2", "d", "e"]]);
         assert_eq!(
             constraints,
@@ -1030,6 +1032,7 @@ mod test {
             component.calculate_cell_widths(20);
         assert_eq!(selected_column_index, 1);
         assert_eq!(headers, vec!["", "1", "2", "3"]);
+        let rows = rows.iter().map(|row|  row.iter().map(|cell|  cell.read().unwrap().clone()).collect::<Vec<_>>()).collect::<Vec<_>>();
         assert_eq!(
             rows,
             vec![
@@ -1067,6 +1070,7 @@ mod test {
             component.calculate_cell_widths(20);
         assert_eq!(selected_column_index, 1);
         assert_eq!(headers, vec!["", "1", "2", "3"]);
+        let rows = rows.iter().map(|row|  row.iter().map(|cell|  cell.read().unwrap().clone()).collect::<Vec<_>>()).collect::<Vec<_>>();
         assert_eq!(
             rows,
             vec![
