@@ -11,6 +11,7 @@ use anyhow::Result;
 use database_tree::{Database, Table as DTable};
 use std::convert::{From, Into};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, RwLock};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -30,7 +31,7 @@ pub enum Focus {
 
 pub struct TableComponent {
     pub headers: Vec<Header>,
-    pub rows: Vec<Vec<Value>>,
+    pub rows: Vec<Vec<Arc<RwLock<Value>>>>,
     pub eod: bool,
     pub selected_row: TableState,
     pub focus: Focus,
@@ -89,7 +90,7 @@ impl TableComponent {
         }
         self.headers = headers;
         self.constraint_adjust = vec![0; self.headers.len()];
-        self.rows = rows;
+        self.rows = rows.into_iter().map(|row| row.into_iter().map(|cell| Arc::new(RwLock::new(cell))).collect::<Vec<_>>()).collect::<Vec<_>>();
         self.selected_column = selected_column;
         self.selection_area_corner = None;
         self.column_page_start = AtomicUsize::new(0);
@@ -265,7 +266,7 @@ impl TableComponent {
                 self.rows[y.min(selected_row_index)..y.max(selected_row_index) + 1]
                     .iter()
                     .map(|row| {
-                        row[x.min(self.selected_column)..x.max(self.selected_column) + 1].iter().map(|r| r.data.clone()).collect::<Vec<String>>().join(",")
+                        row[x.min(self.selected_column)..x.max(self.selected_column) + 1].iter().map(|r| r.read().unwrap().data.clone()).collect::<Vec<String>>().join(",")
                     })
                     .collect::<Vec<String>>()
                     .join("\n"),
@@ -278,18 +279,20 @@ impl TableComponent {
         self.rows
             .get(self.selected_row.selected()?)?
             .get(self.selected_column)
-            .map(|cell| cell.to_string())
+            .map(|cell| cell.read().unwrap().to_string())
     }
 
     // TODO:
     pub fn set_selected_cell(&mut self, v: String) -> Option<()> {
         let row = self.rows.get_mut(self.selected_row.selected()?)?;
         let value = if v == NULL { Value::default() } else { Value::new(v) };
-        row[self.selected_column] = value;
+        let cell = &row[self.selected_column];
+        let mut v = cell.write().unwrap();
+        *v = value;
         Some(())
     }
 
-    pub fn selected_rows(&self) -> Option<Vec<Vec<Value>>> {
+    pub fn selected_rows(&self) -> Option<Vec<Vec<Arc<RwLock<Value>>>>> {
         if let Some((_x, y)) = self.selection_area_corner {
             let selected_row_index = self.selected_row.selected()?;
             return Some(
@@ -348,30 +351,25 @@ impl TableComponent {
         headers.into_iter().map(|h| h.to_string()).collect()
     }
 
-    fn rows(&self, left: usize, right: usize) -> Vec<Vec<Value>> {
+    fn rows(&self, left: usize, right: usize) -> Vec<Vec<Arc<RwLock<Value>>>> {
         let mut rows = self
             .rows
             .iter()
             .map(|row| row[left..right].to_vec())
-            .collect::<Vec<Vec<Value>>>();
+            .collect::<Vec<Vec<Arc<RwLock<Value>>>>>();
         // let mut new_rows: Vec<Vec<Value>> =
         //     rows.iter().map(|row| row[left..right].to_vec()).collect();
         for (index, row) in rows.iter_mut().enumerate() {
-            row.insert(0, (index + 1).to_string().into())
+            row.insert(0, Arc::new(RwLock::new((index + 1).to_string().into())))
         }
         rows
     }
 
-    // ref cell
-    // fn rows_ref(&self, left: usize, right: usize) -> Vec<Vec<Value>> {
-
-    // }
-
     fn calculate_cell_widths(
         &mut self,
         area_width: u16,
-    ) -> (usize, Vec<String>, Vec<Vec<Value>>, Vec<Constraint>) {
-        let headers = if self.rows.is_empty() && !self.headers.is_empty() { vec![self.headers.iter().map(|h| h.to_string().into()).collect::<Vec<Value>>().clone()] } else { vec![] };
+    ) -> (usize, Vec<String>, Vec<Vec<Arc<RwLock<Value>>>>, Vec<Constraint>) {
+        let headers = if self.rows.is_empty() && !self.headers.is_empty() { vec![self.headers.iter().map(|h| Arc::new(RwLock::new(h.to_string().into()))).collect::<Vec<Arc<RwLock<Value>>>>().clone()] } else { vec![] };
         let rows = if self.rows.is_empty() && !self.headers.is_empty() { &headers } else { &self.rows };
         if rows.is_empty() {
              return (0, Vec::new(), Vec::new(), Vec::new());
@@ -387,7 +385,7 @@ impl TableComponent {
         loop {
             let length = rows
                 .iter()
-                .map(|row| { row.get(column_index).map_or(0, |cell| cell.width()) })
+                .map(|row| { row.get(column_index).map_or(0, |cell| cell.read().unwrap().width()) })
                 .collect::<Vec<usize>>()
                 .iter()
                 .max()
@@ -421,7 +419,7 @@ impl TableComponent {
         {
             let length = rows
                 .iter()
-                .map(|row| { row.get(column_index).map_or(0, |cell| cell.width()) })
+                .map(|row| { row.get(column_index).map_or(0, |cell| cell.read().unwrap().width()) })
                 .collect::<Vec<usize>>()
                 .iter()
                 .max()
@@ -493,7 +491,7 @@ impl TableComponent {
         if  let Some(primary_key) = columns.iter().next() {
             if let Some(index) = self.headers.iter().position(|h| h.name == *primary_key) {
                 if let Some(value) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.get(index).map(|s| s.clone()))).flatten().flatten() {
-                    return Ok((primary_key.to_string(), value))
+                    return Ok((primary_key.to_string(), value.read().unwrap().clone()))
                 }
             }
         } else {
@@ -501,7 +499,7 @@ impl TableComponent {
             if self.headers.iter().next().map(|h| h.name.to_lowercase() == "id" || h.name.to_lowercase().ends_with("_id") ).unwrap_or_default() {
                 if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
                     let col = self.headers.iter().next().unwrap();
-                    return Ok((col.name.clone(), id))
+                    return Ok((col.name.clone(), id.read().unwrap().clone()))
                 }
             }
         }
@@ -566,11 +564,12 @@ impl StatefulDrawableComponent for TableComponent {
         let rows = rows.iter().enumerate().map(|(row_index, item)| {
             let height = item
                 .iter()
-                .map(|content| content.data.chars().filter(|c| *c == '\n').count())
+                .map(|content| content.read().unwrap().data.chars().filter(|c| *c == '\n').count())
                 .max()
                 .unwrap_or(0)
                 + 1;
             let cells = item.iter().enumerate().map(|(column_index, c)| {
+                let c = c.read().unwrap();
                 let value = if c.is_null { format!("<{}>", "NULL") } else { c.to_string() };
                 let style = if self.is_selected_cell(row_index, column_index, selected_column_index) {
                     Style::default().bg(self.theme.color)
@@ -779,6 +778,7 @@ impl Component for TableComponent {
 mod test {
     use super::{KeyConfig, ThemeConfig, TableComponent};
     use tui::layout::Constraint;
+    use std::sync::{Arc, RwLock};
 
     #[test]
     fn test_headers() {
@@ -791,8 +791,8 @@ mod test {
     fn test_rows() {
         let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.rows = vec![
-            vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
         assert_eq!(component.rows(1, 2), vec![vec!["1", "b"], vec!["2", "e"]],)
     }
@@ -812,8 +812,8 @@ mod test {
         let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
-            vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
         component.selected_row.select(Some(1));
         component.selected_column = 1;
@@ -837,8 +837,8 @@ mod test {
         let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
-            vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
         component.selected_row.select(Some(1));
         component.selected_column = 1;
@@ -861,8 +861,8 @@ mod test {
 
         let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.rows = vec![
-            vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
         component.selected_row.select(Some(1));
         component.selected_column = 1;
@@ -885,8 +885,8 @@ mod test {
 
         let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.rows = vec![
-            vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
         component.selected_row.select(Some(0));
         component.selected_column = 1;
@@ -900,8 +900,8 @@ mod test {
         let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
-            vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
         component.selected_row.select(Some(0));
         assert!(component.is_number_column(0, 0));
@@ -917,8 +917,8 @@ mod test {
         let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
-            vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
         component.selected_row.select(Some(0));
         assert_eq!(component.selected_cells(), Some("a".to_string()));
@@ -933,8 +933,8 @@ mod test {
         let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
-            vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
         component.selected_row.select(Some(0));
         component.selection_area_corner = Some((1, 1));
@@ -950,8 +950,8 @@ mod test {
         let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
-            vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
         component.selected_row.select(Some(0));
         // a
@@ -971,8 +971,8 @@ mod test {
         let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
-            vec!["a", "b", "c"].iter().map(|h| h.into()).collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
         component.selected_row.select(Some(0));
         component.selection_area_corner = Some((1, 1));
@@ -995,9 +995,9 @@ mod test {
         component.rows = vec![
             vec!["aaaaa", "bbbbb", "ccccc"]
                 .iter()
-                .map(|h| h.into())
+                .map(|h| Arc::new(RwLock::new(h.into())))
                 .collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
         let (selected_column_index, headers, rows, constraints) =
             component.calculate_cell_widths(10);
@@ -1021,9 +1021,9 @@ mod test {
         component.rows = vec![
             vec!["aaaaa", "bbbbb", "ccccc"]
                 .iter()
-                .map(|h| h.into())
+                .map(|h| Arc::new(RwLock::new(h.into())))
                 .collect(),
-            vec!["d", "e", "f"].iter().map(|h| h.into()).collect(),
+            vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
         ];
 
         let (selected_column_index, headers, rows, constraints) =
@@ -1055,11 +1055,11 @@ mod test {
         component.rows = vec![
             vec!["aaaaa", "bbbbb", "ccccc"]
                 .iter()
-                .map(|h| h.into())
+                .map(|h| Arc::new(RwLock::new(h.into())))
                 .collect(),
             vec!["dddddddddd", "e", "f"]
                 .iter()
-                .map(|h| h.into())
+                .map(|h| Arc::new(RwLock::new(h.into())))
                 .collect(),
         ];
 

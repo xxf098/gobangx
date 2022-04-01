@@ -11,6 +11,7 @@ pub use mssql::MssqlPool;
 pub use meta::{ColType, Header, Value, ColumnMeta, ColumnConstraint};
 
 use std::collections::HashMap;
+use std::sync::{Arc, RwLock};
 use async_trait::async_trait;
 use database_tree::{Child, Database, Table};
 use crate::config::DatabaseType;
@@ -250,8 +251,7 @@ impl DatabaseType {
     }
 
     pub fn update_row_by_column(&self, database: &Database, table: &Table, pkey: &str, pval: &str, header: &Header, val: &Value) -> String {
-        // TODO: NULL header type
-        let mut v = if header.is_no_quote() { header.name.clone() } else { format!("'{}'", header.name) };
+        let mut v = if header.is_no_quote() { val.data.clone() } else { format!("'{}'", val.data) };
         if val.is_null { v = "NULL".to_string() };
         match self {
             DatabaseType::MySql => format!("UPDATE `{}`.`{}` SET {} = {} where {} = '{}'", database.name, table.name, header.name, v, pkey, pval),
@@ -263,7 +263,7 @@ impl DatabaseType {
 
 
     // handle null | handle value type
-    pub fn insert_rows(&self, database: &Database, table: &Table, headers: &Vec<Header>, rows: &Vec<Vec<Value>>) -> String {
+    pub fn insert_rows(&self, database: &Database, table: &Table, headers: &Vec<Header>, rows: &Vec<Vec<Arc<RwLock<Value>>>>) -> String {
         let header_str = self.insert_headers(headers);
         match self {
             DatabaseType::Postgres => {
@@ -370,9 +370,10 @@ async fn postgres_table_ddl(table: &Table, columns: Vec<ColumnMeta>, pkey_cols: 
     Ok(ddl.trim_end().to_string())
 }
 
-fn convert_row_str (row: &Vec<Value>, headers: &Vec<Header>) -> String {
+fn convert_row_str (row: &Vec<Arc<RwLock<Value>>>, headers: &Vec<Header>) -> String {
     let mut row_str = String::new();
     for (i, v) in row.iter().enumerate() {
+        let v = v.read().unwrap();
         let s = if v.is_null { "NULL".to_string() } else {
             let mut s = format!("'{}'", v.data);
             if let Some(header) = headers.get(i) {

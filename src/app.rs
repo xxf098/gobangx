@@ -18,6 +18,7 @@ use tui::{
     Frame,
 };
 use tokio::sync::mpsc;
+use std::sync::{Arc, RwLock};
 
 pub enum Focus {
     DabataseList,
@@ -348,6 +349,7 @@ impl<'a> App<'a> {
                                         )
                                         .await?;
                                     if !records.is_empty() {
+                                        let records = records.into_iter().map(|row| row.into_iter().map(|cell| Arc::new(RwLock::new(cell))).collect::<Vec<_>>()).collect::<Vec<_>>();
                                         self.record_table.table.rows.extend(records);
                                     } else {
                                         self.record_table.table.end()
