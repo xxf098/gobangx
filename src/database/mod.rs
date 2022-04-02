@@ -241,23 +241,23 @@ impl DatabaseType {
         Ok(columns)
     }
 
-    // TODO: limit 1
     pub fn delete_row_by_column(&self, database: &Database, table: &Table, col: &str, val: &str) -> String {
         match self {
             DatabaseType::MySql => format!("delete from `{}`.`{}` where {} = '{}' LIMIT 1", database.name, table.name, col, val),
-            DatabaseType::Sqlite => format!("delete from `{table}` where {col} = (select {col} from {table} where {col} = '{val}' LIMIT 1)", table=table.name, col=col, val=val),
-            DatabaseType::Postgres => format!(r#"delete from "{}"."{}"."{}" where {} = '{}'"#, database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, col, val),
+            DatabaseType::Sqlite => format!("delete from `{table}` where {col} = (select {col} from `{table}` where {col} = '{val}' LIMIT 1)", table=table.name, col=col, val=val),
+            DatabaseType::Postgres => format!(r#"delete from "{database}"."{schema}"."{table}" where "{col}" = (select "{col}" from "{database}"."{schema}"."{table}" where "{col}" = '{val}' LIMIT 1)"#, database=database.name, schema=table.pg_schema(), table=table.name, col=col, val=val),
             _ => unimplemented!(),
         }
     }
 
+    // TODO: limit 1
     pub fn update_row_by_column(&self, database: &Database, table: &Table, pkey: &str, pval: &str, header: &Header, val: &Value) -> String {
         let mut v = if header.is_no_quote() { val.data.clone() } else { format!("'{}'", val.data) };
         if val.is_null { v = "NULL".to_string() };
         match self {
             DatabaseType::MySql => format!("UPDATE `{}`.`{}` SET {} = {} where {} = '{}'", database.name, table.name, header.name, v, pkey, pval),
             DatabaseType::Sqlite => format!("UPDATE {} SET `{}` = {} where {} = '{}'", table.name, header.name, v, pkey, pval),
-            DatabaseType::Postgres => format!(r#"UPDATE "{}"."{}"."{}" SET {} = {} where {} = '{}'"#, database.name, table.pg_schema(), table.name, header.name, v, pkey, pval),
+            DatabaseType::Postgres => format!(r#"UPDATE "{}"."{}"."{}" SET "{}" = {} where "{}" = '{}'"#, database.name, table.pg_schema(), table.name, header.name, v, pkey, pval),
             _ => unimplemented!(),
         }
     }
