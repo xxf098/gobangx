@@ -179,9 +179,11 @@ impl Component for CellEditorComponent {
             }
             Key::Delete | Key::Backspace  => {
                 if input_str.width() > 0 && !self.input.is_empty() && self.input_idx > 0 {
-                    self.input.remove(self.input_idx - 1);
                     self.input_idx -= 1;
-                    self.input_cursor_position_x -= 1;
+                    self.input_cursor_position_x = self
+                            .input_cursor_position_x
+                            .saturating_sub(compute_character_width(self.input[self.input_idx]));
+                    self.input.remove(self.input_idx);
                 }
                 return Ok(EventState::Consumed);
             }
