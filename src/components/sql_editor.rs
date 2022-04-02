@@ -1,6 +1,7 @@
 use super::{
     compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
     StatefulDrawableComponent, TableComponent,
+    utils::highlight,
 };
 use crate::components::command::CommandInfo;
 use crate::config::{KeyConfig, ThemeConfig};
@@ -41,6 +42,7 @@ pub struct SqlEditorComponent<'a> {
     query_result: Option<QueryResult>,
     completion: CompletionComponent,
     key_config: &'a KeyConfig,
+    theme: ThemeConfig,
     paragraph_state: ParagraphState,
     focus: Focus,
 }
@@ -52,11 +54,12 @@ impl<'a> SqlEditorComponent<'a> {
             input_idx: 0,
             input_cursor_position_x: 0,
             table: TableComponent::new(key_config.clone(), theme.clone()),
-            completion: CompletionComponent::new(key_config.clone(), theme, "", true),
+            completion: CompletionComponent::new(key_config.clone(), theme.clone(), "", true),
             focus: Focus::Editor,
             paragraph_state: ParagraphState::default(),
             query_result: None,
             key_config,
+            theme,
         }
     }
 
@@ -151,7 +154,8 @@ impl<'a> StatefulDrawableComponent for SqlEditorComponent<'a> {
             })
             .split(area);
 
-        let editor = StatefulParagraph::new(self.input.iter().collect::<String>())
+        let input = self.input.iter().collect::<String>();
+        let editor = StatefulParagraph::new(highlight(&input, &self.theme))
             .wrap(Wrap { trim: true })
             .block(Block::default().borders(Borders::ALL));
 
