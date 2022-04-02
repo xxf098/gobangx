@@ -69,10 +69,10 @@ impl CellEditorComponent {
     }
 
     pub fn update(&mut self, input: String) {
-        self.input_idx = input.len();
         let pos: usize = input.chars().map(|c| compute_character_width(c) as usize).sum();
         self.input_cursor_position_x = pos as u16;
         self.input = input.chars().collect();
+        self.input_idx = self.input.len();
     }
 
     pub fn value(&self) -> String {
