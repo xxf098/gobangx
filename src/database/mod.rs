@@ -244,8 +244,8 @@ impl DatabaseType {
     // TODO: limit 1
     pub fn delete_row_by_column(&self, database: &Database, table: &Table, col: &str, val: &str) -> String {
         match self {
-            DatabaseType::MySql => format!("delete from `{}`.`{}` where {} = '{}'", database.name, table.name, col, val),
-            DatabaseType::Sqlite => format!("delete from `{}` where {} = '{}'", table.name, col, val),
+            DatabaseType::MySql => format!("delete from `{}`.`{}` where {} = '{}' LIMIT 1", database.name, table.name, col, val),
+            DatabaseType::Sqlite => format!("delete from `{table}` where {col} = (select {col} from {table} where {col} = '{val}' LIMIT 1)", table=table.name, col=col, val=val),
             DatabaseType::Postgres => format!(r#"delete from "{}"."{}"."{}" where {} = '{}'"#, database.name, table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, col, val),
             _ => unimplemented!(),
         }
