@@ -241,6 +241,7 @@ impl DatabaseType {
         Ok(columns)
     }
 
+    // TODO: limit 1
     pub fn delete_row_by_column(&self, database: &Database, table: &Table, col: &str, val: &str) -> String {
         match self {
             DatabaseType::MySql => format!("delete from `{}`.`{}` where {} = '{}'", database.name, table.name, col, val),
@@ -256,7 +257,7 @@ impl DatabaseType {
         match self {
             DatabaseType::MySql => format!("UPDATE `{}`.`{}` SET {} = {} where {} = '{}'", database.name, table.name, header.name, v, pkey, pval),
             DatabaseType::Sqlite => format!("UPDATE {} SET `{}` = {} where {} = '{}'", table.name, header.name, v, pkey, pval),
-            DatabaseType::Postgres => format!(r#"UPDATE "{}"."{}"."{}" SET {} = {} where {} = '{}'"#, database.name, table.pg_schema(), header.name, v, table.name, pkey, pval),
+            DatabaseType::Postgres => format!(r#"UPDATE "{}"."{}"."{}" SET {} = {} where {} = '{}'"#, database.name, table.pg_schema(), table.name, header.name, v, pkey, pval),
             _ => unimplemented!(),
         }
     }
