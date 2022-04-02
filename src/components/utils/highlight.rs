@@ -137,13 +137,19 @@ fn is_sep(c: &char) -> bool {
     c.is_ascii_whitespace() || *c == '\0'
 }
 
+fn is_quote(c: &char) -> bool {
+    *c == '\'' || *c == '"' || *c == '`'
+}
+
 // FIXME
+// sql formatter
 pub fn highlight<'a>(input: &str, theme: &'a ThemeConfig) -> Text<'a> {
     let chars = input.chars().collect::<Vec<_>>();
     let mut s = String::new();
     let style_hl = Style::default().fg(theme.color);
     let style_normal = Style::default().fg(Color::White);
     let mut spans = vec![];
+    let mut quote_count = 0;
     for (i, c) in chars.iter().enumerate() {
         s.push(*c);
         if is_sep(c) {
@@ -151,7 +157,10 @@ pub fn highlight<'a>(input: &str, theme: &'a ThemeConfig) -> Text<'a> {
             s = String::new();
             continue
         }
-        if KEYWORDS.iter().find(|k| **k == s.to_uppercase()).is_some() {
+        if is_quote(c) {
+            quote_count += 1;
+        }
+        if KEYWORDS.iter().find(|k| **k == s.to_uppercase()).is_some() && quote_count % 2 == 0 {
             if chars.get(i+1).map(|c| is_sep(c)).unwrap_or(true) {
                 spans.push(Span::styled(s.clone(), style_hl));
                 s = String::new();
