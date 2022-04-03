@@ -104,9 +104,7 @@ jobs:
     - name: Build archive
       shell: bash
       run: |
-        staging="gobang-${{ env.GOBANG_VERSION }}-${{ matrix.target }}"
-        mkdir -p "$staging"/{complete,doc}
-
+        staging="gobangx-${{ env.GOBANG_VERSION }}-${{ matrix.target }}"
         cp {README.md,LICENSE} "$staging/"
 
         if [ "${{ matrix.os }}" = "windows-2019" ]; then
