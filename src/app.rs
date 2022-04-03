@@ -444,7 +444,7 @@ mod test {
     use super::{App, Config, EventState, Key};
     use crate::event::Events;
 
-    #[test]
+    #[test] #[ignore]
     fn test_extend_or_shorten_widget_width() {
         let events = Events::new(250);
         let c = Config::default();

@@ -993,6 +993,7 @@ mod test {
     fn test_calculate_cell_widths_when_sum_of_cell_widths_is_greater_than_table_width() {
         let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
+        component.constraint_adjust= vec![0, 0, 0];
         component.rows = vec![
             vec!["aaaaa", "bbbbb", "ccccc"]
                 .iter()
@@ -1020,6 +1021,7 @@ mod test {
     fn test_calculate_cell_widths_when_sum_of_cell_widths_is_less_than_table_width() {
         let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
+        component.constraint_adjust= vec![0, 0, 0];
         component.rows = vec![
             vec!["aaaaa", "bbbbb", "ccccc"]
                 .iter()
@@ -1055,6 +1057,7 @@ mod test {
     fn test_calculate_cell_widths_when_component_has_multiple_rows() {
         let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
+        component.constraint_adjust= vec![0, 0, 0];
         component.rows = vec![
             vec!["aaaaa", "bbbbb", "ccccc"]
                 .iter()
