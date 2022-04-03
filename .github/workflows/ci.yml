@@ -120,7 +120,7 @@ jobs:
         uses: Swatinem/rust-cache@v1
 
       - name: Build
-        run: ${{ env.CARGO }} build --verbose ${{ env.TARGET_FLAGS }}
+        run: ${{ env.CARGO }} build --verbose
 
       - name: Run tests
-        run: ${{ env.CARGO }} test --verbose --workspace ${{ env.TARGET_FLAGS }}
+        run: ${{ env.CARGO }} test --verbose --workspace
