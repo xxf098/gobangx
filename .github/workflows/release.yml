@@ -127,17 +127,17 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  cargo-publish:
-    name: Cargo publish
-    runs-on: ubuntu-latest
-    needs: release
-    steps:
-      - uses: actions/checkout@v1
+  # cargo-publish:
+  #   name: Cargo publish
+  #   runs-on: ubuntu-latest
+  #   needs: release
+  #   steps:
+  #     - uses: actions/checkout@v1
 
-      - name: Install cargo-workspaces
-        uses: actions-rs/install@v0.1
-        with:
-          crate: cargo-workspaces
+  #     - name: Install cargo-workspaces
+  #       uses: actions-rs/install@v0.1
+  #       with:
+  #         crate: cargo-workspaces
 
       # - name: Cargo publish
       #   run: |
