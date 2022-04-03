@@ -4,8 +4,8 @@ version = "0.1.0-alpha.5"
 authors = ["Takayuki Maeda <takoyaki0316@gmail.com>"]
 edition = "2018"
 license = "MIT"
-homepage = "https://github.com/TaKO8Ki/gobang"
-repository = "https://github.com/TaKO8Ki/gobang"
+homepage = "https://github.com/xxf098/gobangx"
+repository = "https://github.com/xxf098/gobangx"
 readme = "README.md"
 description = "Database tree structure"
 

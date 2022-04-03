@@ -4,7 +4,7 @@ gobangx is based on [gobang](https://github.com/TaKO8Ki/gobang)
 
 A cross-platform TUI database management tool written in Rust with more useful features
 
-[![github workflow status](https://img.shields.io/github/workflow/status/xxf098/gobang/CI/main)](https://github.com/xxf098/gobangx/actions)
+[![github workflow status](https://img.shields.io/github/workflow/status/xxf098/gobangx/CI/main)](https://github.com/xxf098/gobangx/actions)
 
 
 </div>
@@ -23,7 +23,7 @@ gobang means a Japanese game played on goban, a go board. The appearance of goba
 
 ### From binaries (Linux, macOS, Windows)
 
-- Download the [latest release binary](https://github.com/xxf098/gobang/releases) for your system
+- Download the [latest release binary](https://github.com/xxf098/gobangx/releases) for your system
 - Set the `PATH` environment variable
 
 ## Usage
