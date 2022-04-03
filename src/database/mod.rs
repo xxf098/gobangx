@@ -255,8 +255,8 @@ impl DatabaseType {
         let mut v = if header.is_no_quote() { val.data.clone() } else { format!("'{}'", val.data) };
         if val.is_null { v = "NULL".to_string() };
         match self {
-            DatabaseType::MySql => format!("UPDATE `{}`.`{}` SET {} = {} where {} = '{}'", database.name, table.name, header.name, v, pkey, pval),
-            DatabaseType::Sqlite => format!("UPDATE {} SET `{}` = {} where {} = '{}'", table.name, header.name, v, pkey, pval),
+            DatabaseType::MySql => format!("UPDATE `{database}`.`{table}` SET {col} = {val} where {pkey} = '{pval}'", database=database.name, table=table.name, col=header.name, val=v, pkey=pkey, pval=pval),
+            DatabaseType::Sqlite => format!("UPDATE {table} SET `{col}` = {val} where {pkey} = '{pval}'", table=table.name, col=header.name, val=v, pkey=pkey, pval=pval),
             DatabaseType::Postgres => format!(r#"UPDATE "{}"."{}"."{}" SET "{}" = {} where "{}" = '{}'"#, database.name, table.pg_schema(), table.name, header.name, v, pkey, pval),
             _ => unimplemented!(),
         }
