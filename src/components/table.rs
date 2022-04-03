@@ -485,6 +485,7 @@ impl TableComponent {
         )
     }
 
+    // primary_key,id,first column
     async fn primary_key_value(&self, pool: &Box<dyn Pool>, database: &Database, table: &DTable) -> anyhow::Result<(String, Value)> {
         let database_type = pool.database_type();
         let columns = database_type.primary_key_columns(pool, &database, &table).await?;
@@ -495,10 +496,9 @@ impl TableComponent {
                 }
             }
         } else {
-            // TODO: limit 1, primary_key not found, delete by id
-            if self.headers.iter().next().map(|h| h.name.to_lowercase() == "id" || h.name.to_lowercase().ends_with("_id") ).unwrap_or_default() {
-                if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.iter().next().map(|s| s.clone()))).flatten().flatten() {
-                    let col = self.headers.iter().next().unwrap();
+            if let Some((i, col)) = self.headers.iter().enumerate().find(|(_, h)| h.name.to_lowercase() == "id" ).or(self.headers.iter().enumerate().next()) {
+                if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.get(i).map(|s| s.clone()))).flatten().flatten() {
+                    // let col = self.headers.iter().next().unwrap();
                     return Ok((col.name.clone(), id.read().unwrap().clone()))
                 }
             }
