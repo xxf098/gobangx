@@ -9,10 +9,11 @@ pub fn sort_by_length_desc(strs: &mut Vec<&str>) {
     });
 } 
 
-pub fn create_operator_regex(mut operators: Vec<&str>) -> Regex {
+pub fn create_operator_regex(mut operators: Vec<&str>) -> anyhow::Result<Regex> {
     sort_by_length_desc(&mut operators);
     let s = format!(r"^({}|.)", operators.join("|"));
-    Regex::new(&s).unwrap()
+    let reg = Regex::new(&s)?;
+    Ok(reg)
 }
 
 #[cfg(test)]
@@ -29,7 +30,7 @@ mod tests {
     #[test]
     fn test_create_operator_regex() {
         let operators = vec!["<>", "<=", ">="];
-        let reg = create_operator_regex(operators);
+        let reg = create_operator_regex(operators).unwrap();
         assert_eq!(reg.as_str(), "^(<=|<>|>=|.)");
     }
     

@@ -26,10 +26,12 @@ pub struct Token {
     value: String,
 }
 
+// https://regex101.com/
 pub struct Tokenizer {
     whitespace_regex: Regex,
     number_regex: Regex,
     operator_regex: Regex,
+    block_comment_regex: Regex,
 }
 
 impl Tokenizer {
@@ -37,7 +39,8 @@ impl Tokenizer {
         let t = Self {
             whitespace_regex: Regex::new(r"^(\s+)")?, 
             number_regex: Regex::new(r"^((-\s*)?[0-9]+(\.[0-9]+)?([eE]-?[0-9]+(\.[0-9]+)?)?|0x[0-9a-fA-F]+|0b[01]+)\b")?,
-            operator_regex: create_operator_regex(vec!["<>", "<=", ">="])
+            operator_regex: create_operator_regex(vec!["<>", "<=", ">="])?,
+            block_comment_regex: Regex::new(r"^(/\*[^]*?(?:\*/|$))")?,
         };
         Ok(t)
     }
