@@ -372,6 +372,8 @@ impl Tokenize for Standard {
             indexed_placeholder_types: vec!["?"],
             named_placeholder_types: vec![],
             line_comment_types: vec!["--"],
+            special_word_chars: vec![],
+            operator: vec![],
         };
         Tokenizer::new(cfg)
     }

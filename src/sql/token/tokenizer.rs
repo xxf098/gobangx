@@ -1,5 +1,6 @@
 use regex::Regex;
 use super::token_type::TokenType;
+use super::regex_factory::create_operator_regex;
 
 pub struct TokenizerConfig<'a> {
     pub reserved_words: Vec<&'a str>,
@@ -12,6 +13,8 @@ pub struct TokenizerConfig<'a> {
     pub indexed_placeholder_types: Vec<&'a str>,
     pub named_placeholder_types: Vec<&'a str>,
     pub line_comment_types: Vec<&'a str>,
+    pub special_word_chars: Vec<&'a str>,
+    pub operator: Vec<&'a str>,
 }
 
 pub trait Tokenize {
@@ -26,6 +29,7 @@ pub struct Token {
 pub struct Tokenizer {
     whitespace_regex: Regex,
     number_regex: Regex,
+    operator_regex: Regex,
 }
 
 impl Tokenizer {
@@ -33,7 +37,7 @@ impl Tokenizer {
         let t = Self {
             whitespace_regex: Regex::new(r"^(\s+)")?, 
             number_regex: Regex::new(r"^((-\s*)?[0-9]+(\.[0-9]+)?([eE]-?[0-9]+(\.[0-9]+)?)?|0x[0-9a-fA-F]+|0b[01]+)\b")?,
-
+            operator_regex: create_operator_regex(vec!["<>", "<=", ">="])
         };
         Ok(t)
     }
