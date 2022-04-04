@@ -7,6 +7,7 @@ mod database;
 mod event;
 mod ui;
 mod version;
+mod sql;
 
 #[macro_use]
 mod log;
@@ -21,7 +22,7 @@ use crossterm::{
 use std::io;
 use tui::{backend::CrosstermBackend, Terminal};
 
-// TODO: SQL meta, edit cell
+// TODO: SQL meta, foreign table
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let value = crate::cli::parse();
