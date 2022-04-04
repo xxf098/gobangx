@@ -9,8 +9,10 @@ pub fn sort_by_length_desc(strs: &mut Vec<&str>) {
     });
 } 
 
-pub fn create_operator_regex(operators: Vec<&str>) -> Regex {
-    Regex::new(r"").unwrap()
+pub fn create_operator_regex(mut operators: Vec<&str>) -> Regex {
+    sort_by_length_desc(&mut operators);
+    let s = format!(r"^({}|.)", operators.join("|"));
+    Regex::new(&s).unwrap()
 }
 
 #[cfg(test)]
@@ -22,6 +24,13 @@ mod tests {
         let mut strs = vec!["aaa", "bb", "ccccc", "ddd", "eeeeeeee", "ff", "h", "g"];
         sort_by_length_desc(&mut strs);
         assert_eq!(strs, vec!["eeeeeeee", "ccccc", "aaa", "ddd", "bb", "ff", "g", "h"])
+    }
+
+    #[test]
+    fn test_create_operator_regex() {
+        let operators = vec!["<>", "<=", ">="];
+        let reg = create_operator_regex(operators);
+        assert_eq!(reg.as_str(), "^(<=|<>|>=|.)");
     }
     
 }
