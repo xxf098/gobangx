@@ -97,6 +97,10 @@ impl Tokenizer {
         get_token_on_first_match(input, &self.block_comment_regex, TokenType::BlockComment)
     }
 
+    fn get_string_token(&self, input: &str) -> Option<Token> {
+        get_token_on_first_match(input, &self.string_regex, TokenType::String)
+    }
+
 }
 
 fn get_token_on_first_match(input: &str, reg: &Regex, typ: TokenType) -> Option<Token> {
@@ -129,5 +133,15 @@ mod tests {
         let token = t.get_block_comment_token(input).unwrap();
         assert_eq!(token.typ, TokenType::BlockComment);
         assert_eq!(token.value, input);
+    }
+
+    #[test]
+    fn test_get_string_token() {
+        let standard = Standard{};
+        let t = standard.tokenizer().unwrap();
+        let input = r"'value' ";
+        let token = t.get_string_token(input).unwrap();
+        assert_eq!(token.typ, TokenType::String);
+        assert_eq!(token.value, r#"'value'"#)
     }
 }
