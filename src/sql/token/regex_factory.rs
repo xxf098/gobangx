@@ -1,6 +1,6 @@
 use std::cmp::Ordering;
+use std::collections::HashMap;
 use regex::{Regex};
-
 
 pub fn sort_by_length_desc(strs: &mut Vec<&str>) {
     strs.sort_by(|a, b| {
@@ -47,6 +47,30 @@ pub fn create_word_regex(special_chars: Vec<&str>) -> anyhow::Result<Regex> {
     Ok(reg)
 }
 
+pub fn create_string_regex(string_types: Vec<&str>) -> anyhow::Result<Regex> {
+    let s = format!(r"^({})", create_string_pattern(string_types));
+    let reg = Regex::new(&s)?;
+    Ok(reg)
+}
+
+pub fn create_string_pattern(string_types: Vec<&str>) -> String {
+    let s = string_types.iter().map(|t| {
+        match *t {
+            "``" => r"((`[^`]*($|`))+)",
+            "{}" => r"((\{[^\}]*($|\}))+)",
+            "[]" => r"((\[[^\]]*($|\]))(\][^\]]*($|\]))*)",
+            r#""""# => r#"(("[^"\\]*(?:\\.[^"\\]*)*("|$))+)"#,
+            "''" => r"(('[^'\\]*(?:\\.[^'\\]*)*('|$))+)",
+            "N''" => r"((N'[^'\\]*(?:\\.[^'\\]*)*('|$))+)",
+            "U&''" => r"((U&'[^'\\]*(?:\\.[^'\\]*)*('|$))+)",
+            r#"U&"""# => r#"((U&"[^"\\]*(?:\\.[^"\\]*)*("|$))+)"#,
+            "$$" => r"(\$\w*\$)[\s\S]*?(\$\w*\$))",  // no backreference
+            _ => unreachable!(),
+        }
+    }).collect::<Vec<_>>();
+    s.join("|")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -87,6 +111,13 @@ mod tests {
     fn test_create_word_regex() {
         let reg = create_word_regex(vec![]).unwrap();
         assert_eq!(reg.as_str(), r"^([\w]+)")
+    }
+
+    #[test]
+    fn test_create_string_regex() {
+        let string_types = vec![r#""""#, "''"];
+        let reg = create_string_regex(string_types).unwrap();
+        assert_eq!(reg.as_str(), r#"^((("[^"\\]*(?:\\.[^"\\]*)*("|$))+)|(('[^'\\]*(?:\\.[^'\\]*)*('|$))+))"#)
     }
 
     #[test]

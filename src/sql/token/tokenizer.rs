@@ -38,6 +38,7 @@ pub struct Tokenizer {
     reserved_newline_regex: Regex,
     reserved_plain_regex: Regex,
     word_regex: Regex,
+    string_regex: Regex,
 }
 
 impl Tokenizer {
@@ -53,6 +54,7 @@ impl Tokenizer {
             reserved_newline_regex: regex_factory::create_reserved_word_regex(cfg.reserved_newline_words)?,
             reserved_plain_regex: regex_factory::create_reserved_word_regex(cfg.reserved_words)?,
             word_regex: regex_factory::create_word_regex(cfg.special_word_chars)?,
+            string_regex: regex_factory::create_string_regex(cfg.string_types)?,
         };
         Ok(t)
     }
