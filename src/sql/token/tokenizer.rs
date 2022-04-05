@@ -1,6 +1,6 @@
 use regex::Regex;
 use super::token_type::TokenType;
-use super::regex_factory::{create_operator_regex, create_line_comment_regex, create_reserved_word_regex};
+use super::regex_factory;
 
 pub struct TokenizerConfig<'a> {
     pub reserved_words: Vec<&'a str>,
@@ -37,6 +37,7 @@ pub struct Tokenizer {
     reserved_top_level_no_indent_regex: Regex,
     reserved_newline_regex: Regex,
     reserved_plain_regex: Regex,
+    word_regex: Regex,
 }
 
 impl Tokenizer {
@@ -44,13 +45,14 @@ impl Tokenizer {
         let t = Self {
             whitespace_regex: Regex::new(r"^(\s+)")?, 
             number_regex: Regex::new(r"^((-\s*)?[0-9]+(\.[0-9]+)?([eE]-?[0-9]+(\.[0-9]+)?)?|0x[0-9a-fA-F]+|0b[01]+)\b")?,
-            operator_regex: create_operator_regex(vec!["<>", "<=", ">="])?,
+            operator_regex: regex_factory::create_operator_regex(vec!["<>", "<=", ">="])?,
             block_comment_regex: Regex::new(r"^(/\*[\S\s]*?(?:\*/|$))")?,
-            line_comment_regex: create_line_comment_regex(cfg.line_comment_types)?,
-            reserved_top_level_regex: create_reserved_word_regex(cfg.reserved_top_level_words)?,
-            reserved_top_level_no_indent_regex: create_reserved_word_regex(cfg.reserved_top_level_words_no_indent)?,
-            reserved_newline_regex: create_reserved_word_regex(cfg.reserved_newline_words)?,
-            reserved_plain_regex: create_reserved_word_regex(cfg.reserved_words)?,
+            line_comment_regex: regex_factory::create_line_comment_regex(cfg.line_comment_types)?,
+            reserved_top_level_regex: regex_factory::create_reserved_word_regex(cfg.reserved_top_level_words)?,
+            reserved_top_level_no_indent_regex: regex_factory::create_reserved_word_regex(cfg.reserved_top_level_words_no_indent)?,
+            reserved_newline_regex: regex_factory::create_reserved_word_regex(cfg.reserved_newline_words)?,
+            reserved_plain_regex: regex_factory::create_reserved_word_regex(cfg.reserved_words)?,
+            word_regex: regex_factory::create_word_regex(cfg.special_word_chars)?,
         };
         Ok(t)
     }

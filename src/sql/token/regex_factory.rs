@@ -28,7 +28,7 @@ pub fn create_line_comment_regex(line_comment_types: Vec<&str>) -> anyhow::Resul
     Ok(reg)
 }
 
-pub fn create_reserved_word_regex(mut reserved_words: Vec<&str>) -> anyhow::Result<Regex>  {
+pub fn create_reserved_word_regex(mut reserved_words: Vec<&str>) -> anyhow::Result<Regex> {
     let reg = if reserved_words.len() < 1 {
         Regex::new(r"^\b$")?
     } else {
@@ -38,7 +38,13 @@ pub fn create_reserved_word_regex(mut reserved_words: Vec<&str>) -> anyhow::Resu
         Regex::new(&s)?
     };
     Ok(reg)
+}
 
+pub fn create_word_regex(special_chars: Vec<&str>) -> anyhow::Result<Regex> {
+    let s = special_chars.join("");
+    let s = format!(r"^([\w{}]+)", s);
+    let reg = Regex::new(&s)?;
+    Ok(reg)
 }
 
 #[cfg(test)]
@@ -75,6 +81,12 @@ mod tests {
         ];
         let reg = create_reserved_word_regex(reserved_words).unwrap();
         assert_eq!(reg.as_str(), r"^(?i:FETCH\s+ABSOLUTE|FETCH\s+RELATIVE|ALTER\s+COLUMN|ALTER\s+TABLE|DELETE\s+FROM|FETCH\s+FIRST|FETCH\s+PRIOR|INSERT\s+INTO|FETCH\s+LAST|FETCH\s+NEXT|SET\s+SCHEMA|GROUP\s+BY|ORDER\s+BY|HAVING|SELECT|UPDATE|VALUES|LIMIT|WHERE|CASE|FROM|ADD|END|SET)\b")
+    }
+
+    #[test]
+    fn test_create_word_regex() {
+        let reg = create_word_regex(vec![]).unwrap();
+        assert_eq!(reg.as_str(), r"^([\w]+)")
     }
 
     #[test]
