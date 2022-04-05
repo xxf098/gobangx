@@ -71,6 +71,21 @@ pub fn create_string_pattern(string_types: Vec<&str>) -> String {
     s.join("|")
 }
 
+pub fn create_paren_regex(parens: Vec<&str>) -> anyhow::Result<Regex> {
+    let p = parens.iter().map(|p| escape_paren(p)).collect::<Vec<_>>().join("|");
+    let s = format!("^({})", p);
+    let reg = Regex::new(&s)?;
+    Ok(reg)
+}
+
+fn escape_paren(paren: &str) -> String {
+    if paren.len() == 1 {
+        escape_reg_exp(paren)
+    } else {
+        format!(r"\b{}\b", paren)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -118,6 +133,16 @@ mod tests {
         let string_types = vec![r#""""#, "''"];
         let reg = create_string_regex(string_types).unwrap();
         assert_eq!(reg.as_str(), r#"^((("[^"\\]*(?:\\.[^"\\]*)*("|$))+)|(('[^'\\]*(?:\\.[^'\\]*)*('|$))+))"#)
+    }
+
+    #[test]
+    fn test_create_paren_regex() {
+        let parens = vec!["(", "CASE"];
+        let reg = create_paren_regex(parens).unwrap();
+        assert_eq!(reg.as_str(), r"^(\(|\bCASE\b)");
+        let parens = vec![")", "END"];
+        let reg = create_paren_regex(parens).unwrap();
+        assert_eq!(reg.as_str(), r"^(\)|\bEND\b)");
     }
 
     #[test]
