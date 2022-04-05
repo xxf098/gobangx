@@ -1,5 +1,4 @@
 use std::cmp::Ordering;
-use std::collections::HashMap;
 use regex::{Regex};
 
 pub fn sort_by_length_desc(strs: &mut Vec<&str>) {
@@ -86,6 +85,16 @@ fn escape_paren(paren: &str) -> String {
     }
 }
 
+pub fn create_placeholder_regex(types: Vec<&str>, pattern: &str) -> anyhow::Result<Regex> {
+    if types.len() < 1 {
+        anyhow::bail!("no placeholder")
+    }
+    let types_regex = types.iter().map(|t| escape_reg_exp(t)).collect::<Vec<_>>().join("|"); 
+    let s = format!("^((?:{})(?:{}))", types_regex, pattern);
+    let reg = Regex::new(&s)?;
+    Ok(reg)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -143,6 +152,15 @@ mod tests {
         let parens = vec![")", "END"];
         let reg = create_paren_regex(parens).unwrap();
         assert_eq!(reg.as_str(), r"^(\)|\bEND\b)");
+    }
+
+    #[test]
+    fn test_create_placeholder_regex() {
+        let reg = create_placeholder_regex(vec!["?"], "[0-9]*").unwrap();
+        assert_eq!(reg.as_str(), r"^((?:\?)(?:[0-9]*))");
+        let reg = create_placeholder_regex(vec![], "[0-9]*").ok();
+        assert!(reg.is_none());
+
     }
 
     #[test]
