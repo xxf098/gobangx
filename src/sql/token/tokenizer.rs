@@ -101,6 +101,10 @@ impl Tokenizer {
         get_token_on_first_match(input, &self.string_regex, TokenType::String)
     }
 
+    fn get_open_paren_token(&self, input: &str) -> Option<Token> {
+        get_token_on_first_match(input, &self.open_paren_regex, TokenType::OpenParen)
+    }
+
 }
 
 fn get_token_on_first_match(input: &str, reg: &Regex, typ: TokenType) -> Option<Token> {
@@ -143,5 +147,15 @@ mod tests {
         let token = t.get_string_token(input).unwrap();
         assert_eq!(token.typ, TokenType::String);
         assert_eq!(token.value, r#"'value'"#)
+    }
+
+    #[test]
+    fn test_get_open_paren_token() {
+        let standard = Standard{};
+        let t = standard.tokenizer().unwrap();
+        let input = r"(abc) ";
+        let token = t.get_open_paren_token(input).unwrap();
+        assert_eq!(token.typ, TokenType::OpenParen);
+        assert_eq!(token.value, r"(")
     }
 }
