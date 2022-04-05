@@ -34,6 +34,7 @@ pub struct Tokenizer {
     block_comment_regex: Regex,
     line_comment_regex: Regex,
     reserved_top_level_regex: Regex,
+    reserved_top_level_no_indent_regex: Regex,
 }
 
 impl Tokenizer {
@@ -45,6 +46,7 @@ impl Tokenizer {
             block_comment_regex: Regex::new(r"^(/\*[\S\s]*?(?:\*/|$))")?,
             line_comment_regex: create_line_comment_regex(cfg.line_comment_types)?,
             reserved_top_level_regex: create_reserved_word_regex(cfg.reserved_top_level_words)?,
+            reserved_top_level_no_indent_regex: create_reserved_word_regex(cfg.reserved_top_level_words_no_indent)?,
         };
         Ok(t)
     }
