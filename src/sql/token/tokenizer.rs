@@ -36,6 +36,7 @@ pub struct Tokenizer {
     reserved_top_level_regex: Regex,
     reserved_top_level_no_indent_regex: Regex,
     reserved_newline_regex: Regex,
+    reserved_plain_regex: Regex,
 }
 
 impl Tokenizer {
@@ -49,6 +50,7 @@ impl Tokenizer {
             reserved_top_level_regex: create_reserved_word_regex(cfg.reserved_top_level_words)?,
             reserved_top_level_no_indent_regex: create_reserved_word_regex(cfg.reserved_top_level_words_no_indent)?,
             reserved_newline_regex: create_reserved_word_regex(cfg.reserved_newline_words)?,
+            reserved_plain_regex: create_reserved_word_regex(cfg.reserved_words)?,
         };
         Ok(t)
     }
