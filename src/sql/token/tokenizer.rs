@@ -1,6 +1,6 @@
 use regex::Regex;
 use super::token_type::TokenType;
-use super::regex_factory::{create_operator_regex, create_line_comment_regex};
+use super::regex_factory::{create_operator_regex, create_line_comment_regex, create_reserved_word_regex};
 
 pub struct TokenizerConfig<'a> {
     pub reserved_words: Vec<&'a str>,
@@ -33,6 +33,7 @@ pub struct Tokenizer {
     operator_regex: Regex,
     block_comment_regex: Regex,
     line_comment_regex: Regex,
+    reserved_top_level_regex: Regex,
 }
 
 impl Tokenizer {
@@ -43,6 +44,7 @@ impl Tokenizer {
             operator_regex: create_operator_regex(vec!["<>", "<=", ">="])?,
             block_comment_regex: Regex::new(r"^(/\*[\S\s]*?(?:\*/|$))")?,
             line_comment_regex: create_line_comment_regex(cfg.line_comment_types)?,
+            reserved_top_level_regex: create_reserved_word_regex(cfg.reserved_top_level_words)?,
         };
         Ok(t)
     }
