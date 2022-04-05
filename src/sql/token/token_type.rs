@@ -1,4 +1,5 @@
 
+#[derive(PartialEq, Debug)]
 pub enum TokenType {
     Word,
     String,

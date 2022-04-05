@@ -17,13 +17,15 @@ pub struct TokenizerConfig<'a> {
     pub operator: Vec<&'a str>,
 }
 
+
+
 pub trait Tokenize {
     fn tokenizer(&self) -> anyhow::Result<Tokenizer>;
 }
 
 pub struct Token {
-    typ: TokenType,
-    value: String,
+    pub typ: TokenType,
+    pub value: String,
 }
 
 // https://regex101.com/
@@ -95,4 +97,21 @@ impl Tokenizer {
 
 fn get_token_on_first_match(input: &str, reg: &Regex, typ: TokenType) -> Option<Token> {
     reg.find(input).map(|m| Token{ typ, value: m.as_str().to_string() })
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::sql::lang::standard::Standard;
+
+    #[test]
+    fn test_get_line_comment_token() {
+        let standard = Standard{};
+        let t = standard.tokenizer().unwrap();
+        let input = "-- select * from users;";
+        let token = t.get_line_comment_token(input).unwrap();
+        assert_eq!(token.typ, TokenType::LineComment);
+        assert_eq!(token.value, input);
+    }
 }
