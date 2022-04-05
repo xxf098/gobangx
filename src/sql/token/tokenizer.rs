@@ -69,7 +69,30 @@ impl Tokenizer {
         Ok(t)
     }
 
-    pub fn tokenize(&self) -> Vec<Token> {
-        vec![]
+    pub fn tokenize(&self, input: &str) -> Vec<Token> {
+        let mut tokens = vec![];
+        let mut index = 0;
+        let input_len = input.len();
+        while index < input_len {
+            let whitespace_before = self.get_whitespace_count(input);
+            index += whitespace_before;
+            if index < input_len {
+
+            }
+        }
+        tokens
     }
+
+    fn get_whitespace_count(&self, input: &str) -> usize {
+        self.whitespace_regex.find(input).map(|s| s.as_str().len()).unwrap_or(0)
+    }
+
+    fn get_line_comment_token(&self, input: &str) -> Option<Token> {
+        get_token_on_first_match(input, &self.line_comment_regex, TokenType::LineComment)
+    }
+
+}
+
+fn get_token_on_first_match(input: &str, reg: &Regex, typ: TokenType) -> Option<Token> {
+    reg.find(input).map(|m| Token{ typ, value: m.as_str().to_string() })
 }

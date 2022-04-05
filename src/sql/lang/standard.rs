@@ -388,6 +388,7 @@ mod tests {
     fn test_standard() {
         let s = Standard{};
         let t = s.tokenizer().unwrap();
-        t.tokenize();
+        let sql = "select * from users limit 10;";
+        t.tokenize(sql);
     }
 }
