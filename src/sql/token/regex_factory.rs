@@ -7,7 +7,12 @@ pub fn sort_by_length_desc(strs: &mut Vec<&str>) {
         let o = b.len().cmp(&a.len());
         if o == Ordering::Equal { a.cmp(b) } else { o }
     });
-} 
+}
+
+#[inline]
+pub fn escape_reg_exp<'t>(text: &'t str) -> String {
+    regex::escape(text)
+}
 
 pub fn create_operator_regex(mut operators: Vec<&str>) -> anyhow::Result<Regex> {
     sort_by_length_desc(&mut operators);
@@ -25,6 +30,12 @@ mod tests {
         let mut strs = vec!["aaa", "bb", "ccccc", "ddd", "eeeeeeee", "ff", "h", "g"];
         sort_by_length_desc(&mut strs);
         assert_eq!(strs, vec!["eeeeeeee", "ccccc", "aaa", "ddd", "bb", "ff", "g", "h"])
+    }
+
+    #[test]
+    fn test_escape_reg_exp() {
+        let s = escape_reg_exp("?");
+        assert_eq!(s, r"\?");
     }
 
     #[test]
