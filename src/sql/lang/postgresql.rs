@@ -512,7 +512,8 @@ impl Tokenize for PostgreSQL {
             reserved_top_level_words: RESERVED_TOP_LEVEL_WORDS.to_vec(),
             reserved_newline_words: RESERVED_NEW_LINE_WORDS.to_vec(),
             reserved_top_level_words_no_indent: RESERVED_TOP_LEVEL_WORDS_NO_INDENT.to_vec(),
-            string_types: vec![r#""""#, "''", r"U&''", r#"U&"""#, "$$"],
+            // string_types: vec![r#""""#, "''", r"U&''", r#"U&"""#, "$$"], // FIXME
+            string_types: vec![r#""""#, "''", r"U&''", r#"U&"""#,],
             open_parens: vec!["(", "CASE"],
             close_parens: vec![")", "END"],
             indexed_placeholder_types: vec!["$"],
@@ -539,5 +540,22 @@ impl Tokenize for PostgreSQL {
             ],
         };
         Tokenizer::new(cfg)
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_postgre_sql() {
+        let s = PostgreSQL{};
+        let t = s.tokenizer().unwrap();
+        let sql = "select * from users limit 10;";
+        let tokens = t.tokenize(sql);
+        for token in tokens {
+            println!("{:?}", token);
+        }
     }
 }
