@@ -1,5 +1,5 @@
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum TokenType {
     Word,
     String,
@@ -14,4 +14,5 @@ pub enum TokenType {
     BlockComment,
     Number,
     Placeholder,
+    WhiteSpace
 }

@@ -389,6 +389,9 @@ mod tests {
         let s = Standard{};
         let t = s.tokenizer().unwrap();
         let sql = "select * from users limit 10;";
-        t.tokenize(sql);
+        let tokens = t.tokenize(sql);
+        for token in tokens {
+            println!("{:?}", token);
+        }
     }
 }

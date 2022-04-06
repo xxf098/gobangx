@@ -32,10 +32,22 @@ pub trait Tokenize {
     fn tokenizer(&self) -> anyhow::Result<Tokenizer>;
 }
 
+#[derive(Clone, Debug)]
 pub struct Token {
     pub typ: TokenType,
     pub key: String,
     pub value: String,
+}
+
+impl Token {
+
+    pub fn white(n: usize) -> Token {
+        Self {
+            typ: TokenType::WhiteSpace,
+            key: "".to_string(),
+            value: " ".repeat(n)
+        }
+    }
 }
 
 // https://regex101.com/
@@ -83,13 +95,21 @@ impl Tokenizer {
 
     pub fn tokenize(&self, input: &str) -> Vec<Token> {
         let mut tokens = vec![];
+        let mut token: Option<Token> = None;
         let mut index = 0;
         let input_len = input.len();
         while index < input_len {
             let whitespace_before = self.get_whitespace_count(input);
+            if whitespace_before > 0 {
+                tokens.push(Token::white(whitespace_before));
+            }
             index += whitespace_before;
             if index < input_len {
-
+                token = self.get_next_token(&input[index..], token);
+                if let Some(t) = token.as_ref() {
+                    index += t.value.len();
+                    tokens.push(t.clone())
+                }
             }
         }
         tokens
@@ -99,7 +119,7 @@ impl Tokenizer {
         self.whitespace_regex.find(input).map(|s| s.as_str().len()).unwrap_or(0)
     }
 
-    fn get_next_token(&self, input: &str, previous_token: &Option<Token>) -> Option<Token> {
+    fn get_next_token(&self, input: &str, previous_token: Option<Token>) -> Option<Token> {
         check_some!(self.get_comment_token(input));
         check_some!(self.get_string_token(input));
         check_some!(self.get_open_paren_token(input));
@@ -153,7 +173,7 @@ impl Tokenizer {
         get_token_on_first_match(input, &self.operator_regex, TokenType::Operator)
     }
 
-    fn get_reserved_word_token(&self, input: &str, previous_token: &Option<Token>) -> Option<Token> {
+    fn get_reserved_word_token(&self, input: &str, previous_token: Option<Token>) -> Option<Token> {
         if let Some(prev) = previous_token {
             if prev.value == "." {  return None }
         };
