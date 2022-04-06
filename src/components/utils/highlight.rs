@@ -1,8 +1,8 @@
+use std::convert::TryFrom;
 use tui::text::{Text, Spans, Span};
 use tui::style::{Color, Style};
-use crate::config::{ThemeConfig};
-use crate::sql::lang::Standard;
-use crate::sql::token::{tokenizer::Tokenize, token_type::TokenType };
+use crate::config::{ThemeConfig, DatabaseType};
+use crate::sql::token::{tokenizer::Tokenizer, token_type::TokenType };
 
 
 // fn is_sep(c: &char) -> bool {
@@ -44,12 +44,11 @@ use crate::sql::token::{tokenizer::Tokenize, token_type::TokenType };
 // }
 
 // TODO: sql formatter
-pub fn highlight_sql<'a>(input: &'a str, theme: &'a ThemeConfig) -> Text<'a> {
+pub fn highlight_sql<'a>(input: &'a str, theme: &'a ThemeConfig, database_type: &DatabaseType) -> Text<'a> {
     let style_hl = Style::default().fg(theme.color);
     let style_normal = Style::default().fg(Color::White);
     let mut spans = vec![];
-    let s = Standard{};
-    let t = s.tokenizer();
+    let t = Tokenizer::try_from(database_type.clone());
     if t.is_err() {
         spans.push(Span::styled(input, style_normal));
         return Text::from(Spans::from(spans));
@@ -65,3 +64,4 @@ pub fn highlight_sql<'a>(input: &'a str, theme: &'a ThemeConfig) -> Text<'a> {
     };
     Text::from(Spans::from(spans))
 }
+

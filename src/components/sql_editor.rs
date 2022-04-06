@@ -4,7 +4,7 @@ use super::{
     utils::highlight_sql,
 };
 use crate::components::command::CommandInfo;
-use crate::config::{KeyConfig, ThemeConfig};
+use crate::config::{KeyConfig, ThemeConfig, DatabaseType};
 use crate::database::{ExecuteResult, Pool};
 use crate::event::{Key, Store};
 use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
@@ -45,10 +45,11 @@ pub struct SqlEditorComponent<'a> {
     theme: ThemeConfig,
     paragraph_state: ParagraphState,
     focus: Focus,
+    database_type: DatabaseType,
 }
 
 impl<'a> SqlEditorComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, theme: ThemeConfig) -> Self {
+    pub fn new(key_config: &'a KeyConfig, theme: ThemeConfig, database_type: DatabaseType) -> Self {
         Self {
             input: Vec::new(),
             input_idx: 0,
@@ -60,7 +61,12 @@ impl<'a> SqlEditorComponent<'a> {
             query_result: None,
             key_config,
             theme,
+            database_type,
         }
+    }
+
+    pub fn set_database_type(&mut self, database_type: DatabaseType) {
+        self.database_type = database_type;
     }
 
     fn update_completion(&mut self) {
@@ -155,7 +161,7 @@ impl<'a> StatefulDrawableComponent for SqlEditorComponent<'a> {
             .split(area);
 
         let input = self.input.iter().collect::<String>();
-        let editor = StatefulParagraph::new(highlight_sql(input.trim(), &self.theme))
+        let editor = StatefulParagraph::new(highlight_sql(input.trim(), &self.theme, &self.database_type))
             .wrap(Wrap { trim: true })
             .block(Block::default().borders(Borders::ALL));
 

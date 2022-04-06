@@ -4,6 +4,7 @@ use crate::components::{
 };
 use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, MssqlPool, RECORDS_LIMIT_PER_PAGE};
 use crate::event::{Key, Event, Store};
+use crate::config::DatabaseType;
 use crate::{
     components::tab::Tab,
     components::{
@@ -49,7 +50,7 @@ impl<'a> App<'a> {
             connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.theme),
             record_table: RecordTableComponent::new(config.key_config.clone(), config.theme.clone()),
             properties: PropertiesComponent::new(&config.key_config, &config.theme),
-            sql_editor: SqlEditorComponent::new(&config.key_config, config.theme.clone()),
+            sql_editor: SqlEditorComponent::new(&config.key_config, config.theme.clone(), DatabaseType::Sqlite),
             tab: TabComponent::new(&config.key_config),
             help: HelpComponent::new(&config.key_config),
             databases: DatabasesComponent::new(&config.key_config, &config.theme),
@@ -175,18 +176,22 @@ impl<'a> App<'a> {
                 pool.close().await;
             }
             self.pool = if conn.is_mysql() {
+                self.sql_editor.set_database_type(DatabaseType::MySql);
                 Some(Box::new(
                     MySqlPool::new(conn.database_url()?.as_str()).await?,
                 ))
             } else if conn.is_postgres() {
+                self.sql_editor.set_database_type(DatabaseType::Postgres);
                 Some(Box::new(
                     PostgresPool::new(conn.database_url()?.as_str()).await?,
                 ))
             } else if conn.is_mssql() {
+                self.sql_editor.set_database_type(DatabaseType::Mssql);
                 Some(Box::new(
                     MssqlPool::new(conn.database_url()?.as_str()).await?,
                 ))
             } else {
+                self.sql_editor.set_database_type(DatabaseType::Sqlite);
                 Some(Box::new(
                     SqlitePool::new(conn.database_url()?.as_str()).await?,
                 ))
