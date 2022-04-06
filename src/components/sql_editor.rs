@@ -155,7 +155,7 @@ impl<'a> StatefulDrawableComponent for SqlEditorComponent<'a> {
             .split(area);
 
         let input = self.input.iter().collect::<String>();
-        let editor = StatefulParagraph::new(highlight_sql(&input, &self.theme))
+        let editor = StatefulParagraph::new(highlight_sql(input.trim(), &self.theme))
             .wrap(Wrap { trim: true })
             .block(Block::default().borders(Borders::ALL));
 

@@ -1,6 +1,6 @@
 use crate::sql::token::tokenizer::{TokenizerConfig, Tokenize, Tokenizer};
 
-const RESERVED_WORDS: [&str; 296] = [
+const RESERVED_WORDS: [&str; 299] = [
   "ABS",
   "ALL",
   "ALLOCATE",
@@ -108,6 +108,7 @@ const RESERVED_WORDS: [&str; 296] = [
   "FLOOR",
   "FOR",
   "FOREIGN",
+  "FOREIGN KEY",
   "FREE",
   "FROM",
   "FULL",
@@ -197,6 +198,7 @@ const RESERVED_WORDS: [&str; 296] = [
   "PRECISION",
   "PREPARE",
   "PRIMARY",
+  "PRIMARY KEY",
   "PROCEDURE",
   "RANGE",
   "RANK",
@@ -258,6 +260,7 @@ const RESERVED_WORDS: [&str; 296] = [
   "SYSTEM_USER",
   "TABLE",
   "TABLESAMPLE",
+  "TEXT",
   "THEN",
   "TIME",
   "TIMESTAMP",
