@@ -123,6 +123,10 @@ impl Tokenizer {
         get_token_on_first_match(input, &self.word_regex, TokenType::Word)
     }
 
+    fn get_operator_token(&self, input: &str) -> Option<Token> {
+        get_token_on_first_match(input, &self.operator_regex, TokenType::Operator)
+    }
+
 }
 
 fn get_token_on_first_match(input: &str, reg: &Regex, typ: TokenType) -> Option<Token> {
@@ -204,6 +208,16 @@ mod tests {
         let input = r"word";
         let token = t.get_word_token(input).unwrap();
         assert_eq!(token.typ, TokenType::Word);
+        assert_eq!(token.value, input)
+    }
+
+    #[test]
+    fn test_get_operator_token() {
+        let standard = Standard{};
+        let t = standard.tokenizer().unwrap();
+        let input = r">=";
+        let token = t.get_operator_token(input).unwrap();
+        assert_eq!(token.typ, TokenType::Operator);
         assert_eq!(token.value, input)
     }
 }
