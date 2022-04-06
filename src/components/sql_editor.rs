@@ -50,12 +50,13 @@ pub struct SqlEditorComponent<'a> {
 
 impl<'a> SqlEditorComponent<'a> {
     pub fn new(key_config: &'a KeyConfig, theme: ThemeConfig, database_type: DatabaseType) -> Self {
+        let db_type = database_type.clone();
         Self {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position_x: 0,
             table: TableComponent::new(key_config.clone(), theme.clone()),
-            completion: CompletionComponent::new(key_config.clone(), theme.clone(), "", true),
+            completion: CompletionComponent::new_with_candidates(key_config.clone(), theme.clone(), db_type.into()),
             focus: Focus::Editor,
             paragraph_state: ParagraphState::default(),
             query_result: None,

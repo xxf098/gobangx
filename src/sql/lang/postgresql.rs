@@ -1,4 +1,5 @@
 use crate::sql::token::tokenizer::{TokenizerConfig, Tokenize, Tokenizer};
+use super::Completion;
 
 const RESERVED_WORDS: [&str; 450] = [
   "ABORT",
@@ -543,6 +544,16 @@ impl Tokenize for PostgreSQL {
     }
 }
 
+
+impl Completion for PostgreSQL {
+    fn complete() -> Vec<&'static str> {
+        RESERVED_WORDS.to_vec().into_iter()
+        .chain(RESERVED_TOP_LEVEL_WORDS.to_vec().into_iter())
+        .chain(RESERVED_NEW_LINE_WORDS.to_vec().into_iter())
+        .chain(RESERVED_TOP_LEVEL_WORDS_NO_INDENT.to_vec().into_iter())
+        .collect()
+    }
+}
 
 #[cfg(test)]
 mod tests {

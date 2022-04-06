@@ -42,6 +42,19 @@ impl CompletionComponent {
         }
     }
 
+    pub fn new_with_candidates(key_config: KeyConfig, theme: ThemeConfig, candidates: Vec<&str>) -> Self {
+        let mut candidates: Vec<_> = candidates.iter().map(|w| w.to_string()).collect();
+        candidates.sort();
+        candidates.dedup();
+        Self {
+            key_config,
+            theme,
+            state: ListState::default(),
+            word: "".to_string(),
+            candidates,
+        }
+    }
+
     pub fn update(&mut self, word: impl Into<String>) {
         self.word = word.into();
         self.state.select(None);
