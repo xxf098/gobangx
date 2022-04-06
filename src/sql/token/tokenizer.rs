@@ -2,6 +2,15 @@ use regex::Regex;
 use super::token_type::TokenType;
 use super::regex_factory;
 
+macro_rules! check_some {
+    ($opt: expr) => {
+        if let Some(v) = $opt {
+            return Some(v)
+        } 
+    };
+}
+
+
 pub struct TokenizerConfig<'a> {
     pub reserved_words: Vec<&'a str>,
     pub reserved_top_level_words: Vec<&'a str>,
@@ -90,6 +99,10 @@ impl Tokenizer {
         self.whitespace_regex.find(input).map(|s| s.as_str().len()).unwrap_or(0)
     }
 
+    fn getNextToken(&self, input: &str, previous_token: Option<Token>) -> Option<Token> {
+        None
+    }
+
     fn get_line_comment_token(&self, input: &str) -> Option<Token> {
         get_token_on_first_match(input, &self.line_comment_regex, TokenType::LineComment)
     }
@@ -127,11 +140,38 @@ impl Tokenizer {
         get_token_on_first_match(input, &self.operator_regex, TokenType::Operator)
     }
 
+    fn get_reserved_word_token(&self, input: &str, previous_token: Option<Token>) -> Option<Token> {
+        if let Some(prev) = previous_token {
+            if prev.value == "." {  return None }
+        };
+        check_some!(self.get_top_level_reserved_token(input));
+        check_some!(self.get_newline_reserved_token(input));
+        check_some!(self.get_top_level_reserved_token_no_indent(input));
+        self.get_plain_reserved_token(input)
+    }
+
+    fn get_top_level_reserved_token(&self, input: &str) -> Option<Token> {
+        get_token_on_first_match(input, &self.reserved_top_level_regex, TokenType::ReservedTopLevel)
+    }
+
+    fn get_newline_reserved_token(&self, input: &str) -> Option<Token> {
+        get_token_on_first_match(input, &self.reserved_newline_regex, TokenType::ReservedNewline)
+    }
+
+    fn get_top_level_reserved_token_no_indent(&self, input: &str) -> Option<Token> {
+        get_token_on_first_match(input, &self.reserved_top_level_no_indent_regex, TokenType::ReservedTopLevelNoIndent)
+    }
+
+    fn get_plain_reserved_token(&self, input: &str) -> Option<Token> {
+        get_token_on_first_match(input, &self.reserved_plain_regex, TokenType::Reserved)
+    }
+
 }
 
 fn get_token_on_first_match(input: &str, reg: &Regex, typ: TokenType) -> Option<Token> {
     reg.find(input).map(|m| Token{ typ, value: m.as_str().to_string(), key: "".to_string() })
 }
+
 
 
 #[cfg(test)]
