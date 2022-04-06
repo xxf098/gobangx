@@ -99,8 +99,21 @@ impl Tokenizer {
         self.whitespace_regex.find(input).map(|s| s.as_str().len()).unwrap_or(0)
     }
 
-    fn getNextToken(&self, input: &str, previous_token: Option<Token>) -> Option<Token> {
-        None
+    fn get_next_token(&self, input: &str, previous_token: &Option<Token>) -> Option<Token> {
+        check_some!(self.get_comment_token(input));
+        check_some!(self.get_string_token(input));
+        check_some!(self.get_open_paren_token(input));
+        check_some!(self.get_close_paren_token(input));
+        check_some!(self.get_placeholder_token(input));
+        check_some!(self.get_number_token(input));
+        check_some!(self.get_reserved_word_token(input, previous_token));
+        check_some!(self.get_word_token(input));
+        self.get_operator_token(input)
+    }
+
+    fn get_comment_token(&self, input: &str) -> Option<Token> {
+        check_some!(self.get_line_comment_token(input));
+        self.get_block_comment_token(input)
     }
 
     fn get_line_comment_token(&self, input: &str) -> Option<Token> {
@@ -140,7 +153,7 @@ impl Tokenizer {
         get_token_on_first_match(input, &self.operator_regex, TokenType::Operator)
     }
 
-    fn get_reserved_word_token(&self, input: &str, previous_token: Option<Token>) -> Option<Token> {
+    fn get_reserved_word_token(&self, input: &str, previous_token: &Option<Token>) -> Option<Token> {
         if let Some(prev) = previous_token {
             if prev.value == "." {  return None }
         };
