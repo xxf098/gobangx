@@ -14,5 +14,4 @@ pub enum TokenType {
     BlockComment,
     Number,
     Placeholder,
-    WhiteSpace
 }

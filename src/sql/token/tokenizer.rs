@@ -37,15 +37,23 @@ pub struct Token {
     pub typ: TokenType,
     pub key: String,
     pub value: String,
+    pub whitespace_before: String,
 }
 
 impl Token {
 
-    pub fn white(n: usize) -> Token {
-        Self {
-            typ: TokenType::WhiteSpace,
+    pub fn new(typ: TokenType, value: &str) -> Self {
+        Self { 
+            typ,
+            value: value.to_string(),
             key: "".to_string(),
-            value: " ".repeat(n)
+            whitespace_before: "".to_string(),
+         }
+    }
+
+    pub fn set_whitespace(&mut self, n: usize) {
+        if n > 0 {
+            self.whitespace_before = " ".repeat(n)
         }
     }
 }
@@ -99,16 +107,14 @@ impl Tokenizer {
         let mut index = 0;
         let input_len = input.len();
         while index < input_len {
-            let whitespace_before = self.get_whitespace_count(input);
-            if whitespace_before > 0 {
-                tokens.push(Token::white(whitespace_before));
-            }
+            let whitespace_before = self.get_whitespace_count(&input[index..]);
             index += whitespace_before;
             if index < input_len {
                 token = self.get_next_token(&input[index..], token);
-                if let Some(t) = token.as_ref() {
+                if let Some(t) = token.as_mut() {
                     index += t.value.len();
-                    tokens.push(t.clone())
+                    t.set_whitespace(whitespace_before);
+                    tokens.push(t.clone());
                 }
             }
         }
@@ -202,7 +208,7 @@ impl Tokenizer {
 }
 
 fn get_token_on_first_match(input: &str, reg: &Regex, typ: TokenType) -> Option<Token> {
-    reg.find(input).map(|m| Token{ typ, value: m.as_str().to_string(), key: "".to_string() })
+    reg.find(input).map(|m| Token::new(typ, m.as_str()))
 }
 
 
