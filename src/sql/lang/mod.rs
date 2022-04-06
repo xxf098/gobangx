@@ -1,2 +1,4 @@
-pub mod standard;
+mod standard;
+
+pub use standard::Standard;
 

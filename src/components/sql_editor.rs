@@ -1,7 +1,7 @@
 use super::{
     compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
     StatefulDrawableComponent, TableComponent,
-    utils::highlight,
+    utils::highlight_sql,
 };
 use crate::components::command::CommandInfo;
 use crate::config::{KeyConfig, ThemeConfig};
@@ -155,7 +155,7 @@ impl<'a> StatefulDrawableComponent for SqlEditorComponent<'a> {
             .split(area);
 
         let input = self.input.iter().collect::<String>();
-        let editor = StatefulParagraph::new(highlight(&input, &self.theme))
+        let editor = StatefulParagraph::new(highlight_sql(&input, &self.theme))
             .wrap(Wrap { trim: true })
             .block(Block::default().borders(Borders::ALL));
 

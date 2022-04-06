@@ -1,3 +1,4 @@
+use std::string::ToString;
 use regex::Regex;
 use super::token_type::TokenType;
 use super::regex_factory;
@@ -35,7 +36,7 @@ pub trait Tokenize {
 #[derive(Clone, Debug)]
 pub struct Token {
     pub typ: TokenType,
-    pub key: String,
+    pub key: Option<String>,
     pub value: String,
     pub whitespace_before: String,
 }
@@ -46,7 +47,7 @@ impl Token {
         Self { 
             typ,
             value: value.to_string(),
-            key: "".to_string(),
+            key: None,
             whitespace_before: "".to_string(),
          }
     }
@@ -58,7 +59,13 @@ impl Token {
     }
 }
 
-// https://regex101.com/
+impl ToString for Token {
+
+    fn to_string(&self) -> String {
+        format!("{}{}", self.whitespace_before, self.value)
+    }
+}
+
 pub struct Tokenizer {
     whitespace_regex: Regex,
     number_regex: Regex,
@@ -216,7 +223,7 @@ fn get_token_on_first_match(input: &str, reg: &Regex, typ: TokenType) -> Option<
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sql::lang::standard::Standard;
+    use crate::sql::lang::Standard;
 
     #[test]
     fn test_get_line_comment_token() {
