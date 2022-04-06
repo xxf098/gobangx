@@ -25,6 +25,7 @@ pub trait Tokenize {
 
 pub struct Token {
     pub typ: TokenType,
+    pub key: String,
     pub value: String,
 }
 
@@ -109,10 +110,19 @@ impl Tokenizer {
         get_token_on_first_match(input, &self.close_paren_regex, TokenType::CloseParen)
     }
 
+    // TODO:
+    fn get_placeholder_token(&self, _input: &str) -> Option<Token> {
+        None
+    }
+
+    fn get_number_token(&self, input: &str) -> Option<Token> {
+        get_token_on_first_match(input, &self.number_regex, TokenType::Number)
+    }
+
 }
 
 fn get_token_on_first_match(input: &str, reg: &Regex, typ: TokenType) -> Option<Token> {
-    reg.find(input).map(|m| Token{ typ, value: m.as_str().to_string() })
+    reg.find(input).map(|m| Token{ typ, value: m.as_str().to_string(), key: "".to_string() })
 }
 
 
@@ -171,5 +181,15 @@ mod tests {
         let token = t.get_close_paren_token(input).unwrap();
         assert_eq!(token.typ, TokenType::CloseParen);
         assert_eq!(token.value, r")")
+    }
+
+    #[test]
+    fn test_get_number_token() {
+        let standard = Standard{};
+        let t = standard.tokenizer().unwrap();
+        let input = r"987654";
+        let token = t.get_number_token(input).unwrap();
+        assert_eq!(token.typ, TokenType::Number);
+        assert_eq!(token.value, input)
     }
 }
