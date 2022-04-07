@@ -178,6 +178,18 @@ impl TableComponent {
         self.selected_column += 1;
     }
 
+    // jump to last column 
+    fn last_column(&mut self) {
+        if self.rows.is_empty() {
+            return;
+        }
+        self.reset_selection();
+        if self.selected_column >= self.headers.len().saturating_sub(1) {
+            return;
+        }
+        self.selected_column = self.headers.len().saturating_sub(1);
+    }
+
     fn previous_column(&mut self) {
         if self.rows.is_empty() {
             return;
@@ -187,6 +199,18 @@ impl TableComponent {
             return;
         }
         self.selected_column -= 1;
+    }
+
+    // jump to first column
+    fn first_column(&mut self) {
+        if self.rows.is_empty() {
+            return;
+        }
+        self.reset_selection();
+        if self.selected_column == 0 {
+            return;
+        }
+        self.selected_column = 0;
     }
 
     fn expand_column(&mut self) {
@@ -706,6 +730,12 @@ impl Component for TableComponent {
         // } else if key == self.key_config.reset_column_width {
         //     self.reset_column();
         //     return Ok(EventState::Consumed);
+        } else if key == self.key_config.jump_to_start {
+            self.first_column();
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.jump_to_end {
+            self.last_column();
+            return Ok(EventState::Consumed);
         } else if key == self.key_config.edit_cell {
             self.focus = Focus::Editor;
             self.cell_editor.update(self.selected_cell().unwrap_or("".to_string()));

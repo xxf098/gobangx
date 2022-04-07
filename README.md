@@ -53,6 +53,7 @@ If you want to add connections, you need to edit your config file. For more info
 | ---- | ---- |
 | <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd>, <kbd>l</kbd> | Scroll left/down/up/right |
 | <kbd>Ctrl</kbd> + <kbd>u</kbd>, <kbd>Ctrl</kbd> + <kbd>d</kbd> | Scroll up/down multiple lines |
+| <kbd>0</kbd>, <kbd>$</kbd> | Scroll to start/end |
 | <kbd>g</kbd> , <kbd>G</kbd> | Scroll to top/bottom |
 | <kbd>H</kbd>, <kbd>J</kbd>, <kbd>K</kbd>, <kbd>L</kbd> | Extend selection by one cell left/down/up/right |
 | <kbd>y</kbd> | Yank a cell value |
