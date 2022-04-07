@@ -73,14 +73,13 @@ impl<'a> Component for TabComponent<'a> {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
-        let key = key[0];
-        if key == self.key_config.tab_records {
+        if key == [self.key_config.tab_records] {
             self.selected_tab = Tab::Records;
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.tab_sql_editor {
+        } else if key == [self.key_config.tab_sql_editor] {
             self.selected_tab = Tab::Sql;
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.tab_properties {
+        } else if key == [self.key_config.tab_properties] {
             self.selected_tab = Tab::Properties;
             return Ok(EventState::Consumed);
         }

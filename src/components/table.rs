@@ -656,6 +656,9 @@ impl Component for TableComponent {
             let header = &self.headers[self.selected_column];
             copy_to_clipboard(&header.name)?;
             return Ok(EventState::Consumed);
+        } else if key == self.key_config.reset_column_width {
+            self.reset_column();
+            return Ok(EventState::Consumed);
         }
         let key = key[0];
         if key == self.key_config.scroll_left {
@@ -700,9 +703,9 @@ impl Component for TableComponent {
         } else if key == self.key_config.shorten_column_width {
             self.shorten_column();
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.reset_column_width {
-            self.reset_column();
-            return Ok(EventState::Consumed);
+        // } else if key == self.key_config.reset_column_width {
+        //     self.reset_column();
+        //     return Ok(EventState::Consumed);
         } else if key == self.key_config.edit_cell {
             self.focus = Focus::Editor;
             self.cell_editor.update(self.selected_cell().unwrap_or("".to_string()));

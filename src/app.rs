@@ -427,9 +427,7 @@ impl<'a> App<'a> {
             self.focus = Focus::ConnectionList;
             return Ok(EventState::Consumed);
         }
-        if self.tab.event(key)?.is_consumed() {
-            return Ok(EventState::Consumed);
-        }
+
         match self.focus {
             Focus::ConnectionList => {
                 if key[0] == self.config.key_config.enter {
@@ -444,6 +442,9 @@ impl<'a> App<'a> {
                 }
             }
             Focus::Table => {
+                if self.tab.event(key)?.is_consumed() {
+                    return Ok(EventState::Consumed);
+                }
                 if key[0] == self.config.key_config.focus_left {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
