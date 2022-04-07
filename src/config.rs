@@ -20,7 +20,7 @@ pub struct Config {
     #[serde(default)]
     pub log_level: LogLevel,
     #[serde(default)]
-    pub theme: ThemeConfig,
+    pub params: Params,
 }
 
 // TODO: Oracle, SQL Server
@@ -64,7 +64,7 @@ impl Default for Config {
             }],
             key_config: KeyConfig::default(),
             log_level: LogLevel::default(),
-            theme: ThemeConfig::default(),
+            params: Params::default(),
         }
     }
 }
@@ -134,7 +134,7 @@ pub struct KeyConfig {
 }
 
 #[derive(Debug, Deserialize, Clone)]
-pub struct ThemeConfig {
+pub struct Params {
     #[serde(deserialize_with = "deserialize_color", default="default_color")]
     pub color: Color,
     #[serde(deserialize_with = "deserialize_page_size", default="default_page_size")]
@@ -163,8 +163,8 @@ fn default_color() -> Color {
 
 fn deserialize_page_size<'de, D>(deserializer: D) -> Result<u16, D::Error> where D: Deserializer<'de> {
     let mut page_size = u16::deserialize(deserializer)?;
-    page_size = page_size.max(50);
-    page_size = page_size.min(1000);
+    page_size = page_size.max(20);
+    page_size = page_size.min(2000);
     Ok(page_size)
 }
 
@@ -172,7 +172,7 @@ fn default_page_size() -> u16 {
     200
 }
 
-impl Default for ThemeConfig {
+impl Default for Params {
 
     fn default() -> Self {
         Self { color: Color::Blue, page_size: 200 }

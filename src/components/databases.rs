@@ -3,7 +3,7 @@ use super::{
     EventState,
 };
 use crate::components::command::{self, CommandInfo};
-use crate::config::{Connection, KeyConfig, ThemeConfig};
+use crate::config::{Connection, KeyConfig, Params};
 use crate::database::{Pool};
 use crate::event::{Key, Store};
 use crate::clipboard::copy_to_clipboard;
@@ -42,7 +42,7 @@ pub struct DatabasesComponent<'a> {
     scroll: VerticalScroll,
     focus: Focus,
     key_config: &'a KeyConfig,
-    theme: &'a ThemeConfig,
+    theme: &'a Params,
 }
 
 // impl Default for DatabasesComponent {
@@ -52,7 +52,7 @@ pub struct DatabasesComponent<'a> {
 // }
 
 impl<'a> DatabasesComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, theme: &'a ThemeConfig) -> Self {
+    pub fn new(key_config: &'a KeyConfig, theme: &'a Params) -> Self {
         Self {
             tree: DatabaseTree::default(),
             filter: DatabaseFilterComponent::new(),
@@ -318,14 +318,14 @@ fn tree_nav(tree: &mut DatabaseTree, key: Key, key_config: &KeyConfig) -> bool {
 
 #[cfg(test)]
 mod test {
-    use super::{Color, Database, DatabaseTreeItem, DatabasesComponent, Span, Spans, Style, KeyConfig, ThemeConfig};
+    use super::{Color, Database, DatabaseTreeItem, DatabasesComponent, Span, Spans, Style, KeyConfig, Params};
     use database_tree::Table;
 
     #[test]
     fn test_tree_database_tree_item_to_span() {
         const WIDTH: u16 = 10;
         let key = KeyConfig::default(); 
-        let theme = ThemeConfig::default();
+        let theme = Params::default();
         let dc = DatabasesComponent::new(&key, &theme);
         assert_eq!(
             dc.tree_item_to_span(
@@ -371,7 +371,7 @@ mod test {
     fn test_tree_table_tree_item_to_span() {
         const WIDTH: u16 = 10;
         let key = KeyConfig::default(); 
-        let theme = ThemeConfig::default();
+        let theme = Params::default();
         let dc = DatabasesComponent::new(&key, &theme);
         assert_eq!(
             dc.tree_item_to_span(
@@ -429,7 +429,7 @@ mod test {
     fn test_filterd_tree_item_to_span() {
         const WIDTH: u16 = 10;
         let key = KeyConfig::default(); 
-        let theme = ThemeConfig::default();
+        let theme = Params::default();
         let dc = DatabasesComponent::new(&key, &theme);
         assert_eq!(
             dc.tree_item_to_span(

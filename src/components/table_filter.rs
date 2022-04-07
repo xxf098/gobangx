@@ -3,7 +3,7 @@ use super::{
     StatefulDrawableComponent,
 };
 use crate::components::command::CommandInfo;
-use crate::config::{KeyConfig, ThemeConfig};
+use crate::config::{KeyConfig, Params};
 use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
@@ -19,7 +19,7 @@ use unicode_width::UnicodeWidthStr;
 
 pub struct TableFilterComponent {
     key_config: KeyConfig,
-    theme: ThemeConfig,
+    theme: Params,
     pub table: Option<Table>,
     input: Vec<char>,
     input_idx: usize,
@@ -28,7 +28,7 @@ pub struct TableFilterComponent {
 }
 
 impl TableFilterComponent {
-    pub fn new(key_config: KeyConfig, theme: ThemeConfig) -> Self {
+    pub fn new(key_config: KeyConfig, theme: Params) -> Self {
         Self {
             key_config: key_config.clone(),
             table: None,
@@ -267,11 +267,11 @@ impl Component for TableFilterComponent {
 
 #[cfg(test)]
 mod test {
-    use super::{KeyConfig, TableFilterComponent, ThemeConfig};
+    use super::{KeyConfig, TableFilterComponent, Params};
 
     #[test]
     fn test_complete() {
-        let mut filter = TableFilterComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut filter = TableFilterComponent::new(KeyConfig::default(), Params::default());
         filter.input_idx = 2;
         filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
         filter.completion.update("an");
@@ -284,7 +284,7 @@ mod test {
 
     #[test]
     fn test_complete_end() {
-        let mut filter = TableFilterComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut filter = TableFilterComponent::new(KeyConfig::default(), Params::default());
         filter.input_idx = 9;
         filter.input = vec!['a', 'b', ' ', 'c', 'd', 'e', 'f', ' ', 'i'];
         filter.completion.update('i');
@@ -297,7 +297,7 @@ mod test {
 
     #[test]
     fn test_complete_no_candidates() {
-        let mut filter = TableFilterComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut filter = TableFilterComponent::new(KeyConfig::default(), Params::default());
         filter.input_idx = 2;
         filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
         filter.completion.update("foo");

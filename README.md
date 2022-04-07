@@ -105,9 +105,11 @@ database = "bar"
 type = "sqlite"
 path = "/path/to/baz.db"
 
-[theme]
+[params]
 # support: red,green,yellow,blue,magenta,cyan or color code 
 color = "red"
+# page size limit, page_size >= 20 && page_size <= 2000
+page_size = 100
 ```
 
 ## Contribution

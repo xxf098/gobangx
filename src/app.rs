@@ -48,13 +48,13 @@ impl<'a> App<'a> {
         let store = Store::new(sender);
         Self {
             config: config.clone(),
-            connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.theme),
-            record_table: RecordTableComponent::new(config.key_config.clone(), config.theme.clone()),
-            properties: PropertiesComponent::new(&config.key_config, &config.theme),
-            sql_editor: SqlEditorComponent::new(&config.key_config, config.theme.clone(), DatabaseType::Sqlite),
+            connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.params),
+            record_table: RecordTableComponent::new(config.key_config.clone(), config.params.clone()),
+            properties: PropertiesComponent::new(&config.key_config, &config.params),
+            sql_editor: SqlEditorComponent::new(&config.key_config, config.params.clone(), DatabaseType::Sqlite),
             tab: TabComponent::new(&config.key_config),
             help: HelpComponent::new(&config.key_config),
-            databases: DatabasesComponent::new(&config.key_config, &config.theme),
+            databases: DatabasesComponent::new(&config.key_config, &config.params),
             error: ErrorComponent::new(&config.key_config),
             focus: Focus::ConnectionList,
             pool: None,
@@ -150,7 +150,7 @@ impl<'a> App<'a> {
         if let Some(pool) = self.pool.as_ref() {
             pool.close().await;
         }
-        let page_size = self.config.theme.page_size;
+        let page_size = self.config.params.page_size;
         self.pool = if conn.is_mysql() {
             Some(Box::new(
                 MySqlPool::new(conn.database_url()?.as_str(), page_size).await?,
@@ -178,7 +178,7 @@ impl<'a> App<'a> {
             if let Some(pool) = self.pool.as_ref() {
                 pool.close().await;
             }
-            let page_size = self.config.theme.page_size;
+            let page_size = self.config.params.page_size;
             self.pool = if conn.is_mysql() {
                 self.sql_editor.set_database_type(DatabaseType::MySql);
                 Some(Box::new(
@@ -344,7 +344,7 @@ impl<'a> App<'a> {
                         }
 
                         if let Some(index) = self.record_table.table.selected_row.selected() {
-                            if index.saturating_add(1) % self.config.theme.page_size as usize == 0 {
+                            if index.saturating_add(1) % self.config.params.page_size as usize == 0 {
                                 if let Some((database, table, _)) =
                                     self.databases.tree().selected_table()
                                 {

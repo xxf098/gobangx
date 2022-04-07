@@ -3,7 +3,7 @@ use super::{
     StatefulDrawableComponent, TableStatusComponent, CellEditorComponent,
 };
 use crate::components::command::{self, CommandInfo};
-use crate::config::{KeyConfig, ThemeConfig};
+use crate::config::{KeyConfig, Params};
 use crate::event::{Key, Store, Event};
 use crate::database::{Pool, Header, Value};
 use crate::clipboard::copy_to_clipboard;
@@ -42,14 +42,14 @@ pub struct TableComponent {
     column_page_start: AtomicUsize,
     scroll: VerticalScroll,
     key_config: KeyConfig,
-    theme: ThemeConfig,
+    theme: Params,
     area_width: u16,
     cell_editor: CellEditorComponent,
     orderby_status: Option<String>
 }
 
 impl TableComponent {
-    pub fn new(key_config: KeyConfig, theme: ThemeConfig) -> Self {
+    pub fn new(key_config: KeyConfig, theme: Params) -> Self {
         Self {
             selected_row: TableState::default(),
             cell_editor: CellEditorComponent::new("".to_string()),
@@ -815,20 +815,20 @@ impl Component for TableComponent {
 
 #[cfg(test)]
 mod test {
-    use super::{KeyConfig, ThemeConfig, TableComponent};
+    use super::{KeyConfig, Params, TableComponent};
     use tui::layout::Constraint;
     use std::sync::{Arc, RwLock};
 
     #[test]
     fn test_headers() {
-        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), Params::default());
         component.headers = vec!["a", "b", "c"].into_iter().map(|h| h.into()).collect();
         assert_eq!(component.headers(1, 2), vec!["", "b"])
     }
 
     #[test]
     fn test_rows() {
-        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), Params::default());
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
             vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
@@ -849,7 +849,7 @@ mod test {
         // 1  a  b  c
         // 2 |d  e| f
 
-        let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component =  TableComponent::new(KeyConfig::default(), Params::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
@@ -874,7 +874,7 @@ mod test {
         // 1  a  b  c
         // 2  d |e  f|
 
-        let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component =  TableComponent::new(KeyConfig::default(), Params::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
@@ -899,7 +899,7 @@ mod test {
         // 1  a |b| c
         // 2  d |e| f
 
-        let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component =  TableComponent::new(KeyConfig::default(), Params::default());
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
             vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
@@ -923,7 +923,7 @@ mod test {
         // 1  a |b| c
         // 2  d |e| f
 
-        let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component =  TableComponent::new(KeyConfig::default(), Params::default());
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
             vec!["d", "e", "f"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
@@ -937,7 +937,7 @@ mod test {
 
     #[test]
     fn test_is_number_column() {
-        let mut component =  TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component =  TableComponent::new(KeyConfig::default(), Params::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
@@ -954,7 +954,7 @@ mod test {
         // 1 |a| b c
         // 2  d  e f
 
-        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), Params::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
@@ -970,7 +970,7 @@ mod test {
         // 1 |a  b| c
         // 2 |d  e| f
 
-        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), Params::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
@@ -987,7 +987,7 @@ mod test {
         // 1 |a| b c
         // 2  d  e f
 
-        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), Params::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
@@ -1008,7 +1008,7 @@ mod test {
         // 1 |a  b| c
         // 2 |d  e| f
 
-        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), Params::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.rows = vec![
             vec!["a", "b", "c"].iter().map(|h| Arc::new(RwLock::new(h.into()))).collect(),
@@ -1030,7 +1030,7 @@ mod test {
 
     #[test]
     fn test_calculate_cell_widths_when_sum_of_cell_widths_is_greater_than_table_width() {
-        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), Params::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.constraint_adjust= vec![0, 0, 0];
         component.rows = vec![
@@ -1058,7 +1058,7 @@ mod test {
 
     #[test]
     fn test_calculate_cell_widths_when_sum_of_cell_widths_is_less_than_table_width() {
-        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), Params::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.constraint_adjust= vec![0, 0, 0];
         component.rows = vec![
@@ -1094,7 +1094,7 @@ mod test {
 
     #[test]
     fn test_calculate_cell_widths_when_component_has_multiple_rows() {
-        let mut component = TableComponent::new(KeyConfig::default(), ThemeConfig::default());
+        let mut component = TableComponent::new(KeyConfig::default(), Params::default());
         component.headers = vec!["1", "2", "3"].into_iter().map(|h| h.into()).collect();
         component.constraint_adjust= vec![0, 0, 0];
         component.rows = vec![
