@@ -220,9 +220,20 @@ impl<'a> Component for SqlEditorComponent<'a> {
 
         if key == self.key_config.focus_above && matches!(self.focus, Focus::Table) {
             self.focus = Focus::Editor
-        } else if key == self.key_config.enter {
-            return self.complete();
+        } else {
+            if matches!(self.focus, Focus::Editor) {
+                if key == self.key_config.enter {
+                    return self.complete();
+                }
+                if key == self.key_config.move_up && self.completion.is_show() {
+                    return self.completion.event(key);
+                }
+                if key == self.key_config.move_down && self.completion.is_show() {
+                    return self.completion.event(key);
+                }
+            }
         }
+       
 
         match key {
             Key::Char(c) if matches!(self.focus, Focus::Editor) => {

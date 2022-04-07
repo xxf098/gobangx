@@ -22,6 +22,7 @@ pub struct CompletionComponent {
     state: ListState,
     word: String,
     candidates: Vec<String>,
+    is_show: bool,
 }
 
 impl CompletionComponent {
@@ -39,6 +40,7 @@ impl CompletionComponent {
                     .map(|w| w.to_string())
                     .collect()
             },
+            is_show: false, 
         }
     }
 
@@ -52,11 +54,13 @@ impl CompletionComponent {
             state: ListState::default(),
             word: "".to_string(),
             candidates,
+            is_show: false,
         }
     }
 
     pub fn update(&mut self, word: impl Into<String>) {
         self.word = word.into();
+        self.is_show = false;
         self.state.select(None);
         self.state.select(Some(0))
     }
@@ -115,6 +119,10 @@ impl CompletionComponent {
     pub fn word(&self) -> String {
         self.word.to_string()
     }
+
+    pub fn is_show(&self) -> bool {
+        self.is_show
+    }
 }
 
 impl MovableComponent for CompletionComponent {
@@ -132,10 +140,13 @@ impl MovableComponent for CompletionComponent {
                 .filterd_candidates()
                 .map(|c| ListItem::new(c.to_string()))
                 .collect::<Vec<ListItem>>();
-            if candidates.clone().is_empty() {
+            let candidates_len = candidates.len(); 
+            if candidates_len == 0 {
+                self.is_show = false;
                 return Ok(());
             }
-            let candidate_list = List::new(candidates.clone())
+            self.is_show = true;
+            let candidate_list = List::new(candidates)
                 .block(Block::default().borders(Borders::ALL))
                 .highlight_style(Style::default().bg(self.theme.color))
                 .style(Style::default());
@@ -146,7 +157,7 @@ impl MovableComponent for CompletionComponent {
                 width
                     .min(f.size().width)
                     .min(f.size().right().saturating_sub(area.x + x)),
-                (candidates.len().min(5) as u16 + 2)
+                (candidates_len.min(5) as u16 + 2)
                     .min(f.size().bottom().saturating_sub(area.y + y + 2)),
             );
             f.render_widget(Clear, area);
