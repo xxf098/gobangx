@@ -2,6 +2,7 @@ use super::{Component, DrawableComponent, EventState};
 use crate::components::command::CommandInfo;
 use crate::config::KeyConfig;
 use crate::event::Key;
+use crate::clipboard::copy_to_clipboard;
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -65,6 +66,10 @@ impl<'a> Component for ErrorComponent<'a> {
             if key[0] == self.key_config.exit_popup {
                 self.error = String::new();
                 self.hide();
+                return Ok(EventState::Consumed);
+            }
+            if key[0] == self.key_config.copy {
+                copy_to_clipboard(&self.error.to_string())?;
                 return Ok(EventState::Consumed);
             }
             return Ok(EventState::NotConsumed);
