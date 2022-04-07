@@ -80,9 +80,9 @@ pub struct Tokenizer {
     string_regex: Regex,
     open_paren_regex: Regex,
     close_paren_regex: Regex,
-    indexed_placeholder_regex: Option<Regex>,
-    ident_named_placeholder_regex: Option<Regex>,
-    string_named_placeholder_regex: Option<Regex>,
+    // indexed_placeholder_regex: Option<Regex>,
+    // ident_named_placeholder_regex: Option<Regex>,
+    // string_named_placeholder_regex: Option<Regex>,
 }
 
 impl Tokenizer {
@@ -101,9 +101,9 @@ impl Tokenizer {
             string_regex: regex_factory::create_string_regex(cfg.string_types.clone())?,
             open_paren_regex: regex_factory::create_paren_regex(cfg.open_parens)?,
             close_paren_regex: regex_factory::create_paren_regex(cfg.close_parens)?,
-            indexed_placeholder_regex: regex_factory::create_placeholder_regex(cfg.indexed_placeholder_types, r"[0-9]*").ok(),
-            ident_named_placeholder_regex: regex_factory::create_placeholder_regex(cfg.named_placeholder_types.clone(), r"[a-zA-Z0-9._$]+").ok(),
-            string_named_placeholder_regex: regex_factory::create_placeholder_regex(cfg.named_placeholder_types, &regex_factory::create_string_pattern(cfg.string_types)).ok(),
+            // indexed_placeholder_regex: regex_factory::create_placeholder_regex(cfg.indexed_placeholder_types, r"[0-9]*").ok(),
+            // ident_named_placeholder_regex: regex_factory::create_placeholder_regex(cfg.named_placeholder_types.clone(), r"[a-zA-Z0-9._$]+").ok(),
+            // string_named_placeholder_regex: regex_factory::create_placeholder_regex(cfg.named_placeholder_types, &regex_factory::create_string_pattern(cfg.string_types)).ok(),
         };
         Ok(t)
     }

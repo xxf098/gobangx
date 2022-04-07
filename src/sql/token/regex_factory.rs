@@ -85,7 +85,7 @@ fn escape_paren(paren: &str) -> String {
     }
 }
 
-pub fn create_placeholder_regex(types: Vec<&str>, pattern: &str) -> anyhow::Result<Regex> {
+pub fn _create_placeholder_regex(types: Vec<&str>, pattern: &str) -> anyhow::Result<Regex> {
     if types.len() < 1 {
         anyhow::bail!("no placeholder")
     }
@@ -156,9 +156,9 @@ mod tests {
 
     #[test]
     fn test_create_placeholder_regex() {
-        let reg = create_placeholder_regex(vec!["?"], "[0-9]*").unwrap();
+        let reg = _create_placeholder_regex(vec!["?"], "[0-9]*").unwrap();
         assert_eq!(reg.as_str(), r"^((?:\?)(?:[0-9]*))");
-        let reg = create_placeholder_regex(vec![], "[0-9]*").ok();
+        let reg = _create_placeholder_regex(vec![], "[0-9]*").ok();
         assert!(reg.is_none());
 
     }
