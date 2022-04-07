@@ -2,7 +2,7 @@ use crate::clipboard::copy_to_clipboard;
 use crate::components::{
     CommandInfo, Component as _, DrawableComponent as _, EventState, StatefulDrawableComponent,
 };
-use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, MssqlPool, RECORDS_LIMIT_PER_PAGE};
+use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, MssqlPool};
 use crate::event::{Key, Event, Store};
 use crate::config::DatabaseType;
 use crate::{
@@ -150,17 +150,18 @@ impl<'a> App<'a> {
         if let Some(pool) = self.pool.as_ref() {
             pool.close().await;
         }
+        let page_size = self.config.theme.page_size;
         self.pool = if conn.is_mysql() {
             Some(Box::new(
-                MySqlPool::new(conn.database_url()?.as_str()).await?,
+                MySqlPool::new(conn.database_url()?.as_str(), page_size).await?,
             ))
         } else if conn.is_postgres() {
             Some(Box::new(
-                PostgresPool::new(conn.database_url()?.as_str()).await?,
+                PostgresPool::new(conn.database_url()?.as_str(), page_size).await?,
             ))
         } else {
             Some(Box::new(
-                SqlitePool::new(conn.database_url()?.as_str()).await?,
+                SqlitePool::new(conn.database_url()?.as_str(), page_size).await?,
             ))
         };
         self.databases
@@ -177,25 +178,26 @@ impl<'a> App<'a> {
             if let Some(pool) = self.pool.as_ref() {
                 pool.close().await;
             }
+            let page_size = self.config.theme.page_size;
             self.pool = if conn.is_mysql() {
                 self.sql_editor.set_database_type(DatabaseType::MySql);
                 Some(Box::new(
-                    MySqlPool::new(conn.database_url()?.as_str()).await?,
+                    MySqlPool::new(conn.database_url()?.as_str(), page_size).await?,
                 ))
             } else if conn.is_postgres() {
                 self.sql_editor.set_database_type(DatabaseType::Postgres);
                 Some(Box::new(
-                    PostgresPool::new(conn.database_url()?.as_str()).await?,
+                    PostgresPool::new(conn.database_url()?.as_str(), page_size).await?,
                 ))
             } else if conn.is_mssql() {
                 self.sql_editor.set_database_type(DatabaseType::Mssql);
                 Some(Box::new(
-                    MssqlPool::new(conn.database_url()?.as_str()).await?,
+                    MssqlPool::new(conn.database_url()?.as_str(), page_size).await?,
                 ))
             } else {
                 self.sql_editor.set_database_type(DatabaseType::Sqlite);
                 Some(Box::new(
-                    SqlitePool::new(conn.database_url()?.as_str()).await?,
+                    SqlitePool::new(conn.database_url()?.as_str(), page_size).await?,
                 ))
             };
             self.databases
@@ -342,7 +344,7 @@ impl<'a> App<'a> {
                         }
 
                         if let Some(index) = self.record_table.table.selected_row.selected() {
-                            if index.saturating_add(1) % RECORDS_LIMIT_PER_PAGE as usize == 0 {
+                            if index.saturating_add(1) % self.config.theme.page_size as usize == 0 {
                                 if let Some((database, table, _)) =
                                     self.databases.tree().selected_table()
                                 {

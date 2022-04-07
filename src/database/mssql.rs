@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use database_tree::{Child, Database, Table, Schema};
 use futures::TryStreamExt;
 use itertools::Itertools;
-use super::{ExecuteResult, QueryResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, ColType, Header, Value};
+use super::{ExecuteResult, QueryResult, Pool, TableRow, ColType, Header, Value};
 use crate::get_or_null;
 use crate::config::DatabaseType;
 
@@ -15,11 +15,13 @@ pub type MssqlPoolOptions = sqlx::pool::PoolOptions<Mssql>;
 
 pub struct MssqlPool {
     pool: sqlx::mssql::MssqlPool,
+    page_size: u16,
 }
 
 impl MssqlPool {
-    pub async fn new(database_url: &str) -> anyhow::Result<Self> {
+    pub async fn new(database_url: &str, page_size: u16) -> anyhow::Result<Self> {
         Ok(Self {
+            page_size,
             pool: MssqlPoolOptions::new()
                 .connect_timeout(Duration::from_secs(5))
                 .connect(database_url)
@@ -265,7 +267,7 @@ impl Pool for MssqlPool {
                 table = table.name,
                 filter = filter,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
-                limit = RECORDS_LIMIT_PER_PAGE
+                limit = self.page_size
             )
         } else {
             format!(
@@ -273,7 +275,7 @@ impl Pool for MssqlPool {
                 database = database.name,
                 table = table.name,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
-                limit = RECORDS_LIMIT_PER_PAGE
+                limit = self.page_size
             )
         };
         let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);

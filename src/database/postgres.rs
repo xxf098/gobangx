@@ -1,6 +1,6 @@
 use crate::get_or_null;
 use crate::config::DatabaseType;
-use super::{ExecuteResult, QueryResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE, Header, ColType, Value, ColumnMeta, ColumnConstraint};
+use super::{ExecuteResult, QueryResult, Pool, TableRow, Header, ColType, Value, ColumnMeta, ColumnConstraint};
 use async_trait::async_trait;
 // use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
 use database_tree::{Child, Database, Schema, Table};
@@ -12,11 +12,13 @@ use std::time::Duration;
 
 pub struct PostgresPool {
     pool: PgPool,
+    page_size: u16,
 }
 
 impl PostgresPool {
-    pub async fn new(database_url: &str) -> anyhow::Result<Self> {
+    pub async fn new(database_url: &str, page_size: u16,) -> anyhow::Result<Self> {
         Ok(Self {
+            page_size,
             pool: PgPoolOptions::new()
                 .connect_timeout(Duration::from_secs(5))
                 .connect(database_url)
@@ -275,7 +277,7 @@ impl Pool for PostgresPool {
                 orderby = orderby,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 page = page,
-                limit = RECORDS_LIMIT_PER_PAGE
+                limit = self.page_size
             )
         } else {
             format!(
@@ -285,7 +287,7 @@ impl Pool for PostgresPool {
                 orderby = orderby,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 page = page,
-                limit = RECORDS_LIMIT_PER_PAGE
+                limit = self.page_size
             )
         };
         let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
@@ -528,7 +530,7 @@ impl PostgresPool {
                 filter = filter,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 page = page,
-                limit = RECORDS_LIMIT_PER_PAGE
+                limit = self.page_size
             )
         } else {
             format!(
@@ -537,7 +539,7 @@ impl PostgresPool {
                 table = table.name,
                 table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 page = page,
-                limit = RECORDS_LIMIT_PER_PAGE
+                limit = self.page_size
             )
         };
         let json: Vec<(serde_json::Value,)> =

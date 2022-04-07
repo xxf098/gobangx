@@ -135,8 +135,10 @@ pub struct KeyConfig {
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct ThemeConfig {
-    #[serde(deserialize_with = "deserialize_color")]
+    #[serde(deserialize_with = "deserialize_color", default="default_color")]
     pub color: Color,
+    #[serde(deserialize_with = "deserialize_page_size", default="default_page_size")]
+    pub page_size: u16,
 }
 
 // https://brokenco.de/2020/08/03/serde-deserialize-with-string.html
@@ -155,10 +157,25 @@ fn deserialize_color<'de, D>(deserializer: D) -> Result<Color, D::Error> where D
    Ok(color)
 }
 
+fn default_color() -> Color {
+    Color::Blue
+}
+
+fn deserialize_page_size<'de, D>(deserializer: D) -> Result<u16, D::Error> where D: Deserializer<'de> {
+    let mut page_size = u16::deserialize(deserializer)?;
+    page_size = page_size.max(50);
+    page_size = page_size.min(1000);
+    Ok(page_size)
+}
+
+fn default_page_size() -> u16 {
+    200
+}
+
 impl Default for ThemeConfig {
 
     fn default() -> Self {
-        Self { color: Color::Blue }
+        Self { color: Color::Blue, page_size: 200 }
     }
 }
 

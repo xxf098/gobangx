@@ -16,7 +16,7 @@ use async_trait::async_trait;
 use database_tree::{Child, Database, Table};
 use crate::config::DatabaseType;
 
-pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
+// pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
 pub const MYSQL_KEYWORDS: [&str; 1] = ["int"];
 pub const POSTGRES_KEYWORDS: [&str; 1] = ["group"];
 const INDENT: &str = "    ";
