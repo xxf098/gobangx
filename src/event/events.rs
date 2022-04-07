@@ -20,7 +20,7 @@ impl Default for EventConfig {
 
 #[derive(Clone, Debug)]
 pub enum Event {
-    Input(Vec<Key>),
+    Input(Key),
     RedrawDatabase(bool),
     RedrawTable(bool),
     OrderByTable((String, usize)),
@@ -55,8 +55,7 @@ impl Events {
                         if event::poll(config.tick_rate).unwrap() {
                             if let event::Event::Key(key) = event::read().unwrap() {
                                 let key = Key::from(key);
-            
-                                event_tx.send(Event::Input(vec![key])).await.unwrap();
+                                event_tx.send(Event::Input(key)).await.unwrap();
                                 continue;
                             }
                         }
