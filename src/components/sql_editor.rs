@@ -225,10 +225,10 @@ impl<'a> Component for SqlEditorComponent<'a> {
                 if key[0] == self.key_config.enter {
                     return self.complete();
                 }
-                if key[0] == self.key_config.move_up && self.completion.is_show() {
+                if key[0] == self.key_config.move_up && self.completion.visible() {
                     return self.completion.event(key);
                 }
-                if key[0] == self.key_config.move_down && self.completion.is_show() {
+                if key[0] == self.key_config.move_down && self.completion.visible() {
                     return self.completion.event(key);
                 }
             }

@@ -22,7 +22,7 @@ pub struct CompletionComponent {
     state: ListState,
     word: String,
     candidates: Vec<String>,
-    is_show: bool,
+    visible: bool,
 }
 
 impl CompletionComponent {
@@ -40,7 +40,7 @@ impl CompletionComponent {
                     .map(|w| w.to_string())
                     .collect()
             },
-            is_show: false, 
+            visible: false, 
         }
     }
 
@@ -54,13 +54,13 @@ impl CompletionComponent {
             state: ListState::default(),
             word: "".to_string(),
             candidates,
-            is_show: false,
+            visible: false,
         }
     }
 
     pub fn update(&mut self, word: impl Into<String>) {
         self.word = word.into();
-        self.is_show = false;
+        self.visible = false;
         self.state.select(None);
         self.state.select(Some(0))
     }
@@ -120,8 +120,8 @@ impl CompletionComponent {
         self.word.to_string()
     }
 
-    pub fn is_show(&self) -> bool {
-        self.is_show
+    pub fn visible(&self) -> bool {
+        self.visible
     }
 }
 
@@ -142,10 +142,10 @@ impl MovableComponent for CompletionComponent {
                 .collect::<Vec<ListItem>>();
             let candidates_len = candidates.len(); 
             if candidates_len == 0 {
-                self.is_show = false;
+                self.visible = false;
                 return Ok(());
             }
-            self.is_show = true;
+            self.visible = true;
             let candidate_list = List::new(candidates)
                 .block(Block::default().borders(Borders::ALL))
                 .highlight_style(Style::default().bg(self.theme.color))
