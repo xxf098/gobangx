@@ -168,16 +168,16 @@ impl StatefulDrawableComponent for CellEditorComponent {
 impl Component for CellEditorComponent {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> anyhow::Result<EventState> {
         let input_str: String = self.input.iter().collect();
         match key {
-            Key::Char(c) => {
-                self.input.insert(self.input_idx, c);
+            [Key::Char(c)] => {
+                self.input.insert(self.input_idx, *c);
                 self.input_idx += 1;
                 self.input_cursor_position_x += 1;
                 return Ok(EventState::Consumed);
             }
-            Key::Delete | Key::Backspace  => {
+            [Key::Delete | Key::Backspace]  => {
                 if input_str.width() > 0 && !self.input.is_empty() && self.input_idx > 0 {
                     self.input_idx -= 1;
                     self.input_cursor_position_x = self
@@ -187,24 +187,24 @@ impl Component for CellEditorComponent {
                 }
                 return Ok(EventState::Consumed);
             }
-            Key::Left => {
+            [Key::Left] => {
                 self.move_cursor_left();
                 return Ok(EventState::Consumed);
             }
-            Key::Right => {
+            [Key::Right] => {
                 self.move_cursor_right();
                 return Ok(EventState::Consumed);
             }
-            Key::CtrlLeft => {
+            [Key::CtrlLeft] => {
                 self.move_cursor_by_word(CursorDir::Left);
                 return Ok(EventState::Consumed);
             }
-            Key::CtrlRight => {
+            [Key::CtrlRight] => {
                 self.move_cursor_by_word(CursorDir::Right);
                 return Ok(EventState::Consumed);
             }
-            Key::Ctrl(c) => {
-                if c == 'w' {
+            [Key::Ctrl(c)] => {
+                if *c == 'w' {
                     self.delete_word();
                     return Ok(EventState::Consumed);
                 }

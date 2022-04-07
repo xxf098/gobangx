@@ -117,7 +117,8 @@ impl<'a> StatefulDrawableComponent for ConnectionsComponent<'a> {
 impl<'a> Component for ConnectionsComponent<'a> {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
+        let key = key[0];
         if key == self.key_config.scroll_down {
             self.next_connection(1);
             return Ok(EventState::Consumed);

@@ -40,6 +40,7 @@ pub struct App<'a> {
     pub config: Config,
     pub error: ErrorComponent<'a>,
     pub store: Store,
+    pub keys: Vec<Key>,
 }
 
 impl<'a> App<'a> {
@@ -59,6 +60,7 @@ impl<'a> App<'a> {
             pool: None,
             left_main_chunk_percentage: 15,
             store,
+            keys: Vec::with_capacity(8),
         }
     }
 
@@ -231,16 +233,23 @@ impl<'a> App<'a> {
         Ok(())
     }
 
+    pub fn clear_keys(&mut self) {
+        self.keys.clear()
+    }
+
     pub async fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
         self.update_commands();
-
-        if self.components_event(key).await?.is_consumed() {
+        self.keys.push(key);
+        if self.components_event(self.keys.clone()).await?.is_consumed() {
+            self.keys.clear();
             return Ok(EventState::Consumed);
         };
 
-        if self.move_focus(key)?.is_consumed() {
+        if self.move_focus()?.is_consumed() {
+            self.keys.clear();
             return Ok(EventState::Consumed);
         };
+        // self.keys.clear();
         Ok(EventState::NotConsumed)
     }
 
@@ -264,33 +273,33 @@ impl<'a> App<'a> {
         return Ok(EventState::NotConsumed)
     }
 
-    async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
-        if self.error.event(key)?.is_consumed() {
+    async fn components_event(&mut self, key: Vec<Key>) -> anyhow::Result<EventState> {
+        if self.error.event(&key)?.is_consumed() {
             return Ok(EventState::Consumed);
         }
 
-        if !matches!(self.focus, Focus::ConnectionList) && self.help.event(key)?.is_consumed() {
+        if !matches!(self.focus, Focus::ConnectionList) && self.help.event(&key)?.is_consumed() {
             return Ok(EventState::Consumed);
         }
 
         match self.focus {
             Focus::ConnectionList => {
-                if self.connections.event(key)?.is_consumed() {
+                if self.connections.event(&key)?.is_consumed() {
                     return Ok(EventState::Consumed);
                 }
 
-                if key == self.config.key_config.enter {
+                if key[0] == self.config.key_config.enter {
                     self.update_databases(true).await?;
                     return Ok(EventState::Consumed);
                 }
             }
             Focus::DabataseList => {
-                if self.databases.event(key)?.is_consumed() ||
-                    self.databases.async_event(key, self.pool.as_ref().unwrap(), &self.store).await?.is_consumed() {
+                if self.databases.event(&key)?.is_consumed() ||
+                    self.databases.async_event(key[0], self.pool.as_ref().unwrap(), &self.store).await?.is_consumed() {
                     return Ok(EventState::Consumed);
                 }
 
-                if key == self.config.key_config.enter && self.databases.tree_focused() {
+                if key[0] == self.config.key_config.enter && self.databases.tree_focused() {
                     if let Some((database, table, _)) = self.databases.tree().selected_table() {
                         self.record_table.reset();
                         let (headers, records) = self
@@ -312,18 +321,18 @@ impl<'a> App<'a> {
             Focus::Table => {
                 match self.tab.selected_tab {
                     Tab::Records => {
-                        if self.record_table.event(key)?.is_consumed() || 
-                        self.record_table.async_event(key, self.pool.as_ref().unwrap(), &self.store).await?.is_consumed() {
+                        if self.record_table.event(&key)?.is_consumed() || 
+                        self.record_table.async_event(key[0], self.pool.as_ref().unwrap(), &self.store).await?.is_consumed() {
                             return Ok(EventState::Consumed);
                         };
 
-                        if key == self.config.key_config.copy {
+                        if key[0] == self.config.key_config.copy {
                             if let Some(text) = self.record_table.table.selected_cells() {
                                 copy_to_clipboard(text.as_str())?
                             }
                         }
 
-                        if key == self.config.key_config.enter && self.record_table.filter_focused()
+                        if key[0] == self.config.key_config.enter && self.record_table.filter_focused()
                         {
                             self.update_record_table(true, None, 0).await?;
                         }
@@ -364,10 +373,10 @@ impl<'a> App<'a> {
                         };
                     }
                     Tab::Sql => {
-                        if self.sql_editor.event(key)?.is_consumed()
+                        if self.sql_editor.event(&key)?.is_consumed()
                             || self
                                 .sql_editor
-                                .async_event(key, self.pool.as_ref().unwrap(), &self.store)
+                                .async_event(key[0], self.pool.as_ref().unwrap(), &self.store)
                                 .await?
                                 .is_consumed()
                         {
@@ -375,7 +384,7 @@ impl<'a> App<'a> {
                         };
                     }
                     Tab::Properties => {
-                        if self.properties.event(key)?.is_consumed() {
+                        if self.properties.event(&key)?.is_consumed() {
                             return Ok(EventState::Consumed);
                         };
                     }
@@ -383,7 +392,7 @@ impl<'a> App<'a> {
             }
         }
 
-        if self.extend_or_shorten_widget_width(key)?.is_consumed() {
+        if self.extend_or_shorten_widget_width(key[0])?.is_consumed() {
             return Ok(EventState::Consumed);
         };
 
@@ -412,8 +421,9 @@ impl<'a> App<'a> {
         Ok(EventState::NotConsumed)
     }
 
-    fn move_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
-        if key == self.config.key_config.focus_connections {
+    fn move_focus(&mut self) -> anyhow::Result<EventState> {
+        let key = &self.keys;
+        if key[0] == self.config.key_config.focus_connections {
             self.focus = Focus::ConnectionList;
             return Ok(EventState::Consumed);
         }
@@ -422,19 +432,19 @@ impl<'a> App<'a> {
         }
         match self.focus {
             Focus::ConnectionList => {
-                if key == self.config.key_config.enter {
+                if key[0] == self.config.key_config.enter {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
                 }
             }
             Focus::DabataseList => {
-                if key == self.config.key_config.focus_right && self.databases.tree_focused() {
+                if key[0] == self.config.key_config.focus_right && self.databases.tree_focused() {
                     self.focus = Focus::Table;
                     return Ok(EventState::Consumed);
                 }
             }
             Focus::Table => {
-                if key == self.config.key_config.focus_left {
+                if key[0] == self.config.key_config.focus_left {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
                 }

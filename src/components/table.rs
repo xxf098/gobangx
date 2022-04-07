@@ -645,13 +645,14 @@ impl Component for TableComponent {
         )));
     }
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
         if self.focus == Focus::Editor {
             let state = self.cell_editor.event(key)?;
             if state == EventState::Consumed {
                 return Ok(EventState::Consumed)
             }
         }
+        let key = key[0];
         if key == self.key_config.scroll_left {
             self.previous_column();
             return Ok(EventState::Consumed);

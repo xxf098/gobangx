@@ -81,8 +81,8 @@ impl Component for RecordTableComponent {
         self.table.commands(out)
     }
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
-        if key == self.key_config.filter {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
+        if key[0] == self.key_config.filter {
             self.focus = Focus::Filter;
             return Ok(EventState::Consumed);
         }

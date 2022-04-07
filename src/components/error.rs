@@ -60,9 +60,9 @@ impl<'a> DrawableComponent for ErrorComponent<'a> {
 impl<'a> Component for ErrorComponent<'a> {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
         if self.visible {
-            if key == self.key_config.exit_popup {
+            if key[0] == self.key_config.exit_popup {
                 self.error = String::new();
                 self.hide();
                 return Ok(EventState::Consumed);

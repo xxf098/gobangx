@@ -199,26 +199,26 @@ impl StatefulDrawableComponent for TableFilterComponent {
 impl Component for TableFilterComponent {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();
 
         // apply comletion candidates
-        if key == self.key_config.enter {
+        if key[0] == self.key_config.enter {
             return self.complete();
         }
 
         self.completion.selected_candidate();
 
         match key {
-            Key::Char(c) => {
-                self.input.insert(self.input_idx, c);
+            [Key::Char(c)] => {
+                self.input.insert(self.input_idx, *c);
                 self.input_idx += 1;
-                self.input_cursor_position += compute_character_width(c);
+                self.input_cursor_position += compute_character_width(*c);
                 self.update_completion();
 
                 Ok(EventState::Consumed)
             }
-            Key::Delete | Key::Backspace => {
+            [Key::Delete | Key::Backspace] => {
                 if input_str.width() > 0 && !self.input.is_empty() && self.input_idx > 0 {
                     let last_c = self.input.remove(self.input_idx - 1);
                     self.input_idx -= 1;
@@ -227,7 +227,7 @@ impl Component for TableFilterComponent {
                 }
                 Ok(EventState::Consumed)
             }
-            Key::Left => {
+            [Key::Left] => {
                 if !self.input.is_empty() && self.input_idx > 0 {
                     self.input_idx -= 1;
                     self.input_cursor_position = self
@@ -237,14 +237,14 @@ impl Component for TableFilterComponent {
                 }
                 Ok(EventState::Consumed)
             }
-            Key::Ctrl('a') => {
+            [Key::Ctrl('a')] => {
                 if !self.input.is_empty() && self.input_idx > 0 {
                     self.input_idx = 0;
                     self.input_cursor_position = 0
                 }
                 Ok(EventState::Consumed)
             }
-            Key::Right => {
+            [Key::Right] => {
                 if self.input_idx < self.input.len() {
                     let next_c = self.input[self.input_idx];
                     self.input_idx += 1;
@@ -253,7 +253,7 @@ impl Component for TableFilterComponent {
                 }
                 Ok(EventState::Consumed)
             }
-            Key::Ctrl('e') => {
+            [Key::Ctrl('e')] => {
                 if self.input_idx < self.input.len() {
                     self.input_idx = self.input.len();
                     self.input_cursor_position = self.input_str().width() as u16;

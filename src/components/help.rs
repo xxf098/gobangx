@@ -74,7 +74,8 @@ impl<'a> DrawableComponent for HelpComponent<'a> {
 impl<'a> Component for HelpComponent<'a> {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
+        let key = key[0];
         if self.visible {
             if key == self.key_config.exit_popup {
                 self.hide();

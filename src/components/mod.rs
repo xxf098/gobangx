@@ -92,7 +92,7 @@ pub trait MovableComponent {
 pub trait Component {
     fn commands(&self, out: &mut Vec<CommandInfo>);
 
-    fn event(&mut self, key: crate::event::Key) -> Result<EventState>;
+    fn event(&mut self, key: &[crate::event::Key]) -> Result<EventState>;
 
     async fn async_event(
         &mut self,

@@ -58,7 +58,7 @@ async fn main() -> anyhow::Result<()> {
                 }
                 Err(err) => app.error.set(err.to_string())?,
             },
-            Event::Tick => (),
+            Event::Tick => app.clear_keys(),
             _  => match app.action_event(next_event).await {
                 Ok(_) => {},
                 Err(err) => app.error.set(err.to_string())?,

@@ -235,8 +235,8 @@ impl<'a> Component for DatabasesComponent<'a> {
         out.push(CommandInfo::new(command::expand_collapse(&self.key_config)))
     }
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
-        if key == self.key_config.filter && self.focus == Focus::Tree {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
+        if key[0] == self.key_config.filter && self.focus == Focus::Tree {
             self.focus = Focus::Filter;
             return Ok(EventState::Consumed);
         }
@@ -250,7 +250,7 @@ impl<'a> Component for DatabasesComponent<'a> {
         }
 
         match key {
-            Key::Enter if matches!(self.focus, Focus::Filter) => {
+            [Key::Enter] if matches!(self.focus, Focus::Filter) => {
                 self.focus = Focus::Tree;
                 return Ok(EventState::Consumed);
             }
@@ -259,7 +259,7 @@ impl<'a> Component for DatabasesComponent<'a> {
                     return Ok(EventState::Consumed);
                 }
             }
-            key if key == self.key_config.copy => {
+            key if key[0] == self.key_config.copy => {
                 if let Some(item) = self.tree.selected_item() {
                     let name = item.kind().name();
                     copy_to_clipboard(&name)?;
@@ -273,7 +273,7 @@ impl<'a> Component for DatabasesComponent<'a> {
                     } else {
                         &mut self.tree
                     },
-                    key,
+                    key[0],
                     &self.key_config,
                 ) {
                     return Ok(EventState::Consumed);

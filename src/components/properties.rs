@@ -185,9 +185,9 @@ impl<'a> Component for PropertiesComponent<'a> {
         )));
     }
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
         self.focused_component().event(key)?;
-
+        let key = key[0];
         if key == self.key_config.copy {
             if let Some(text) = self.focused_component().selected_cells() {
                 copy_to_clipboard(text.as_str())?
