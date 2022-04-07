@@ -20,7 +20,7 @@ impl Default for EventConfig {
 
 #[derive(Clone, Debug)]
 pub enum Event {
-    Input(Key),
+    Input(Vec<Key>),
     RedrawDatabase(bool),
     RedrawTable(bool),
     OrderByTable((String, usize)),
@@ -56,7 +56,7 @@ impl Events {
                             if let event::Event::Key(key) = event::read().unwrap() {
                                 let key = Key::from(key);
             
-                                event_tx.send(Event::Input(key)).await.unwrap();
+                                event_tx.send(Event::Input(vec![key])).await.unwrap();
                                 continue;
                             }
                         }

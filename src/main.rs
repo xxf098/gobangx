@@ -48,10 +48,10 @@ async fn main() -> anyhow::Result<()> {
         })?;
         let next_event = events.next().await.unwrap();
         match next_event {
-            Event::Input(key) => match app.event(key).await {
+            Event::Input(key) => match app.event(&key).await {
                 Ok(state) => {
                     if !state.is_consumed()
-                        && (key == app.config.key_config.quit || key == app.config.key_config.exit)
+                        && (key[0] == app.config.key_config.quit || key[0] == app.config.key_config.exit)
                     {
                         break;
                     }

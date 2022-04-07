@@ -652,6 +652,11 @@ impl Component for TableComponent {
                 return Ok(EventState::Consumed)
             }
         }
+        if key == self.key_config.copy2 {
+            let header = &self.headers[self.selected_column];
+            copy_to_clipboard(&header.name)?;
+            return Ok(EventState::Consumed);
+        }
         let key = key[0];
         if key == self.key_config.scroll_left {
             self.previous_column();

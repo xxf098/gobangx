@@ -93,6 +93,7 @@ pub struct KeyConfig {
     pub move_up: Key,
     pub move_down: Key,
     pub copy: Key,
+    pub copy2: [Key; 2], // copy column
     pub advanced_copy: Key, // copy table schema
     pub enter: Key,
     pub exit: Key,
@@ -169,6 +170,7 @@ impl Default for KeyConfig {
             move_up: Key::Up,
             move_down: Key::Down,
             copy: Key::Char('y'),
+            copy2: [Key::Char('y'), Key::Char('c')],
             advanced_copy: Key::Char('Y'),
             enter: Key::Enter,
             exit: Key::Ctrl('c'),

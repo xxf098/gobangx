@@ -237,9 +237,9 @@ impl<'a> App<'a> {
         self.keys.clear()
     }
 
-    pub async fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
+    pub async fn event(&mut self, key: &[Key]) -> anyhow::Result<EventState> {
         self.update_commands();
-        self.keys.push(key);
+        self.keys.extend_from_slice(key);
         if self.components_event(self.keys.clone()).await?.is_consumed() {
             self.keys.clear();
             return Ok(EventState::Consumed);
@@ -326,7 +326,7 @@ impl<'a> App<'a> {
                             return Ok(EventState::Consumed);
                         };
 
-                        if key[0] == self.config.key_config.copy {
+                        if key == [self.config.key_config.copy] {
                             if let Some(text) = self.record_table.table.selected_cells() {
                                 copy_to_clipboard(text.as_str())?
                             }
