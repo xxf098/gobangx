@@ -206,7 +206,7 @@ impl TableComponent {
     }
 
     fn backward_by_character(&mut self, c: char) {
-        if let Some((i, _)) = self.headers.iter().enumerate().find(|(i, h)| *i < self.selected_column && h.name.starts_with(c)) {
+        if let Some((i, _)) = self.headers.iter().enumerate().rev().find(|(i, h)| *i < self.selected_column && h.name.starts_with(c)) {
             self.selected_column = i;
             self.movement = Some(Movement::Backward(c));
         }
