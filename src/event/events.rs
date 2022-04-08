@@ -13,7 +13,7 @@ impl Default for EventConfig {
     fn default() -> EventConfig {
         EventConfig {
             exit_key: Key::Ctrl('c'),
-            tick_rate: Duration::from_millis(480),
+            tick_rate: Duration::from_millis(300),
         }
     }
 }
@@ -52,7 +52,7 @@ impl Events {
             loop {
                 tokio::select! {
                     () = &mut sleep => {
-                        if event::poll(config.tick_rate).unwrap() {
+                        if event::poll(Duration::from_millis(480)).unwrap() {
                             if let event::Event::Key(key) = event::read().unwrap() {
                                 let key = Key::from(key);
                                 event_tx.send(Event::Input(key)).await.unwrap();
