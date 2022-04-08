@@ -51,6 +51,8 @@ If you want to add connections, you need to edit your config file. For more info
 | <kbd>Ctrl</kbd> + <kbd>u</kbd>, <kbd>Ctrl</kbd> + <kbd>d</kbd> | Scroll up/down multiple lines |
 | <kbd>0</kbd>, <kbd>$</kbd> | Scroll to start/end |
 | <kbd>g</kbd> , <kbd>G</kbd> | Scroll to top/bottom |
+| <kbd>f</kbd>+<kbd>_</kbd> | Forward to next column starts with the character `_` |
+| <kbd>F</kbd>+<kbd>_</kbd> | Backward to next column starts with the character `_` |
 | <kbd>H</kbd>, <kbd>J</kbd>, <kbd>K</kbd>, <kbd>L</kbd> | Extend selection by one cell left/down/up/right |
 | <kbd>y</kbd> | Yank a cell value |
 | <kbd>yc</kbd> | Yank column name |
