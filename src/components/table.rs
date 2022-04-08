@@ -296,14 +296,14 @@ impl TableComponent {
                     .join("\n"),
             );
         }
-        self.selected_cell()
+        self.selected_cell().map(|c| c.to_string())
     }
 
-    pub fn selected_cell(&self) -> Option<String> {
+    pub fn selected_cell(&self) -> Option<Value> {
         self.rows
             .get(self.selected_row.selected()?)?
             .get(self.selected_column)
-            .map(|cell| cell.read().unwrap().to_string())
+            .map(|cell| cell.read().unwrap().clone())
     }
 
     // TODO:
@@ -738,7 +738,8 @@ impl Component for TableComponent {
             return Ok(EventState::Consumed);
         } else if key == self.key_config.edit_cell {
             self.focus = Focus::Editor;
-            self.cell_editor.update(self.selected_cell().unwrap_or("".to_string()));
+            let s = self.selected_cell().map(|c| if c.is_null { NULL.to_string() } else { c.to_string() });
+            self.cell_editor.update(s.unwrap_or("".to_string()));
             return Ok(EventState::Consumed);
         } else if key == self.key_config.exit_popup {
             self.focus = Focus::Status;
