@@ -15,7 +15,7 @@ pub struct TableValueComponent {
 }
 
 impl TableValueComponent {
-    pub fn new(value: String) -> Self {
+    pub fn _new(value: String) -> Self {
         Self { value }
     }
 }
@@ -37,7 +37,7 @@ impl DrawableComponent for TableValueComponent {
 impl Component for TableValueComponent {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, _key: Key) -> Result<EventState> {
+    fn event(&mut self, _key: &[Key]) -> Result<EventState> {
         todo!("scroll");
     }
 }

@@ -2,8 +2,8 @@ use super::{Component, EventState, StatefulDrawableComponent};
 use crate::clipboard::copy_to_clipboard;
 use crate::components::command::{self, CommandInfo};
 use crate::components::TableComponent;
-use crate::config::KeyConfig;
-use crate::database::Pool;
+use crate::config::{KeyConfig, Settings};
+use crate::database::{Pool, Header, ColType, Value};
 use crate::event::Key;
 use anyhow::Result;
 use async_trait::async_trait;
@@ -30,24 +30,26 @@ impl std::fmt::Display for Focus {
     }
 }
 
-pub struct PropertiesComponent {
+pub struct PropertiesComponent<'a> {
     column_table: TableComponent,
     constraint_table: TableComponent,
     foreign_key_table: TableComponent,
     index_table: TableComponent,
     focus: Focus,
-    key_config: KeyConfig,
+    key_config: &'a KeyConfig,
+    settings: &'a Settings,
 }
 
-impl PropertiesComponent {
-    pub fn new(key_config: KeyConfig) -> Self {
+impl<'a> PropertiesComponent<'a> {
+    pub fn new(key_config: &'a KeyConfig, settings: &'a Settings) -> Self {
         Self {
-            column_table: TableComponent::new(key_config.clone()),
-            constraint_table: TableComponent::new(key_config.clone()),
-            foreign_key_table: TableComponent::new(key_config.clone()),
-            index_table: TableComponent::new(key_config.clone()),
+            column_table: TableComponent::new(key_config.clone(), settings.clone()),
+            constraint_table: TableComponent::new(key_config.clone(), settings.clone()),
+            foreign_key_table: TableComponent::new(key_config.clone(), settings.clone()),
+            index_table: TableComponent::new(key_config.clone(), settings.clone()),
             focus: Focus::Column,
             key_config,
+            settings,
         }
     }
 
@@ -72,11 +74,12 @@ impl PropertiesComponent {
             self.column_table.update(
                 columns
                     .iter()
-                    .map(|c| c.columns())
-                    .collect::<Vec<Vec<String>>>(),
-                columns.get(0).unwrap().fields(),
+                    .map(|c| c.columns().into_iter().map(|c| Value::new(c)).collect::<Vec<_>>())
+                    .collect::<Vec<Vec<Value>>>(),
+                columns.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
+                0,
             );
         }
         self.constraint_table.reset();
@@ -85,11 +88,12 @@ impl PropertiesComponent {
             self.constraint_table.update(
                 constraints
                     .iter()
-                    .map(|c| c.columns())
-                    .collect::<Vec<Vec<String>>>(),
-                constraints.get(0).unwrap().fields(),
+                    .map(|c| c.columns().into_iter().map(|c| Value::new(c)).collect::<Vec<_>>())
+                    .collect::<Vec<Vec<Value>>>(),
+                constraints.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
+                0,
             );
         }
         self.foreign_key_table.reset();
@@ -98,11 +102,12 @@ impl PropertiesComponent {
             self.foreign_key_table.update(
                 foreign_keys
                     .iter()
-                    .map(|c| c.columns())
-                    .collect::<Vec<Vec<String>>>(),
-                foreign_keys.get(0).unwrap().fields(),
+                    .map(|c| c.columns().into_iter().map(|c| Value::new(c)).collect::<Vec<_>>())
+                    .collect::<Vec<Vec<Value>>>(),
+                foreign_keys.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
+                0,
             );
         }
         self.index_table.reset();
@@ -111,11 +116,12 @@ impl PropertiesComponent {
             self.index_table.update(
                 indexes
                     .iter()
-                    .map(|c| c.columns())
-                    .collect::<Vec<Vec<String>>>(),
-                indexes.get(0).unwrap().fields(),
+                    .map(|c| c.columns().into_iter().map(|c| Value::new(c)).collect::<Vec<_>>())
+                    .collect::<Vec<Vec<Value>>>(),
+                indexes.get(0).unwrap().fields().into_iter().map(|c| Header::new(c, ColType::VarChar)).collect(),
                 database.clone(),
                 table.clone(),
+                0,
             );
         }
         Ok(())
@@ -137,7 +143,7 @@ impl PropertiesComponent {
     }
 }
 
-impl StatefulDrawableComponent for PropertiesComponent {
+impl<'a> StatefulDrawableComponent for PropertiesComponent<'a> {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let layout = Layout::default()
             .direction(Direction::Horizontal)
@@ -149,7 +155,7 @@ impl StatefulDrawableComponent for PropertiesComponent {
             .iter()
             .map(|(f, c)| {
                 ListItem::new(c.to_string()).style(if *f == self.focus {
-                    Style::default().bg(Color::Blue)
+                    Style::default().bg(self.settings.color)
                 } else {
                     Style::default()
                 })
@@ -172,16 +178,16 @@ impl StatefulDrawableComponent for PropertiesComponent {
 }
 
 #[async_trait]
-impl Component for PropertiesComponent {
+impl<'a> Component for PropertiesComponent<'a> {
     fn commands(&self, out: &mut Vec<CommandInfo>) {
         out.push(CommandInfo::new(command::toggle_property_tabs(
             &self.key_config,
         )));
     }
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
         self.focused_component().event(key)?;
-
+        let key = key[0];
         if key == self.key_config.copy {
             if let Some(text) = self.focused_component().selected_cells() {
                 copy_to_clipboard(text.as_str())?

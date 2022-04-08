@@ -2,57 +2,65 @@ use crate::clipboard::copy_to_clipboard;
 use crate::components::{
     CommandInfo, Component as _, DrawableComponent as _, EventState, StatefulDrawableComponent,
 };
-use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, RECORDS_LIMIT_PER_PAGE};
-use crate::event::Key;
+use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, MssqlPool};
+use crate::event::{Key, Event, Store};
+use crate::config::DatabaseType;
 use crate::{
     components::tab::Tab,
     components::{
         command, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
         PropertiesComponent, RecordTableComponent, SqlEditorComponent, TabComponent,
     },
-    config::Config,
+    config::{Config, Connection},
 };
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     Frame,
 };
+use tokio::sync::mpsc;
+use std::sync::{Arc, RwLock};
 
 pub enum Focus {
     DabataseList,
     Table,
     ConnectionList,
 }
-pub struct App {
+pub struct App<'a> {
     record_table: RecordTableComponent,
-    properties: PropertiesComponent,
-    sql_editor: SqlEditorComponent,
+    properties: PropertiesComponent<'a>,
+    sql_editor: SqlEditorComponent<'a>,
     focus: Focus,
-    tab: TabComponent,
-    help: HelpComponent,
-    databases: DatabasesComponent,
-    connections: ConnectionsComponent,
+    tab: TabComponent<'a>,
+    help: HelpComponent<'a>,
+    databases: DatabasesComponent<'a>,
+    connections: ConnectionsComponent<'a>,
     pool: Option<Box<dyn Pool>>,
     left_main_chunk_percentage: u16,
     pub config: Config,
-    pub error: ErrorComponent,
+    pub error: ErrorComponent<'a>,
+    pub store: Store,
+    pub keys: Vec<Key>,
 }
 
-impl App {
-    pub fn new(config: Config) -> App {
+impl<'a> App<'a> {
+    pub fn new(config: &'a Config, sender: mpsc::Sender<Event>) -> App<'a> {
+        let store = Store::new(sender);
         Self {
             config: config.clone(),
-            connections: ConnectionsComponent::new(config.key_config.clone(), config.conn),
-            record_table: RecordTableComponent::new(config.key_config.clone()),
-            properties: PropertiesComponent::new(config.key_config.clone()),
-            sql_editor: SqlEditorComponent::new(config.key_config.clone()),
-            tab: TabComponent::new(config.key_config.clone()),
-            help: HelpComponent::new(config.key_config.clone()),
-            databases: DatabasesComponent::new(config.key_config.clone()),
-            error: ErrorComponent::new(config.key_config),
+            connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.settings),
+            record_table: RecordTableComponent::new(config.key_config.clone(), config.settings.clone()),
+            properties: PropertiesComponent::new(&config.key_config, &config.settings),
+            sql_editor: SqlEditorComponent::new(&config.key_config, config.settings.clone(), DatabaseType::Sqlite),
+            tab: TabComponent::new(&config.key_config),
+            help: HelpComponent::new(&config.key_config),
+            databases: DatabasesComponent::new(&config.key_config, &config.settings),
+            error: ErrorComponent::new(&config.key_config),
             focus: Focus::ConnectionList,
             pool: None,
             left_main_chunk_percentage: 15,
+            store,
+            keys: Vec::with_capacity(8),
         }
     }
 
@@ -134,36 +142,76 @@ impl App {
         res
     }
 
-    async fn update_databases(&mut self) -> anyhow::Result<()> {
+    pub async fn update_databases_internal(&mut self, conn: Option<&Connection>) -> anyhow::Result<()> {
+        if conn.is_none() {
+            return Ok(())
+        }
+        let conn = conn.unwrap();
+        if let Some(pool) = self.pool.as_ref() {
+            pool.close().await;
+        }
+        let page_size = self.config.settings.page_size;
+        self.pool = if conn.is_mysql() {
+            Some(Box::new(
+                MySqlPool::new(conn.database_url()?.as_str(), page_size).await?,
+            ))
+        } else if conn.is_postgres() {
+            Some(Box::new(
+                PostgresPool::new(conn.database_url()?.as_str(), page_size).await?,
+            ))
+        } else {
+            Some(Box::new(
+                SqlitePool::new(conn.database_url()?.as_str(), page_size).await?,
+            ))
+        };
+        self.databases
+            .update(conn, self.pool.as_ref().unwrap())
+            .await?;
+        self.focus = Focus::DabataseList;
+        self.record_table.reset();
+        self.tab.reset();
+        Ok(())
+    }
+
+    async fn update_databases(&mut self, is_focus: bool) -> anyhow::Result<()> {
         if let Some(conn) = self.connections.selected_connection() {
             if let Some(pool) = self.pool.as_ref() {
                 pool.close().await;
             }
+            let page_size = self.config.settings.page_size;
             self.pool = if conn.is_mysql() {
+                self.sql_editor.set_database_type(DatabaseType::MySql);
                 Some(Box::new(
-                    MySqlPool::new(conn.database_url()?.as_str()).await?,
+                    MySqlPool::new(conn.database_url()?.as_str(), page_size).await?,
                 ))
             } else if conn.is_postgres() {
+                self.sql_editor.set_database_type(DatabaseType::Postgres);
                 Some(Box::new(
-                    PostgresPool::new(conn.database_url()?.as_str()).await?,
+                    PostgresPool::new(conn.database_url()?.as_str(), page_size).await?,
+                ))
+            } else if conn.is_mssql() {
+                self.sql_editor.set_database_type(DatabaseType::Mssql);
+                Some(Box::new(
+                    MssqlPool::new(conn.database_url()?.as_str(), page_size).await?,
                 ))
             } else {
+                self.sql_editor.set_database_type(DatabaseType::Sqlite);
                 Some(Box::new(
-                    SqlitePool::new(conn.database_url()?.as_str()).await?,
+                    SqlitePool::new(conn.database_url()?.as_str(), page_size).await?,
                 ))
             };
             self.databases
                 .update(conn, self.pool.as_ref().unwrap())
                 .await?;
-            self.focus = Focus::DabataseList;
+            if is_focus { self.focus = Focus::DabataseList; }
             self.record_table.reset();
             self.tab.reset();
         }
         Ok(())
     }
 
-    async fn update_record_table(&mut self) -> anyhow::Result<()> {
-        if let Some((database, table)) = self.databases.tree().selected_table() {
+    async fn update_record_table(&mut self, focus: bool, orderby: Option<String>, selected_column: usize) -> anyhow::Result<()> {
+        if let Some((database, table, _)) = self.databases.tree().selected_table() {
             let (headers, records) = self
                 .pool
                 .as_ref()
@@ -177,63 +225,93 @@ impl App {
                     } else {
                         Some(self.record_table.filter.input_str())
                     },
+                    orderby,
                 )
                 .await?;
             self.record_table
-                .update(records, headers, database.clone(), table.clone());
+                .update(records, headers, database.clone(), table.clone(), selected_column);
+            if focus { self.record_table.focus = crate::components::record_table::Focus::Table; }
         }
         Ok(())
     }
 
+    pub fn clear_keys(&mut self) {
+        self.keys.clear()
+    }
+
     pub async fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
         self.update_commands();
-
-        if self.components_event(key).await?.is_consumed() {
+        self.keys.push(key);
+        if self.components_event(self.keys.clone()).await?.is_consumed() {
+            self.keys.clear();
             return Ok(EventState::Consumed);
         };
 
-        if self.move_focus(key)?.is_consumed() {
+        if self.move_focus()?.is_consumed() {
+            self.keys.clear();
             return Ok(EventState::Consumed);
         };
+        // self.keys.clear();
         Ok(EventState::NotConsumed)
     }
 
-    async fn components_event(&mut self, key: Key) -> anyhow::Result<EventState> {
-        if self.error.event(key)?.is_consumed() {
+    pub async fn action_event(&mut self, r: Event) -> anyhow::Result<EventState> {
+        match r {
+            Event::RedrawDatabase(focus) => {
+                self.update_databases(focus).await?;
+                return Ok(EventState::Consumed)
+            },
+            Event::RedrawTable(focus) => {
+                self.update_record_table(focus, None, 0).await?;
+                return Ok(EventState::Consumed)
+            },
+            Event::OrderByTable((order, selected_column)) => {
+                let orderby = if order.len() > 0 { Some(order) } else { None };
+                self.update_record_table(true, orderby, selected_column).await?;
+                return Ok(EventState::Consumed)
+            }
+            _ => {},
+        };
+        return Ok(EventState::NotConsumed)
+    }
+
+    async fn components_event(&mut self, key: Vec<Key>) -> anyhow::Result<EventState> {
+        if self.error.event(&key)?.is_consumed() {
             return Ok(EventState::Consumed);
         }
 
-        if !matches!(self.focus, Focus::ConnectionList) && self.help.event(key)?.is_consumed() {
+        if !matches!(self.focus, Focus::ConnectionList) && self.help.event(&key)?.is_consumed() {
             return Ok(EventState::Consumed);
         }
 
         match self.focus {
             Focus::ConnectionList => {
-                if self.connections.event(key)?.is_consumed() {
+                if self.connections.event(&key)?.is_consumed() {
                     return Ok(EventState::Consumed);
                 }
 
-                if key == self.config.key_config.enter {
-                    self.update_databases().await?;
+                if key[0] == self.config.key_config.enter {
+                    self.update_databases(true).await?;
                     return Ok(EventState::Consumed);
                 }
             }
             Focus::DabataseList => {
-                if self.databases.event(key)?.is_consumed() {
+                if self.databases.event(&key)?.is_consumed() ||
+                    self.databases.async_event(key[0], self.pool.as_ref().unwrap(), &self.store).await?.is_consumed() {
                     return Ok(EventState::Consumed);
                 }
 
-                if key == self.config.key_config.enter && self.databases.tree_focused() {
-                    if let Some((database, table)) = self.databases.tree().selected_table() {
+                if key[0] == self.config.key_config.enter && self.databases.tree_focused() {
+                    if let Some((database, table, _)) = self.databases.tree().selected_table() {
                         self.record_table.reset();
                         let (headers, records) = self
                             .pool
                             .as_ref()
                             .unwrap()
-                            .get_records(&database, &table, 0, None)
+                            .get_records(&database, &table, 0, None, None)
                             .await?;
                         self.record_table
-                            .update(records, headers, database.clone(), table.clone());
+                            .update(records, headers, database.clone(), table.clone(), 0);
                         self.properties
                             .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
                             .await?;
@@ -245,20 +323,20 @@ impl App {
             Focus::Table => {
                 match self.tab.selected_tab {
                     Tab::Records => {
-                        if self.record_table.event(key)?.is_consumed() {
+                        if self.record_table.event(&key)?.is_consumed() || 
+                        self.record_table.async_event(key[0], self.pool.as_ref().unwrap(), &self.store).await?.is_consumed() {
                             return Ok(EventState::Consumed);
                         };
 
-                        if key == self.config.key_config.copy {
+                        if key == [self.config.key_config.copy] {
                             if let Some(text) = self.record_table.table.selected_cells() {
                                 copy_to_clipboard(text.as_str())?
                             }
                         }
 
-                        if key == self.config.key_config.enter && self.record_table.filter_focused()
+                        if key[0] == self.config.key_config.enter && self.record_table.filter_focused()
                         {
-                            self.record_table.focus = crate::components::record_table::Focus::Table;
-                            self.update_record_table().await?;
+                            self.update_record_table(true, None, 0).await?;
                         }
 
                         if self.record_table.table.eod {
@@ -266,8 +344,8 @@ impl App {
                         }
 
                         if let Some(index) = self.record_table.table.selected_row.selected() {
-                            if index.saturating_add(1) % RECORDS_LIMIT_PER_PAGE as usize == 0 {
-                                if let Some((database, table)) =
+                            if index.saturating_add(1) % self.config.settings.page_size as usize == 0 {
+                                if let Some((database, table, _)) =
                                     self.databases.tree().selected_table()
                                 {
                                     let (_, records) = self
@@ -283,9 +361,11 @@ impl App {
                                             } else {
                                                 Some(self.record_table.filter.input_str())
                                             },
+                                            None,
                                         )
                                         .await?;
                                     if !records.is_empty() {
+                                        let records = records.into_iter().map(|row| row.into_iter().map(|cell| Arc::new(RwLock::new(cell))).collect::<Vec<_>>()).collect::<Vec<_>>();
                                         self.record_table.table.rows.extend(records);
                                     } else {
                                         self.record_table.table.end()
@@ -295,10 +375,10 @@ impl App {
                         };
                     }
                     Tab::Sql => {
-                        if self.sql_editor.event(key)?.is_consumed()
+                        if self.sql_editor.event(&key)?.is_consumed()
                             || self
                                 .sql_editor
-                                .async_event(key, self.pool.as_ref().unwrap())
+                                .async_event(key[0], self.pool.as_ref().unwrap(), &self.store)
                                 .await?
                                 .is_consumed()
                         {
@@ -306,7 +386,7 @@ impl App {
                         };
                     }
                     Tab::Properties => {
-                        if self.properties.event(key)?.is_consumed() {
+                        if self.properties.event(&key)?.is_consumed() {
                             return Ok(EventState::Consumed);
                         };
                     }
@@ -314,7 +394,7 @@ impl App {
             }
         }
 
-        if self.extend_or_shorten_widget_width(key)?.is_consumed() {
+        if self.extend_or_shorten_widget_width(key[0])?.is_consumed() {
             return Ok(EventState::Consumed);
         };
 
@@ -343,29 +423,31 @@ impl App {
         Ok(EventState::NotConsumed)
     }
 
-    fn move_focus(&mut self, key: Key) -> anyhow::Result<EventState> {
-        if key == self.config.key_config.focus_connections {
+    fn move_focus(&mut self) -> anyhow::Result<EventState> {
+        let key = &self.keys;
+        if key[0] == self.config.key_config.focus_connections {
             self.focus = Focus::ConnectionList;
             return Ok(EventState::Consumed);
         }
-        if self.tab.event(key)?.is_consumed() {
-            return Ok(EventState::Consumed);
-        }
+
         match self.focus {
             Focus::ConnectionList => {
-                if key == self.config.key_config.enter {
+                if key[0] == self.config.key_config.enter {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
                 }
             }
             Focus::DabataseList => {
-                if key == self.config.key_config.focus_right && self.databases.tree_focused() {
+                if key[0] == self.config.key_config.focus_right && self.databases.tree_focused() {
                     self.focus = Focus::Table;
                     return Ok(EventState::Consumed);
                 }
             }
             Focus::Table => {
-                if key == self.config.key_config.focus_left {
+                if self.tab.event(key)?.is_consumed() {
+                    return Ok(EventState::Consumed);
+                }
+                if key[0] == self.config.key_config.focus_left {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
                 }
@@ -378,10 +460,13 @@ impl App {
 #[cfg(test)]
 mod test {
     use super::{App, Config, EventState, Key};
+    use crate::event::Events;
 
-    #[test]
+    #[test] #[ignore]
     fn test_extend_or_shorten_widget_width() {
-        let mut app = App::new(Config::default());
+        let events = Events::new(250);
+        let c = Config::default();
+        let mut app = App::new(&c, events.sender());
         assert_eq!(
             app.extend_or_shorten_widget_width(Key::Char('>')).unwrap(),
             EventState::Consumed

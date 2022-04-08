@@ -20,7 +20,7 @@ port = 3306
 
 [[conn]]
 type = "mysql"
-user = "tako8ki"
+user = "xxf098"
 host = "localhost"
 port = 3306
 database = "world"
@@ -58,3 +58,8 @@ database = "dvdrental"
 [[conn]]
 type = "sqlite"
 path = "$HOME/Downloads/chinook.db"
+
+
+[settings]
+color = "red"
+page_size = 100

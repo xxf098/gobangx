@@ -1,25 +1,28 @@
+use std::time::Duration;
+use sqlx::mssql::{Mssql, MssqlColumn, MssqlRow};
+use sqlx::{Column as _, Row as _, TypeInfo as _};
+use async_trait::async_trait;
+use database_tree::{Child, Database, Table, Schema};
+use futures::TryStreamExt;
+use itertools::Itertools;
+use super::{ExecuteResult, QueryResult, Pool, TableRow, ColType, Header, Value};
 use crate::get_or_null;
 use crate::config::DatabaseType;
-use super::{ExecuteResult, QueryResult, Pool, TableRow, Header, ColType, Value};
-use async_trait::async_trait;
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
-use database_tree::{Child, Database, Table};
-use futures::TryStreamExt;
-use sqlx::mysql::{MySqlColumn, MySqlPoolOptions, MySqlRow, MySql};
-use sqlx::{Column as _, Row as _, TypeInfo as _};
-use sqlx::decode::Decode;
-use std::time::Duration;
 
-pub struct MySqlPool {
-    pool: sqlx::mysql::MySqlPool,
+
+pub type MssqlPoolOptions = sqlx::pool::PoolOptions<Mssql>;
+
+
+pub struct MssqlPool {
+    pool: sqlx::mssql::MssqlPool,
     page_size: u16,
 }
 
-impl MySqlPool {
+impl MssqlPool {
     pub async fn new(database_url: &str, page_size: u16) -> anyhow::Result<Self> {
         Ok(Self {
             page_size,
-            pool: MySqlPoolOptions::new()
+            pool: MssqlPoolOptions::new()
                 .connect_timeout(Duration::from_secs(5))
                 .connect(database_url)
                 .await?,
@@ -41,6 +44,7 @@ impl TableRow for Constraint {
         vec![self.name.to_string(), self.column_name.to_string()]
     }
 }
+
 
 pub struct Column {
     name: Option<String>,
@@ -147,16 +151,33 @@ impl TableRow for Index {
     }
 }
 
+
 #[async_trait]
-impl Pool for MySqlPool {
+impl Pool for MssqlPool {
+
     async fn execute(&self, query: &str) -> anyhow::Result<ExecuteResult> {
         let query = query.trim();
-
-        if query.to_uppercase().starts_with("SELECT") || query.to_uppercase().starts_with("SHOW") {
-            let result = self.query(query).await?;
+        if query.to_uppercase().starts_with("SELECT") {
+            let mut rows = sqlx::query(query).fetch(&self.pool);
+            let mut headers = vec![];
+            let mut records = vec![];
+            while let Some(row) = rows.try_next().await? {
+                // headers = row
+                //     .columns()
+                //     .iter()
+                //     .map(|column| column.name().to_string())
+                //     .collect();
+                let mut new_row = vec![];
+                for column in row.columns().iter() {
+                    let row = convert_column_value_to_string(&row, column)?;
+                    new_row.push(row.0);
+                    if records.len() == 0 { headers.push(row.1); }
+                }
+                records.push(new_row)
+            }
             return Ok(ExecuteResult::Read {
-                headers: result.headers,
-                rows: result.rows,
+                headers,
+                rows: records,
                 database: Database {
                     name: "-".to_string(),
                     children: Vec::new(),
@@ -177,41 +198,12 @@ impl Pool for MySqlPool {
         })
     }
 
-    async fn query(&self, query: &str) -> anyhow::Result<QueryResult> {
-        let query = query.trim();
-
-        if query.to_uppercase().starts_with("SELECT") || query.to_uppercase().starts_with("SHOW") {
-            let mut rows = sqlx::query(query).fetch(&self.pool);
-            let mut headers = vec![];
-            let mut records = vec![];
-            while let Some(row) = rows.try_next().await? {
-              
-                let mut new_row = vec![];
-                for column in row.columns() {
-                    let row = convert_column_value_to_string(&row, column)?;
-                    new_row.push(row.0);
-                    if records.len() == 0 { headers.push(row.1); };
-                }
-                records.push(new_row)
-            }
-
-            return Ok(QueryResult {
-                headers,
-                rows: records,
-                updated_rows: 0,
-            });
-        }
-
-        let result = sqlx::query(query).execute(&self.pool).await?;
-        Ok(QueryResult {
-            headers: vec![],
-            rows: vec![],
-            updated_rows: result.rows_affected(),
-        })
+    async fn query(&self, _query: &str) -> anyhow::Result<QueryResult> {
+        unimplemented!()
     }
 
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
-        let databases = sqlx::query("SHOW DATABASES")
+        let databases = sqlx::query("select name from sys.databases")
             .fetch_all(&self.pool)
             .await?
             .iter()
@@ -228,47 +220,61 @@ impl Pool for MySqlPool {
     }
 
     async fn get_tables(&self, database: String) -> anyhow::Result<Vec<Child>> {
-        let query = format!("SHOW TABLE STATUS FROM `{}`", database);
+        let query = format!("SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_CATALOG = '{}'", database.to_uppercase());
         let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
-        let mut tables = vec![];
+        let mut tables = Vec::new();
         while let Some(row) = rows.try_next().await? {
             tables.push(Table {
-                name: row.try_get("Name")?,
-                create_time: row.try_get("Create_time")?,
-                update_time: row.try_get("Update_time")?,
-                engine: row.try_get("Engine")?,
-                schema: None,
+                name: row.try_get("TABLE_NAME")?,
+                create_time: None,
+                update_time: None,
+                engine: None,
+                schema: row.try_get("TABLE_SCHEMA")?,
             })
         }
-        Ok(tables.into_iter().map(|table| table.into()).collect())
+        let mut schemas = vec![];
+        for (key, group) in &tables
+            .iter()
+            .sorted_by(|a, b| Ord::cmp(&b.schema, &a.schema))
+            .group_by(|t| t.schema.as_ref())
+        {
+            if let Some(key) = key {
+                schemas.push(
+                    Schema {
+                        name: key.to_string(),
+                        tables: group.cloned().collect(),
+                    }
+                    .into(),
+                )
+            }
+        }
+        Ok(schemas)
     }
 
     async fn get_records(
         &self,
         database: &Database,
         table: &Table,
-        page: u16,
+        _page: u16,
         filter: Option<String>,
-        orderby: Option<String>,
+        _orderby: Option<String>,
     ) -> anyhow::Result<(Vec<Header>, Vec<Vec<Value>>)> {
-        let orderby = if orderby.is_none() { "".to_string() } else { format!("ORDER BY {}", orderby.unwrap()) };
-        let query = if let Some(filter) = filter {
+        // FIXME
+        let query = if let Some(filter) = filter.as_ref() {
             format!(
-                "SELECT * FROM `{database}`.`{table}` WHERE {filter} {orderby} LIMIT {page}, {limit}",
+                r#"SELECT TOP {limit} * FROM "{database}"."{table_schema}"."{table}" WHERE {filter}"#,
                 database = database.name,
                 table = table.name,
                 filter = filter,
-                orderby = orderby,
-                page = page,
+                table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 limit = self.page_size
             )
         } else {
             format!(
-                "SELECT * FROM `{}`.`{}` {orderby} LIMIT {page}, {limit}",
-                database.name,
-                table.name,
-                orderby = orderby,
-                page = page,
+                r#"SELECT TOP {limit} * FROM "{database}"."{table_schema}"."{table}""#,
+                database = database.name,
+                table = table.name,
+                table_schema = table.schema.clone().unwrap_or_else(|| "public".to_string()),
                 limit = self.page_size
             )
         };
@@ -279,13 +285,13 @@ impl Pool for MySqlPool {
             // headers = row
             //     .columns()
             //     .iter()
-            //     .map(|column| column.name().to_string())
+            //     .map(|column| Header::new(column.name().to_string()))
             //     .collect();
             let mut new_row = vec![];
-            for column in row.columns() {
+            for column in row.columns().iter() {
                 let row = convert_column_value_to_string(&row, column)?;
                 new_row.push(row.0);
-                if records.len() == 0 { headers.push(row.1); };
+                headers.push(row.1);
             }
             records.push(new_row)
         }
@@ -297,19 +303,22 @@ impl Pool for MySqlPool {
         database: &Database,
         table: &Table,
     ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
-        let query = format!(
-            "SHOW FULL COLUMNS FROM `{}`.`{}`",
-            database.name, table.name
-        );
-        let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
+        let table_schema = table
+            .schema
+            .as_ref()
+            .map_or("public", |schema| schema.as_str());
+        let query = format!("SELECT * FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_CATALOG = '{}' AND table_schema = '{}' AND table_name = '{}'", &database.name, table_schema, &table.name);
+        let mut rows = sqlx::query(query.as_str())
+            .fetch(&self.pool);
         let mut columns: Vec<Box<dyn TableRow>> = vec![];
         while let Some(row) = rows.try_next().await? {
             columns.push(Box::new(Column {
-                name: row.try_get("Field")?,
-                r#type: row.try_get("Type")?,
-                null: row.try_get("Null")?,
-                default: row.try_get("Default")?,
-                comment: row.try_get("Comment")?,
+                name: row.try_get("COLUMN_NAME")?,
+                r#type: row.try_get("DATA_TYPE")?,
+                // null: row.try_get("IS_NULLABLE")?, // FIXME
+                null: None,
+                default: row.try_get("COLUMN_DEFAULT")?,
+                comment: None,
             }))
         }
         Ok(columns)
@@ -317,102 +326,116 @@ impl Pool for MySqlPool {
 
     async fn get_constraints(
         &self,
-        database: &Database,
+        _database: &Database,
         table: &Table,
     ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
         let mut rows = sqlx::query(
             "
         SELECT
-            COLUMN_NAME,
-            CONSTRAINT_NAME
+            tc.table_schema,
+            tc.constraint_name,
+            tc.table_name,
+            kcu.column_name,
+            ccu.table_schema AS foreign_table_schema,
+            ccu.table_name AS foreign_table_name,
+            ccu.column_name AS foreign_column_name
         FROM
-            information_schema.KEY_COLUMN_USAGE
+            information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name
+            AND ccu.table_schema = tc.table_schema
         WHERE
-            REFERENCED_TABLE_SCHEMA IS NULL
-            AND REFERENCED_TABLE_NAME IS NULL
-            AND TABLE_SCHEMA = ?
-            AND TABLE_NAME = ?
+            NOT tc.constraint_type = 'FOREIGN KEY'
+            AND tc.table_name = '$1'
         ",
         )
-        .bind(&database.name)
         .bind(&table.name)
         .fetch(&self.pool);
         let mut constraints: Vec<Box<dyn TableRow>> = vec![];
         while let Some(row) = rows.try_next().await? {
             constraints.push(Box::new(Constraint {
-                name: row.try_get("CONSTRAINT_NAME")?,
-                column_name: row.try_get("COLUMN_NAME")?,
+                name: row.try_get("constraint_name")?,
+                column_name: row.try_get("column_name")?,
             }))
         }
-        Ok(constraints)
+        Ok(constraints)        
+
     }
 
     async fn get_foreign_keys(
         &self,
-        database: &Database,
+        _database: &Database,
         table: &Table,
     ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
         let mut rows = sqlx::query(
             "
         SELECT
-            TABLE_NAME,
-            COLUMN_NAME,
-            CONSTRAINT_NAME,
-            REFERENCED_TABLE_SCHEMA,
-            REFERENCED_TABLE_NAME,
-            REFERENCED_COLUMN_NAME
+            tc.table_schema,
+            tc.constraint_name,
+            tc.table_name,
+            kcu.column_name,
+            ccu.table_schema AS foreign_table_schema,
+            ccu.table_name AS foreign_table_name,
+            ccu.column_name AS foreign_column_name
         FROM
-            INFORMATION_SCHEMA.KEY_COLUMN_USAGE
+            information_schema.table_constraints AS tc
+            JOIN information_schema.key_column_usage AS kcu ON tc.constraint_name = kcu.constraint_name
+            AND tc.table_schema = kcu.table_schema
+            JOIN information_schema.constraint_column_usage AS ccu ON ccu.constraint_name = tc.constraint_name
+            AND ccu.table_schema = tc.table_schema
         WHERE
-            REFERENCED_TABLE_SCHEMA IS NOT NULL
-            AND REFERENCED_TABLE_NAME IS NOT NULL
-            AND TABLE_SCHEMA = ?
-            AND TABLE_NAME = ?
+            tc.constraint_type = 'FOREIGN KEY'
+            AND tc.table_name = '$1'
         ",
         )
-        .bind(&database.name)
         .bind(&table.name)
         .fetch(&self.pool);
-        let mut foreign_keys: Vec<Box<dyn TableRow>> = vec![];
+        let mut constraints: Vec<Box<dyn TableRow>> = vec![];
         while let Some(row) = rows.try_next().await? {
-            foreign_keys.push(Box::new(ForeignKey {
-                name: row.try_get("CONSTRAINT_NAME")?,
-                column_name: row.try_get("COLUMN_NAME")?,
-                ref_table: row.try_get("REFERENCED_TABLE_NAME")?,
-                ref_column: row.try_get("REFERENCED_COLUMN_NAME")?,
+            constraints.push(Box::new(ForeignKey {
+                name: row.try_get("constraint_name")?,
+                column_name: row.try_get("column_name")?,
+                ref_table: row.try_get("foreign_table_name")?,
+                ref_column: row.try_get("foreign_column_name")?,
             }))
         }
-        Ok(foreign_keys)
+        Ok(constraints)        
     }
 
     async fn get_indexes(
         &self,
-        database: &Database,
+        _database: &Database,
         table: &Table,
     ) -> anyhow::Result<Vec<Box<dyn TableRow>>> {
         let mut rows = sqlx::query(
             "
         SELECT
-            DISTINCT TABLE_NAME,
-            INDEX_NAME,
-            INDEX_TYPE,
-            COLUMN_NAME
-        FROM
-            INFORMATION_SCHEMA.STATISTICS
-        WHERE
-            TABLE_SCHEMA = ?
-            AND TABLE_NAME = ?
+            TABLENAME = t.name,
+            INDEXNAME = ind.name,
+            INDEXID = ind.index_id,
+            TYPENAME = ind.type_desc,
+            COLUMNID = ic.index_column_id,
+            COLUMNNAME = col.name
+       FROM
+            sys.indexes ind
+       INNER JOIN
+            sys.index_columns ic ON  ind.object_id = ic.object_id and ind.index_id = ic.index_id
+       INNER JOIN
+            sys.columns col ON ic.object_id = col.object_id and ic.column_id = col.column_id
+       INNER JOIN
+            sys.tables t ON ind.object_id = t.object_id
+       WHERE t.name = '$1';
         ",
         )
-        .bind(&database.name)
         .bind(&table.name)
         .fetch(&self.pool);
         let mut foreign_keys: Vec<Box<dyn TableRow>> = vec![];
         while let Some(row) = rows.try_next().await? {
             foreign_keys.push(Box::new(Index {
-                name: row.try_get("INDEX_NAME")?,
-                column_name: row.try_get("COLUMN_NAME")?,
-                r#type: row.try_get("INDEX_TYPE")?,
+                name: row.try_get("INDEXNAME")?,
+                column_name: row.try_get("COLUMNNAME")?,
+                r#type: row.try_get("TYPENAME")?,
             }))
         }
         Ok(foreign_keys)
@@ -423,21 +446,21 @@ impl Pool for MySqlPool {
     }
 
     fn database_type(&self) -> DatabaseType {
-        DatabaseType::MySql
+        DatabaseType::Mssql
     }
 }
 
-fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyhow::Result<(Value, Header)> {
+
+fn convert_column_value_to_string(row: &MssqlRow, column: &MssqlColumn) -> anyhow::Result<(Value, Header)> {
     let column_name = column.name();
 
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
         let header = Header::new(column_name.to_string(), ColType::VarChar);
         Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<&str> = value;
-        let header = Header::new(column_name.to_string(), ColType::VarChar);
-        Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<&str> = value;
+    //     Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i8> = value;
         let header = Header::new(column_name.to_string(), ColType::Int);
@@ -462,65 +485,41 @@ fn convert_column_value_to_string(row: &MySqlRow, column: &MySqlColumn) -> anyho
         let value: Option<f64> = value;
         let header = Header::new(column_name.to_string(), ColType::Float);
         Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<u8> = value;
-        let header = Header::new(column_name.to_string(), ColType::Int);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<u16> = value;
-        let header = Header::new(column_name.to_string(), ColType::Int);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<u32> = value;
-        let header = Header::new(column_name.to_string(), ColType::Int);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<u64> = value;
-        let header = Header::new(column_name.to_string(), ColType::Int);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<rust_decimal::Decimal> = value;
-        let header = Header::new(column_name.to_string(), ColType::Int);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveDate> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveTime> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveDateTime> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        let t = value.map(|t| t.to_string().strip_suffix(" UTC").unwrap().to_string());
-        Ok((get_or_null!(t), header))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<serde_json::Value> = value;
-        let header = Header::new(column_name.to_string(), ColType::Date);
-        Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<u8> = value;
+    //     Ok(get_or_null!(value))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<u16> = value;
+    //     Ok(get_or_null!(value))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<u32> = value;
+    //     Ok(get_or_null!(value))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<u64> = value;
+    //     Ok(get_or_null!(value))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<rust_decimal::Decimal> = value;
+    //     Ok(get_or_null!(value))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<NaiveDate> = value;
+    //     Ok(get_or_null!(value))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<NaiveTime> = value;
+    //     Ok(get_or_null!(value))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<NaiveDateTime> = value;
+    //     Ok(get_or_null!(value))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<chrono::DateTime<chrono::Utc>> = value;
+    //     Ok(get_or_null!(value))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<serde_json::Value> = value;
+    //     Ok(get_or_null!(value))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<bool> = value;
         let header = Header::new(column_name.to_string(), ColType::Boolean);
         Ok((get_or_null!(value), header))
     } else {
-        let index = column.ordinal();
-        if let Ok(val) = row.try_get_raw(index) {
-            // https://docs.rs/sqlx-core/0.5.11/src/sqlx_core/mysql/types/str.rs.html
-            // match val.format() {
-            //     MySqlValueFormat::Binary => {},
-            //     MySqlValueFormat::Text => {},
-            // }
-            if let Ok(value) = Decode::<MySql>::decode(val) {
-                let value: &str = value;
-                let header = Header::new(column_name.to_string(), ColType::VarChar);
-                return Ok((Value::new(value.to_string()), header))
-            }
-        }
         anyhow::bail!(
             "column type not implemented: `{}` {}",
             column_name,

@@ -1,14 +1,11 @@
 <div align="center">
 
-![gobang](./resources/logo.png)
+gobangx is based on [gobang](https://github.com/TaKO8Ki/gobang)
 
-gobang is currently in alpha
+A cross-platform TUI database management tool written in Rust with more useful features
 
-A cross-platform TUI database management tool written in Rust
+[![github workflow status](https://img.shields.io/github/workflow/status/xxf098/gobangx/CI/main)](https://github.com/xxf098/gobangx/actions)
 
-[![github workflow status](https://img.shields.io/github/workflow/status/TaKO8Ki/gobang/CI/main)](https://github.com/TaKO8Ki/gobang/actions) [![crates](https://img.shields.io/crates/v/gobang.svg?logo=rust)](https://crates.io/crates/gobang)
-
-![gobang](./resources/gobang.gif)
 
 </div>
 
@@ -18,61 +15,11 @@ A cross-platform TUI database management tool written in Rust
 - Multiple Database support (MySQL, PostgreSQL, SQLite)
 - Intuitive keyboard only control
 
-## TODOs
-
-- [ ] SQL editor
-- [ ] Custom key bindings
-- [ ] Custom theme settings
-- [ ] Support the other databases
-
-## What does "gobang" come from?
-
-gobang means a Japanese game played on goban, a go board. The appearance of goban looks like table structure. And I live in Kyoto, Japan. In Kyoto city, streets are laid out on a grid (We call it “goban no me no youna (碁盤の目のような)”). They are why I named this project "gobang".
-
 ## Installation
-
-### With Homebrew (Linux, macOS)
-
-If you’re using Homebrew or Linuxbrew, install the gobang formula:
-
-```
-brew install tako8ki/tap/gobang
-```
-
-### On Windows
-
-If you're a Windows Scoop user, then you can install gobang from the [official bucket](https://github.com/ScoopInstaller/Main/blob/master/bucket/gobang.json):
-
-```
-scoop install gobang
-```
-### On NixOS
-
-If you're a Nix user, you can install [gobang](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/database/gobang/default.nix) from nixpkgs:
-
-```
-$ nix-env --install gobang
-```
-
-### On NetBSD
-
-If you're a NetBSD user, then you can install gobang from [pkgsrc](https://pkgsrc.se/databases/gobang):
-
-```
-pkgin install gobang
-```
-
-### With Cargo (Linux, macOS, Windows)
-
-If you already have a Rust environment set up, you can use the `cargo install` command:
-
-```
-cargo install --version 0.1.0-alpha.5 gobang
-```
 
 ### From binaries (Linux, macOS, Windows)
 
-- Download the [latest release binary](https://github.com/TaKO8Ki/gobang/releases) for your system
+- Download the [latest release binary](https://github.com/xxf098/gobangx/releases) for your system
 - Set the `PATH` environment variable
 
 ## Usage
@@ -102,9 +49,16 @@ If you want to add connections, you need to edit your config file. For more info
 | ---- | ---- |
 | <kbd>h</kbd>, <kbd>j</kbd>, <kbd>k</kbd>, <kbd>l</kbd> | Scroll left/down/up/right |
 | <kbd>Ctrl</kbd> + <kbd>u</kbd>, <kbd>Ctrl</kbd> + <kbd>d</kbd> | Scroll up/down multiple lines |
+| <kbd>0</kbd>, <kbd>$</kbd> | Scroll to start/end |
 | <kbd>g</kbd> , <kbd>G</kbd> | Scroll to top/bottom |
 | <kbd>H</kbd>, <kbd>J</kbd>, <kbd>K</kbd>, <kbd>L</kbd> | Extend selection by one cell left/down/up/right |
-| <kbd>y</kbd> | Copy a cell value |
+| <kbd>y</kbd> | Yank a cell value |
+| <kbd>yc</kbd> | Yank column name |
+| <kbd>Y</kbd> | Yank `CREATE TABLE` or `INSERT INTO` sql |
+| <kbd>D</kbd> | Delete row by primary key or `id` or first column |
+| <kbd>C</kbd> | Change current cell value, set value to `NULL` with `<NULL>` |
+| <kbd>o</kbd>, <kbd>O</kbd> | Order column asc/desc |
+| <kbd>=</kbd>, <kbd>-</kbd> | Expand/Shorten column width |
 | <kbd>←</kbd>, <kbd>→</kbd> | Move focus to left/right |
 | <kbd>c</kbd> | Move focus to connections |
 | <kbd>/</kbd> | Filter |
@@ -146,8 +100,10 @@ database = "bar"
 [[conn]]
 type = "sqlite"
 path = "/path/to/baz.db"
+
+[settings]
+# support: red,green,yellow,blue,magenta,cyan or color code 
+color = "red"
+# page size limit, page_size >= 20 && page_size <= 2000
+page_size = 100
 ```
-
-## Contribution
-
-Contributions, issues and pull requests are welcome!

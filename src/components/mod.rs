@@ -8,6 +8,7 @@ pub mod help;
 pub mod properties;
 pub mod record_table;
 pub mod sql_editor;
+pub mod cell_editor;
 pub mod tab;
 pub mod table;
 pub mod table_filter;
@@ -33,6 +34,7 @@ pub use table::TableComponent;
 pub use table_filter::TableFilterComponent;
 pub use table_status::TableStatusComponent;
 pub use table_value::TableValueComponent;
+pub use cell_editor::CellEditorComponent;
 
 #[cfg(debug_assertions)]
 pub use debug::DebugComponent;
@@ -90,12 +92,13 @@ pub trait MovableComponent {
 pub trait Component {
     fn commands(&self, out: &mut Vec<CommandInfo>);
 
-    fn event(&mut self, key: crate::event::Key) -> Result<EventState>;
+    fn event(&mut self, key: &[crate::event::Key]) -> Result<EventState>;
 
     async fn async_event(
         &mut self,
         _key: crate::event::Key,
         _pool: &Box<dyn Pool>,
+        _store: &crate::event::Store,
     ) -> Result<EventState> {
         Ok(EventState::NotConsumed)
     }

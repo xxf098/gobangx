@@ -15,14 +15,14 @@ use tui::{
     Frame,
 };
 
-pub struct HelpComponent {
+pub struct HelpComponent<'a> {
     cmds: Vec<CommandInfo>,
     visible: bool,
     selection: u16,
-    key_config: KeyConfig,
+    key_config: &'a KeyConfig,
 }
 
-impl DrawableComponent for HelpComponent {
+impl<'a> DrawableComponent for HelpComponent<'a> {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
         if self.visible {
             const SIZE: (u16, u16) = (65, 24);
@@ -71,10 +71,11 @@ impl DrawableComponent for HelpComponent {
     }
 }
 
-impl Component for HelpComponent {
+impl<'a> Component for HelpComponent<'a> {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
+        let key = key[0];
         if self.visible {
             if key == self.key_config.exit_popup {
                 self.hide();
@@ -105,8 +106,8 @@ impl Component for HelpComponent {
     }
 }
 
-impl HelpComponent {
-    pub const fn new(key_config: KeyConfig) -> Self {
+impl<'a> HelpComponent<'a> {
+    pub const fn new(key_config: &'a KeyConfig) -> Self {
         Self {
             cmds: vec![],
             visible: false,
@@ -173,7 +174,7 @@ mod test {
     fn test_get_text() {
         let width = 3;
         let key_config = KeyConfig::default();
-        let mut component = HelpComponent::new(key_config.clone());
+        let mut component = HelpComponent::new(&key_config);
         component.set_cmds(vec![
             CommandInfo::new(crate::components::command::scroll(&key_config)),
             CommandInfo::new(crate::components::command::filter(&key_config)),

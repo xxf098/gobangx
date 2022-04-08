@@ -3,7 +3,7 @@ use super::{
     StatefulDrawableComponent,
 };
 use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
+use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
@@ -19,6 +19,7 @@ use unicode_width::UnicodeWidthStr;
 
 pub struct TableFilterComponent {
     key_config: KeyConfig,
+    settings: Settings,
     pub table: Option<Table>,
     input: Vec<char>,
     input_idx: usize,
@@ -27,14 +28,15 @@ pub struct TableFilterComponent {
 }
 
 impl TableFilterComponent {
-    pub fn new(key_config: KeyConfig) -> Self {
+    pub fn new(key_config: KeyConfig, settings: Settings) -> Self {
         Self {
             key_config: key_config.clone(),
             table: None,
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position: 0,
-            completion: CompletionComponent::new(key_config, "", false),
+            completion: CompletionComponent::new(key_config, settings.clone(),"", false),
+            settings,
         }
     }
 
@@ -47,6 +49,10 @@ impl TableFilterComponent {
         self.input = Vec::new();
         self.input_idx = 0;
         self.input_cursor_position = 0;
+    }
+
+    pub fn update_candidates(&mut self, candidates: &[String]) {
+        self.completion.update_candidates(candidates)
     }
 
     fn update_completion(&mut self) {
@@ -136,7 +142,7 @@ impl StatefulDrawableComponent for TableFilterComponent {
                 self.table
                     .as_ref()
                     .map_or("-".to_string(), |table| table.name.to_string()),
-                Style::default().fg(Color::Blue),
+                Style::default().fg(self.settings.color),
             ),
             Span::from(format!(
                 " {}",
@@ -193,26 +199,26 @@ impl StatefulDrawableComponent for TableFilterComponent {
 impl Component for TableFilterComponent {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();
 
         // apply comletion candidates
-        if key == self.key_config.enter {
+        if key[0] == self.key_config.enter {
             return self.complete();
         }
 
         self.completion.selected_candidate();
 
         match key {
-            Key::Char(c) => {
-                self.input.insert(self.input_idx, c);
+            [Key::Char(c)] => {
+                self.input.insert(self.input_idx, *c);
                 self.input_idx += 1;
-                self.input_cursor_position += compute_character_width(c);
+                self.input_cursor_position += compute_character_width(*c);
                 self.update_completion();
 
                 Ok(EventState::Consumed)
             }
-            Key::Delete | Key::Backspace => {
+            [Key::Delete | Key::Backspace] => {
                 if input_str.width() > 0 && !self.input.is_empty() && self.input_idx > 0 {
                     let last_c = self.input.remove(self.input_idx - 1);
                     self.input_idx -= 1;
@@ -221,7 +227,7 @@ impl Component for TableFilterComponent {
                 }
                 Ok(EventState::Consumed)
             }
-            Key::Left => {
+            [Key::Left] => {
                 if !self.input.is_empty() && self.input_idx > 0 {
                     self.input_idx -= 1;
                     self.input_cursor_position = self
@@ -231,14 +237,14 @@ impl Component for TableFilterComponent {
                 }
                 Ok(EventState::Consumed)
             }
-            Key::Ctrl('a') => {
+            [Key::Ctrl('a')] => {
                 if !self.input.is_empty() && self.input_idx > 0 {
                     self.input_idx = 0;
                     self.input_cursor_position = 0
                 }
                 Ok(EventState::Consumed)
             }
-            Key::Right => {
+            [Key::Right] => {
                 if self.input_idx < self.input.len() {
                     let next_c = self.input[self.input_idx];
                     self.input_idx += 1;
@@ -247,7 +253,7 @@ impl Component for TableFilterComponent {
                 }
                 Ok(EventState::Consumed)
             }
-            Key::Ctrl('e') => {
+            [Key::Ctrl('e')] => {
                 if self.input_idx < self.input.len() {
                     self.input_idx = self.input.len();
                     self.input_cursor_position = self.input_str().width() as u16;
@@ -261,11 +267,11 @@ impl Component for TableFilterComponent {
 
 #[cfg(test)]
 mod test {
-    use super::{KeyConfig, TableFilterComponent};
+    use super::{KeyConfig, TableFilterComponent, Settings};
 
     #[test]
     fn test_complete() {
-        let mut filter = TableFilterComponent::new(KeyConfig::default());
+        let mut filter = TableFilterComponent::new(KeyConfig::default(), Settings::default());
         filter.input_idx = 2;
         filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
         filter.completion.update("an");
@@ -278,7 +284,7 @@ mod test {
 
     #[test]
     fn test_complete_end() {
-        let mut filter = TableFilterComponent::new(KeyConfig::default());
+        let mut filter = TableFilterComponent::new(KeyConfig::default(), Settings::default());
         filter.input_idx = 9;
         filter.input = vec!['a', 'b', ' ', 'c', 'd', 'e', 'f', ' ', 'i'];
         filter.completion.update('i');
@@ -291,7 +297,7 @@ mod test {
 
     #[test]
     fn test_complete_no_candidates() {
-        let mut filter = TableFilterComponent::new(KeyConfig::default());
+        let mut filter = TableFilterComponent::new(KeyConfig::default(), Settings::default());
         filter.input_idx = 2;
         filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
         filter.completion.update("foo");

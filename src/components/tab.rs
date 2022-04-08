@@ -26,13 +26,13 @@ impl std::fmt::Display for Tab {
     }
 }
 
-pub struct TabComponent {
+pub struct TabComponent<'a> {
     pub selected_tab: Tab,
-    key_config: KeyConfig,
+    key_config: &'a KeyConfig,
 }
 
-impl TabComponent {
-    pub fn new(key_config: KeyConfig) -> Self {
+impl<'a> TabComponent<'a> {
+    pub fn new(key_config: &'a KeyConfig) -> Self {
         Self {
             selected_tab: Tab::Records,
             key_config,
@@ -52,7 +52,7 @@ impl TabComponent {
     }
 }
 
-impl DrawableComponent for TabComponent {
+impl<'a> DrawableComponent for TabComponent<'a> {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, _focused: bool) -> Result<()> {
         let titles = self.names().iter().cloned().map(Spans::from).collect();
         let tabs = Tabs::new(titles)
@@ -69,17 +69,17 @@ impl DrawableComponent for TabComponent {
     }
 }
 
-impl Component for TabComponent {
+impl<'a> Component for TabComponent<'a> {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
-        if key == self.key_config.tab_records {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
+        if key == [self.key_config.tab_records] {
             self.selected_tab = Tab::Records;
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.tab_sql_editor {
+        } else if key == [self.key_config.tab_sql_editor] {
             self.selected_tab = Tab::Sql;
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.tab_properties {
+        } else if key == [self.key_config.tab_properties] {
             self.selected_tab = Tab::Properties;
             return Ok(EventState::Consumed);
         }

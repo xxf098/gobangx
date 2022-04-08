@@ -7,6 +7,7 @@ mod database;
 mod event;
 mod ui;
 mod version;
+mod sql;
 
 #[macro_use]
 mod log;
@@ -21,17 +22,20 @@ use crossterm::{
 use std::io;
 use tui::{backend::CrosstermBackend, Terminal};
 
+// TODO: SQL meta, foreign table
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let value = crate::cli::parse();
-    let config = config::Config::new(&value.config)?;
+    let connection = value.url.as_ref().map(|u| config::Connection::new(u).ok()).flatten();
+    let config = config::Config::new(&value)?;
 
     setup_terminal()?;
 
     let backend = CrosstermBackend::new(io::stdout());
     let mut terminal = Terminal::new(backend)?;
-    let events = event::Events::new(250);
-    let mut app = App::new(config.clone());
+    let mut events = event::Events::new(250);
+    let mut app = App::new(&config, events.sender());
+    app.update_databases_internal(connection.as_ref()).await?;
 
     terminal.clear()?;
 
@@ -42,7 +46,8 @@ async fn main() -> anyhow::Result<()> {
                 std::process::exit(1);
             }
         })?;
-        match events.next()? {
+        let next_event = events.next().await.unwrap();
+        match next_event {
             Event::Input(key) => match app.event(key).await {
                 Ok(state) => {
                     if !state.is_consumed()
@@ -53,7 +58,11 @@ async fn main() -> anyhow::Result<()> {
                 }
                 Err(err) => app.error.set(err.to_string())?,
             },
-            Event::Tick => (),
+            Event::Tick => app.clear_keys(),
+            _  => match app.action_event(next_event).await {
+                Ok(_) => {},
+                Err(err) => app.error.set(err.to_string())?,
+            },
         }
     }
 

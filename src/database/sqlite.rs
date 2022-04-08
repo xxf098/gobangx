@@ -1,8 +1,7 @@
 use crate::get_or_null;
-
-use super::{ExecuteResult, Pool, TableRow, RECORDS_LIMIT_PER_PAGE};
+use crate::config::DatabaseType;
+use super::{ExecuteResult, QueryResult, Pool, TableRow, Header, ColType, Value};
 use async_trait::async_trait;
-use chrono::NaiveDateTime;
 use database_tree::{Child, Database, Table};
 use futures::TryStreamExt;
 use sqlx::sqlite::{SqliteColumn, SqlitePoolOptions, SqliteRow};
@@ -11,11 +10,13 @@ use std::time::Duration;
 
 pub struct SqlitePool {
     pool: sqlx::sqlite::SqlitePool,
+    page_size: u16,
 }
 
 impl SqlitePool {
-    pub async fn new(database_url: &str) -> anyhow::Result<Self> {
+    pub async fn new(database_url: &str, page_size: u16) -> anyhow::Result<Self> {
         Ok(Self {
+            page_size,
             pool: SqlitePoolOptions::new()
                 .connect_timeout(Duration::from_secs(5))
                 .connect(database_url)
@@ -150,27 +151,13 @@ impl TableRow for Index {
 
 #[async_trait]
 impl Pool for SqlitePool {
-    async fn execute(&self, query: &String) -> anyhow::Result<ExecuteResult> {
+    async fn execute(&self, query: &str) -> anyhow::Result<ExecuteResult> {
         let query = query.trim();
         if query.to_uppercase().starts_with("SELECT") {
-            let mut rows = sqlx::query(query).fetch(&self.pool);
-            let mut headers = vec![];
-            let mut records = vec![];
-            while let Some(row) = rows.try_next().await? {
-                headers = row
-                    .columns()
-                    .iter()
-                    .map(|column| column.name().to_string())
-                    .collect();
-                let mut new_row = vec![];
-                for column in row.columns() {
-                    new_row.push(convert_column_value_to_string(&row, column)?)
-                }
-                records.push(new_row)
-            }
+            let result = self.query(query).await?;
             return Ok(ExecuteResult::Read {
-                headers,
-                rows: records,
+                headers: result.headers,
+                rows: result.rows,
                 database: Database {
                     name: "-".to_string(),
                     children: Vec::new(),
@@ -191,8 +178,38 @@ impl Pool for SqlitePool {
         })
     }
 
+    async fn query(&self, query: &str) -> anyhow::Result<QueryResult> {
+        let query = query.trim();
+        if query.to_uppercase().starts_with("SELECT") {
+            let mut rows = sqlx::query(query).fetch(&self.pool);
+            let mut headers = vec![];
+            let mut records = vec![];
+            while let Some(row) = rows.try_next().await? {
+                let mut new_row = vec![];
+                for column in row.columns() {
+                    let row = convert_column_value_to_string(&row, column)?;
+                    new_row.push(row.0);
+                    if records.len() == 0 { headers.push(row.1); };
+                }
+                records.push(new_row)
+            }
+            return Ok(QueryResult {
+                headers,
+                rows: records,
+                updated_rows: 0,
+            });
+        }
+
+        let result = sqlx::query(query).execute(&self.pool).await?;
+        Ok(QueryResult {
+            headers: vec![],
+            rows: vec![],
+            updated_rows: result.rows_affected(),
+        })
+    }
+
     async fn get_databases(&self) -> anyhow::Result<Vec<Database>> {
-        let databases = sqlx::query("SELECT name FROM pragma_database_list")
+        let databases = sqlx::query("SELECT name FROM pragma_database_list ORDER BY name")
             .fetch_all(&self.pool)
             .await?
             .iter()
@@ -210,7 +227,7 @@ impl Pool for SqlitePool {
 
     async fn get_tables(&self, _database: String) -> anyhow::Result<Vec<Child>> {
         let mut rows =
-            sqlx::query("SELECT name FROM sqlite_master WHERE type = 'table'").fetch(&self.pool);
+            sqlx::query("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").fetch(&self.pool);
         let mut tables = Vec::new();
         while let Some(row) = rows.try_next().await? {
             tables.push(Table {
@@ -226,41 +243,53 @@ impl Pool for SqlitePool {
 
     async fn get_records(
         &self,
-        _database: &Database,
+        database: &Database,
         table: &Table,
         page: u16,
         filter: Option<String>,
-    ) -> anyhow::Result<(Vec<String>, Vec<Vec<String>>)> {
+        orderby: Option<String>,
+    ) -> anyhow::Result<(Vec<Header>, Vec<Vec<Value>>)> {
+        let orderby = if orderby.is_none() { "".to_string() } else { format!("ORDER BY {}", orderby.unwrap()) };
         let query = if let Some(filter) = filter {
             format!(
-                "SELECT * FROM `{table}` WHERE {filter} LIMIT {page}, {limit}",
+                "SELECT * FROM `{table}` WHERE {filter} {orderby} LIMIT {page}, {limit}",
                 table = table.name,
                 filter = filter,
+                orderby = orderby,
                 page = page,
-                limit = RECORDS_LIMIT_PER_PAGE
+                limit = self.page_size
             )
         } else {
             format!(
-                "SELECT * FROM `{}` LIMIT {page}, {limit}",
+                "SELECT * FROM `{}` {orderby} LIMIT {page}, {limit}",
                 table.name,
+                orderby = orderby,
                 page = page,
-                limit = RECORDS_LIMIT_PER_PAGE
+                limit = self.page_size
             )
         };
         let mut rows = sqlx::query(query.as_str()).fetch(&self.pool);
         let mut headers = vec![];
         let mut records = vec![];
         while let Some(row) = rows.try_next().await? {
-            headers = row
-                .columns()
-                .iter()
-                .map(|column| column.name().to_string())
-                .collect();
+            // headers = row
+            //     .columns()
+            //     .iter()
+            //     .map(|column| column.name().to_string())
+            //     .collect();
             let mut new_row = vec![];
             for column in row.columns() {
-                new_row.push(convert_column_value_to_string(&row, column)?)
+                let row = convert_column_value_to_string(&row, column)?;
+                new_row.push(row.0);
+                if records.len() == 0 { headers.push(row.1); }
             }
             records.push(new_row)
+        }
+        if headers.len() < 1 && records.len() < 1 {
+            let columns = self.get_columns(database, table).await?;
+            if !columns.is_empty() {
+                headers = columns.iter().map(|c| Header::new(c.columns()[0].clone(), ColType::VarChar)).collect::<Vec<Header>>();
+            }
         }
         Ok((headers, records))
     }
@@ -381,46 +410,61 @@ impl Pool for SqlitePool {
     async fn close(&self) {
         self.pool.close().await;
     }
+    
+    fn database_type(&self) -> DatabaseType {
+        DatabaseType::Sqlite
+    }
 }
 
 fn convert_column_value_to_string(
     row: &SqliteRow,
     column: &SqliteColumn,
-) -> anyhow::Result<String> {
+) -> anyhow::Result<(Value, Header)> {
     let column_name = column.name();
     if let Ok(value) = row.try_get(column_name) {
         let value: Option<String> = value;
-        Ok(value.unwrap_or_else(|| "NULL".to_string()))
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<&str> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::VarChar);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i16> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i32> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<i64> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Int);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f32> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(),  ColType::Float);
+        Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<f64> = value;
-        Ok(get_or_null!(value))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<chrono::DateTime<chrono::Utc>> = value;
-        Ok(get_or_null!(value))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<chrono::DateTime<chrono::Local>> = value;
-        Ok(get_or_null!(value))
-    } else if let Ok(value) = row.try_get(column_name) {
-        let value: Option<NaiveDateTime> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Float);
+        Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<chrono::DateTime<chrono::Utc>> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<chrono::DateTime<chrono::Local>> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
+    // } else if let Ok(value) = row.try_get(column_name) {
+    //     let value: Option<NaiveDateTime> = value;
+    //     let header = Header::new(column_name.to_string(), ColType::Date);
+    //     Ok((get_or_null!(value), header))
     } else if let Ok(value) = row.try_get(column_name) {
         let value: Option<bool> = value;
-        Ok(get_or_null!(value))
+        let header = Header::new(column_name.to_string(), ColType::Boolean);
+        Ok((get_or_null!(value), header))
     } else {
         anyhow::bail!(
             "column type not implemented: `{}` {}",

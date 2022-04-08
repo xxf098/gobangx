@@ -4,8 +4,8 @@ version = "0.1.0-alpha.5"
 authors = ["Takayuki Maeda <takoyaki0316@gmail.com>"]
 edition = "2018"
 license = "MIT"
-homepage = "https://github.com/TaKO8Ki/gobang"
-repository = "https://github.com/TaKO8Ki/gobang"
+homepage = "https://github.com/xxf098/gobangx"
+repository = "https://github.com/xxf098/gobangx"
 readme = "README.md"
 description = "A cross-platform TUI database management tool written in Rust"
 exclude = ["resources/"]
@@ -16,32 +16,34 @@ members=[
 ]
 
 [dependencies]
-tui = { version = "0.15.0", features = ["crossterm"], default-features = false }
-crossterm = "0.20"
-anyhow = "1.0.38"
+tui = { version = "0.17.0", features = ["crossterm"], default-features = false }
+crossterm = "0.23"
+anyhow = "1.0.55"
 unicode-width = "0.1"
-sqlx = { version = "0.5.6", features = ["mysql", "postgres", "sqlite", "chrono", "runtime-tokio-rustls", "decimal", "json"], default-features = false }
+sqlx = { version = "0.5.11", features = ["mysql", "postgres", "sqlite", "mssql", "chrono", "runtime-tokio-rustls", "decimal", "json"], default-features = false }
 chrono = "0.4"
-tokio = { version = "1.11.0", features = ["full"] }
-futures = "0.3.5"
+tokio = { version = "1.17.0", features = ["full"] }
+futures = "0.3.21"
 serde_json = "1.0"
 serde = "1.0"
-toml = "0.4"
-strum = "0.21"
-strum_macros = "0.21"
+toml = "0.5"
+strum = "0.24"
+strum_macros = "0.24"
 database-tree = { path = "./database-tree", version = "0.1.0-alpha.5" }
 easy-cast = "0.4"
-async-trait = "0.1.50"
-itertools = "0.10.0"
-rust_decimal = "1.15"
+async-trait = "0.1.52"
+itertools = "0.10.3"
+rust_decimal = "1.22"
 dirs-next = "2.0"
-clap = "2.33.3"
-structopt = "0.3.22"
-syntect = { version = "4.5", default-features = false, features = ["metadata", "default-fancy"]}
-unicode-segmentation = "1.7"
+clap = { version = "3.1.5", features = ["derive"] }
+syntect = { version = "4.6", default-features = false, features = ["metadata", "default-fancy"]}
+unicode-segmentation = "1.9"
+url = "2.2.2"
+uuid = { version = "0.8", features = ["serde", "v4"] }
+regex = "1"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]
-which = "4.1"
+which = "4.2"
 
 [dev-dependencies]
-pretty_assertions = "1.0.0"
+pretty_assertions = "1.1.0"

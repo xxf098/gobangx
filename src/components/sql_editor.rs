@@ -1,11 +1,12 @@
 use super::{
     compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
     StatefulDrawableComponent, TableComponent,
+    utils::highlight_sql,
 };
 use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
+use crate::config::{KeyConfig, Settings, DatabaseType};
 use crate::database::{ExecuteResult, Pool};
-use crate::event::Key;
+use crate::event::{Key, Store};
 use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
 use anyhow::Result;
 use async_trait::async_trait;
@@ -33,31 +34,40 @@ pub enum Focus {
     Table,
 }
 
-pub struct SqlEditorComponent {
+pub struct SqlEditorComponent<'a> {
     input: Vec<char>,
     input_cursor_position_x: u16,
     input_idx: usize,
     table: TableComponent,
     query_result: Option<QueryResult>,
     completion: CompletionComponent,
-    key_config: KeyConfig,
+    key_config: &'a KeyConfig,
+    settings: Settings,
     paragraph_state: ParagraphState,
     focus: Focus,
+    database_type: DatabaseType,
 }
 
-impl SqlEditorComponent {
-    pub fn new(key_config: KeyConfig) -> Self {
+impl<'a> SqlEditorComponent<'a> {
+    pub fn new(key_config: &'a KeyConfig, settings: Settings, database_type: DatabaseType) -> Self {
+        let db_type = database_type.clone();
         Self {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position_x: 0,
-            table: TableComponent::new(key_config.clone()),
-            completion: CompletionComponent::new(key_config.clone(), "", true),
+            table: TableComponent::new(key_config.clone(), settings.clone()),
+            completion: CompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into()),
             focus: Focus::Editor,
             paragraph_state: ParagraphState::default(),
             query_result: None,
             key_config,
+            settings,
+            database_type,
         }
+    }
+
+    pub fn set_database_type(&mut self, database_type: DatabaseType) {
+        self.database_type = database_type;
     }
 
     fn update_completion(&mut self) {
@@ -140,7 +150,7 @@ impl SqlEditorComponent {
     }
 }
 
-impl StatefulDrawableComponent for SqlEditorComponent {
+impl<'a> StatefulDrawableComponent for SqlEditorComponent<'a> {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let layout = Layout::default()
             .direction(Direction::Vertical)
@@ -151,7 +161,8 @@ impl StatefulDrawableComponent for SqlEditorComponent {
             })
             .split(area);
 
-        let editor = StatefulParagraph::new(self.input.iter().collect::<String>())
+        let input = self.input.iter().collect::<String>();
+        let editor = StatefulParagraph::new(highlight_sql(input.trim(), &self.settings, &self.database_type))
             .wrap(Wrap { trim: true })
             .block(Block::default().borders(Borders::ALL));
 
@@ -201,29 +212,40 @@ impl StatefulDrawableComponent for SqlEditorComponent {
 }
 
 #[async_trait]
-impl Component for SqlEditorComponent {
+impl<'a> Component for SqlEditorComponent<'a> {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();
 
-        if key == self.key_config.focus_above && matches!(self.focus, Focus::Table) {
+        if key[0] == self.key_config.focus_above && matches!(self.focus, Focus::Table) {
             self.focus = Focus::Editor
-        } else if key == self.key_config.enter {
-            return self.complete();
+        } else {
+            if matches!(self.focus, Focus::Editor) {
+                if key[0] == self.key_config.enter {
+                    return self.complete();
+                }
+                if key[0] == self.key_config.move_up && self.completion.visible() {
+                    return self.completion.event(key);
+                }
+                if key[0] == self.key_config.move_down && self.completion.visible() {
+                    return self.completion.event(key);
+                }
+            }
         }
+       
 
         match key {
-            Key::Char(c) if matches!(self.focus, Focus::Editor) => {
-                self.input.insert(self.input_idx, c);
+            [Key::Char(c)] if matches!(self.focus, Focus::Editor) => {
+                self.input.insert(self.input_idx, *c);
                 self.input_idx += 1;
-                self.input_cursor_position_x += compute_character_width(c);
+                self.input_cursor_position_x += compute_character_width(*c);
                 self.update_completion();
 
                 return Ok(EventState::Consumed);
             }
-            Key::Esc if matches!(self.focus, Focus::Editor) => self.focus = Focus::Table,
-            Key::Delete | Key::Backspace if matches!(self.focus, Focus::Editor) => {
+            [Key::Esc] if matches!(self.focus, Focus::Editor) => self.focus = Focus::Table,
+            [Key::Delete | Key::Backspace] if matches!(self.focus, Focus::Editor) => {
                 if input_str.width() > 0 && !self.input.is_empty() && self.input_idx > 0 {
                     let last_c = self.input.remove(self.input_idx - 1);
                     self.input_idx -= 1;
@@ -233,7 +255,7 @@ impl Component for SqlEditorComponent {
 
                 return Ok(EventState::Consumed);
             }
-            Key::Left if matches!(self.focus, Focus::Editor) => {
+            [Key::Left] if matches!(self.focus, Focus::Editor) => {
                 if !self.input.is_empty() && self.input_idx > 0 {
                     self.input_idx -= 1;
                     self.input_cursor_position_x = self
@@ -243,7 +265,7 @@ impl Component for SqlEditorComponent {
                 }
                 return Ok(EventState::Consumed);
             }
-            Key::Right if matches!(self.focus, Focus::Editor) => {
+            [Key::Right] if matches!(self.focus, Focus::Editor) => {
                 if self.input_idx < self.input.len() {
                     let next_c = self.input[self.input_idx];
                     self.input_idx += 1;
@@ -258,9 +280,9 @@ impl Component for SqlEditorComponent {
         return Ok(EventState::NotConsumed);
     }
 
-    async fn async_event(&mut self, key: Key, pool: &Box<dyn Pool>) -> Result<EventState> {
+    async fn async_event(&mut self, key: Key, pool: &Box<dyn Pool>, _store: &Store) -> Result<EventState> {
         if key == self.key_config.enter && matches!(self.focus, Focus::Editor) {
-            let query = self.input.iter().collect();
+            let query = self.input.iter().collect::<String>();
             let result = pool.execute(&query).await?;
             match result {
                 ExecuteResult::Read {
@@ -269,7 +291,8 @@ impl Component for SqlEditorComponent {
                     database,
                     table,
                 } => {
-                    self.table.update(rows, headers, database, table);
+                    // let header_names = headers.into_iter().map(|h| h.name).collect();
+                    self.table.update(rows, headers, database, table, 0);
                     self.focus = Focus::Table;
                     self.query_result = None;
                 }

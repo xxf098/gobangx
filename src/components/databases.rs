@@ -3,13 +3,15 @@ use super::{
     EventState,
 };
 use crate::components::command::{self, CommandInfo};
-use crate::config::{Connection, KeyConfig};
-use crate::database::Pool;
-use crate::event::Key;
+use crate::config::{Connection, KeyConfig, Settings};
+use crate::database::{Pool};
+use crate::event::{Key, Store};
+use crate::clipboard::copy_to_clipboard;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
 use database_tree::{Database, DatabaseTree, DatabaseTreeItem};
+use async_trait::async_trait;
 use std::collections::BTreeSet;
 use std::convert::From;
 use tui::{
@@ -33,17 +35,24 @@ pub enum Focus {
     Tree,
 }
 
-pub struct DatabasesComponent {
+pub struct DatabasesComponent<'a> {
     tree: DatabaseTree,
     filter: DatabaseFilterComponent,
     filterd_tree: Option<DatabaseTree>,
     scroll: VerticalScroll,
     focus: Focus,
-    key_config: KeyConfig,
+    key_config: &'a KeyConfig,
+    settings: &'a Settings,
 }
 
-impl DatabasesComponent {
-    pub fn new(key_config: KeyConfig) -> Self {
+// impl Default for DatabasesComponent {
+//     fn default() -> Self {
+//         Self::new(KeyConfig::default(), ThemeConfig::default())
+//     }
+// }
+
+impl<'a> DatabasesComponent<'a> {
+    pub fn new(key_config: &'a KeyConfig, settings: &'a Settings) -> Self {
         Self {
             tree: DatabaseTree::default(),
             filter: DatabaseFilterComponent::new(),
@@ -51,10 +60,12 @@ impl DatabasesComponent {
             scroll: VerticalScroll::new(false, false),
             focus: Focus::Tree,
             key_config,
+            settings,
         }
     }
 
     pub async fn update(&mut self, connection: &Connection, pool: &Box<dyn Pool>) -> Result<()> {
+        // TODO: load schema first
         let databases = match &connection.database {
             Some(database) => vec![Database::new(
                 database.clone(),
@@ -77,6 +88,7 @@ impl DatabasesComponent {
     }
 
     fn tree_item_to_span(
+        &self,
         item: DatabaseTreeItem,
         selected: bool,
         width: u16,
@@ -109,7 +121,7 @@ impl DatabasesComponent {
                     Span::styled(
                         format!("{}{}{}", indent_str, arrow, first),
                         if selected {
-                            Style::default().bg(Color::Blue)
+                            Style::default().bg(self.settings.color)
                         } else {
                             Style::default()
                         },
@@ -117,15 +129,15 @@ impl DatabasesComponent {
                     Span::styled(
                         middle.to_string(),
                         if selected {
-                            Style::default().bg(Color::Blue).fg(Color::Blue)
+                            Style::default().bg(self.settings.color).fg(self.settings.color)
                         } else {
-                            Style::default().fg(Color::Blue)
+                            Style::default().fg(self.settings.color)
                         },
                     ),
                     Span::styled(
                         format!("{:w$}", last.to_string(), w = width as usize),
                         if selected {
-                            Style::default().bg(Color::Blue)
+                            Style::default().bg(self.settings.color)
                         } else {
                             Style::default()
                         },
@@ -137,7 +149,7 @@ impl DatabasesComponent {
         Spans::from(Span::styled(
             format!("{}{}{:w$}", indent_str, arrow, name, w = width as usize),
             if selected {
-                Style::default().bg(Color::Blue)
+                Style::default().bg(self.settings.color)
             } else {
                 Style::default()
             },
@@ -186,7 +198,7 @@ impl DatabasesComponent {
         let items = tree
             .iterate(self.scroll.get_top(), tree_height)
             .map(|(item, selected)| {
-                Self::tree_item_to_span(
+                self.tree_item_to_span(
                     item.clone(),
                     selected,
                     area.width,
@@ -205,7 +217,7 @@ impl DatabasesComponent {
     }
 }
 
-impl DrawableComponent for DatabasesComponent {
+impl<'a> DrawableComponent for DatabasesComponent<'a> {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let chunks = Layout::default()
             .direction(Direction::Horizontal)
@@ -217,13 +229,14 @@ impl DrawableComponent for DatabasesComponent {
     }
 }
 
-impl Component for DatabasesComponent {
+#[async_trait]
+impl<'a> Component for DatabasesComponent<'a> {
     fn commands(&self, out: &mut Vec<CommandInfo>) {
         out.push(CommandInfo::new(command::expand_collapse(&self.key_config)))
     }
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
-        if key == self.key_config.filter && self.focus == Focus::Tree {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
+        if key[0] == self.key_config.filter && self.focus == Focus::Tree {
             self.focus = Focus::Filter;
             return Ok(EventState::Consumed);
         }
@@ -237,7 +250,7 @@ impl Component for DatabasesComponent {
         }
 
         match key {
-            Key::Enter if matches!(self.focus, Focus::Filter) => {
+            [Key::Enter] if matches!(self.focus, Focus::Filter) => {
                 self.focus = Focus::Tree;
                 return Ok(EventState::Consumed);
             }
@@ -246,6 +259,13 @@ impl Component for DatabasesComponent {
                     return Ok(EventState::Consumed);
                 }
             }
+            key if key[0] == self.key_config.copy => {
+                if let Some(item) = self.tree.selected_item() {
+                    let name = item.kind().name();
+                    copy_to_clipboard(&name)?;
+                }
+                return Ok(EventState::Consumed);
+            }
             key => {
                 if tree_nav(
                     if let Some(tree) = self.filterd_tree.as_mut() {
@@ -253,11 +273,35 @@ impl Component for DatabasesComponent {
                     } else {
                         &mut self.tree
                     },
-                    key,
+                    key[0],
                     &self.key_config,
                 ) {
                     return Ok(EventState::Consumed);
                 }
+            }
+        }
+        Ok(EventState::NotConsumed)
+    }
+
+    async fn async_event(
+        &mut self,
+        key: crate::event::Key,
+        pool: &Box<dyn Pool>,
+        _store: &Store,
+    ) -> Result<EventState> {
+        if key == self.key_config.delete {
+            if let Some((database, table, id)) = self.tree.selected_table() {
+                let sql = pool.database_type().drop_table(&database, &table);
+                pool.execute(&sql).await?;
+                self.tree = self.tree.filter_by_id(id, true);
+            }
+            return Ok(EventState::Consumed)
+        }
+        // self.key_config.advanced_copy
+        if key == self.key_config.advanced_copy {
+            if let Some((database, table, _)) = self.tree.selected_table() {
+                let ddl = pool.database_type().show_schema(pool, &database, &table).await?;
+                copy_to_clipboard(&ddl)?;
             }
         }
         Ok(EventState::NotConsumed)
@@ -274,14 +318,17 @@ fn tree_nav(tree: &mut DatabaseTree, key: Key, key_config: &KeyConfig) -> bool {
 
 #[cfg(test)]
 mod test {
-    use super::{Color, Database, DatabaseTreeItem, DatabasesComponent, Span, Spans, Style};
+    use super::{Color, Database, DatabaseTreeItem, DatabasesComponent, Span, Spans, Style, KeyConfig, Settings};
     use database_tree::Table;
 
     #[test]
     fn test_tree_database_tree_item_to_span() {
         const WIDTH: u16 = 10;
+        let key = KeyConfig::default(); 
+        let settings = Settings::default();
+        let dc = DatabasesComponent::new(&key, &settings);
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_database(
                     &Database {
                         name: "foo".to_string(),
@@ -301,7 +348,7 @@ mod test {
         );
 
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_database(
                     &Database {
                         name: "foo".to_string(),
@@ -323,8 +370,11 @@ mod test {
     #[test]
     fn test_tree_table_tree_item_to_span() {
         const WIDTH: u16 = 10;
+        let key = KeyConfig::default(); 
+        let settings = Settings::default();
+        let dc = DatabasesComponent::new(&key, &settings);
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),
@@ -350,7 +400,7 @@ mod test {
         );
 
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),
@@ -378,8 +428,11 @@ mod test {
     #[test]
     fn test_filterd_tree_item_to_span() {
         const WIDTH: u16 = 10;
+        let key = KeyConfig::default(); 
+        let settings = Settings::default();
+        let dc = DatabasesComponent::new(&key, &settings);
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),
@@ -405,7 +458,7 @@ mod test {
         );
 
         assert_eq!(
-            DatabasesComponent::tree_item_to_span(
+            dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(
                     &Database {
                         name: "foo".to_string(),

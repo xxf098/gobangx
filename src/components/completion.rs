@@ -1,12 +1,12 @@
 use super::{Component, EventState, MovableComponent};
 use crate::components::command::CommandInfo;
-use crate::config::KeyConfig;
+use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
 use anyhow::Result;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Color, Style},
+    style::{Style},
     widgets::{Block, Borders, Clear, List, ListItem, ListState},
     Frame,
 };
@@ -18,15 +18,18 @@ const ALL_RESERVED_WORDS: &[&str] = &[
 
 pub struct CompletionComponent {
     key_config: KeyConfig,
+    settings: Settings,
     state: ListState,
     word: String,
     candidates: Vec<String>,
+    visible: bool,
 }
 
 impl CompletionComponent {
-    pub fn new(key_config: KeyConfig, word: impl Into<String>, all: bool) -> Self {
+    pub fn new(key_config: KeyConfig, settings: Settings, word: impl Into<String>, all: bool) -> Self {
         Self {
             key_config,
+            settings,
             state: ListState::default(),
             word: word.into(),
             candidates: if all {
@@ -37,13 +40,37 @@ impl CompletionComponent {
                     .map(|w| w.to_string())
                     .collect()
             },
+            visible: false, 
+        }
+    }
+
+    pub fn new_with_candidates(key_config: KeyConfig, settings: Settings, candidates: Vec<&str>) -> Self {
+        let mut candidates: Vec<_> = candidates.iter().map(|w| w.to_string()).collect();
+        candidates.sort();
+        candidates.dedup();
+        Self {
+            key_config,
+            settings,
+            state: ListState::default(),
+            word: "".to_string(),
+            candidates,
+            visible: false,
         }
     }
 
     pub fn update(&mut self, word: impl Into<String>) {
         self.word = word.into();
+        self.visible = false;
         self.state.select(None);
         self.state.select(Some(0))
+    }
+
+    pub fn update_candidates(&mut self, candidates: &[String]) {
+        for candidate in candidates {
+            if self.candidates.iter().find(|x| *x == candidate).is_none() {
+                self.candidates.push(candidate.clone())
+            }
+        }
     }
 
     fn next(&mut self) {
@@ -92,6 +119,10 @@ impl CompletionComponent {
     pub fn word(&self) -> String {
         self.word.to_string()
     }
+
+    pub fn visible(&self) -> bool {
+        self.visible
+    }
 }
 
 impl MovableComponent for CompletionComponent {
@@ -109,12 +140,15 @@ impl MovableComponent for CompletionComponent {
                 .filterd_candidates()
                 .map(|c| ListItem::new(c.to_string()))
                 .collect::<Vec<ListItem>>();
-            if candidates.clone().is_empty() {
+            let candidates_len = candidates.len(); 
+            if candidates_len == 0 {
+                self.visible = false;
                 return Ok(());
             }
-            let candidate_list = List::new(candidates.clone())
+            self.visible = true;
+            let candidate_list = List::new(candidates)
                 .block(Block::default().borders(Borders::ALL))
-                .highlight_style(Style::default().bg(Color::Blue))
+                .highlight_style(Style::default().bg(self.settings.color))
                 .style(Style::default());
 
             let area = Rect::new(
@@ -123,7 +157,7 @@ impl MovableComponent for CompletionComponent {
                 width
                     .min(f.size().width)
                     .min(f.size().right().saturating_sub(area.x + x)),
-                (candidates.len().min(5) as u16 + 2)
+                (candidates_len.min(5) as u16 + 2)
                     .min(f.size().bottom().saturating_sub(area.y + y + 2)),
             );
             f.render_widget(Clear, area);
@@ -136,7 +170,8 @@ impl MovableComponent for CompletionComponent {
 impl Component for CompletionComponent {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
-    fn event(&mut self, key: Key) -> Result<EventState> {
+    fn event(&mut self, key: &[Key]) -> Result<EventState> {
+        let key = key[0];
         if key == self.key_config.move_down {
             self.next();
             return Ok(EventState::Consumed);
@@ -150,12 +185,12 @@ impl Component for CompletionComponent {
 
 #[cfg(test)]
 mod test {
-    use super::{CompletionComponent, KeyConfig};
+    use super::{CompletionComponent, KeyConfig, Settings};
 
     #[test]
     fn test_filterd_candidates_lowercase() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "an", false)
+            CompletionComponent::new(KeyConfig::default(), Settings::default(),"an", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"AND".to_string()]
@@ -165,7 +200,7 @@ mod test {
     #[test]
     fn test_filterd_candidates_uppercase() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "AN", false)
+            CompletionComponent::new(KeyConfig::default(), Settings::default(), "AN", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"AND".to_string()]
@@ -175,14 +210,14 @@ mod test {
     #[test]
     fn test_filterd_candidates_multiple_candidates() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "n", false)
+            CompletionComponent::new(KeyConfig::default(), Settings::default(), "n", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"NOT".to_string(), &"NULL".to_string()]
         );
 
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), "N", false)
+            CompletionComponent::new(KeyConfig::default(), Settings::default(), "N", false)
                 .filterd_candidates()
                 .collect::<Vec<&String>>(),
             vec![&"NOT".to_string(), &"NULL".to_string()]

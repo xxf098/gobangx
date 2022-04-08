@@ -1,10 +1,10 @@
 use crate::ui::scrollbar::draw_scrollbar;
-use std::cell::Cell;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use tui::{backend::Backend, layout::Rect, Frame};
 
 pub struct VerticalScroll {
-    top: Cell<usize>,
-    max_top: Cell<usize>,
+    top: AtomicUsize,
+    max_top: AtomicUsize,
     inside: bool,
     border: bool,
 }
@@ -12,30 +12,30 @@ pub struct VerticalScroll {
 impl VerticalScroll {
     pub const fn new(border: bool, inside: bool) -> Self {
         Self {
-            top: Cell::new(0),
-            max_top: Cell::new(0),
+            top: AtomicUsize::new(0),
+            max_top: AtomicUsize::new(0),
             border,
             inside,
         }
     }
 
     pub fn get_top(&self) -> usize {
-        self.top.get()
+        self.top.load(Ordering::Relaxed)
     }
 
     pub fn reset(&self) {
-        self.top.set(0);
+        self.top.store(0, Ordering::Relaxed);
     }
 
     pub fn update(&self, selection: usize, selection_max: usize, visual_height: usize) -> usize {
         let new_top = calc_scroll_top(self.get_top(), visual_height, selection, selection_max);
-        self.top.set(new_top);
+        self.top.store(new_top, Ordering::Relaxed);
 
         if visual_height == 0 {
-            self.max_top.set(0);
+            self.max_top.store(0, Ordering::Relaxed);
         } else {
             let new_max = selection_max.saturating_sub(visual_height);
-            self.max_top.set(new_max);
+            self.max_top.store(new_max, Ordering::Relaxed);
         }
 
         new_top
@@ -45,8 +45,8 @@ impl VerticalScroll {
         draw_scrollbar(
             f,
             r,
-            self.max_top.get(),
-            self.top.get(),
+            self.max_top.load(Ordering::Relaxed),
+            self.top.load(Ordering::Relaxed),
             self.border,
             self.inside,
         );

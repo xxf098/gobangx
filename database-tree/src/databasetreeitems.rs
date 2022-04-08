@@ -42,6 +42,27 @@ impl DatabaseTreeItems {
         }
     }
 
+    pub fn filter_by_id(&self, id: uuid::Uuid, reverse: bool) -> Self {
+        Self {
+            tree_items: self
+                .tree_items
+                .iter()
+                .filter(|item| if reverse { item.id != id } else { item.id == id } )
+                .map(|item| {
+                    let mut item = item.clone();
+                    if item.is_database() {
+                        item.set_collapsed(false);
+                        item
+                    } else {
+                        let mut item = item;
+                        item.show();
+                        item
+                    }
+                })
+                .collect::<Vec<DatabaseTreeItem>>(),
+        }
+    }
+
     fn create_items(
         list: &[Database],
         collapsed: &BTreeSet<&String>,
