@@ -107,7 +107,3 @@ color = "red"
 # page size limit, page_size >= 20 && page_size <= 2000
 page_size = 100
 ```
-
-## Contribution
-
-Contributions, issues and pull requests are welcome!
