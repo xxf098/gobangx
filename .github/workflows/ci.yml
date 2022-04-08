@@ -69,7 +69,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        build: [linux]
+        build: [linux, win-msvc]
         # build: [linux, linux-arm, macos, win-msvc, win32-msvc]
         include:
         - build: linux
@@ -84,10 +84,10 @@ jobs:
         #   os: macos-latest
         #   rust: stable
         #   target: x86_64-apple-darwin
-        # - build: win-msvc
-        #   os: windows-2019
-        #   rust: stable
-        #   target: x86_64-pc-windows-msvc
+        - build: win-msvc
+          os: windows-2019
+          rust: stable
+          target: x86_64-pc-windows-msvc
         # - build: win32-msvc
         #   os: windows-2019
         #   rust: stable
