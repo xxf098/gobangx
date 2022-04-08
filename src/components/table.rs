@@ -190,6 +190,18 @@ impl TableComponent {
         self.selected_column = self.headers.len().saturating_sub(1);
     }
 
+    fn forward_by_character(&mut self, c: char) {
+        if let Some((i, _)) = self.headers.iter().enumerate().find(|(i, h)| *i > self.selected_column && h.name.starts_with(c)) {
+            self.selected_column = i
+        }
+    }
+
+    fn backward_by_character(&mut self, c: char) {
+        if let Some((i, _)) = self.headers.iter().enumerate().find(|(i, h)| *i < self.selected_column && h.name.starts_with(c)) {
+            self.selected_column = i
+        }
+    }
+
     fn previous_column(&mut self) {
         if self.rows.is_empty() {
             return;
@@ -689,7 +701,20 @@ impl Component for TableComponent {
         } else if key == [self.key_config.jump_to_end] {
             self.last_column();
             return Ok(EventState::Consumed);
+        } else if key[0] == self.key_config.forward && key.len() > 1 {
+            match key[1] {
+                Key::Char(c) => self.forward_by_character(c),
+                _ => {},
+            };
+            return Ok(EventState::Consumed);
+        } else if key[0] == self.key_config.backward && key.len() > 1 {
+            match key[1] {
+                Key::Char(c) => self.backward_by_character(c),
+                _ => {},
+            };
+            return Ok(EventState::Consumed);
         }
+        
         let key = key[0];
         if key == self.key_config.scroll_left {
             self.previous_column();

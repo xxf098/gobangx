@@ -131,6 +131,8 @@ pub struct KeyConfig {
     pub orderby_desc: Key,
     pub jump_to_start: Key,
     pub jump_to_end: Key,
+    pub forward: Key,
+    pub backward: Key,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -227,6 +229,9 @@ impl Default for KeyConfig {
             orderby_desc: Key::Char('O'),
             jump_to_start: Key::Char('0'),
             jump_to_end: Key::Char('$'),
+            forward: Key::Char('f'),
+            backward: Key::Char('F'),
+
         }
     }
 }

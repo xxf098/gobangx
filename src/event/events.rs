@@ -13,7 +13,7 @@ impl Default for EventConfig {
     fn default() -> EventConfig {
         EventConfig {
             exit_key: Key::Ctrl('c'),
-            tick_rate: Duration::from_millis(300),
+            tick_rate: Duration::from_millis(480),
         }
     }
 }
