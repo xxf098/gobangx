@@ -49,7 +49,7 @@ impl TableStatusComponent {
 // TODO:
 impl DrawableComponent for TableStatusComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
-        let status = Paragraph::new(Spans::from(vec![
+        let mut spans = vec![
             Span::from(format!(
                 "rows: {}, ",
                 self.row_count.map_or("-".to_string(), |c| c.to_string())
@@ -58,14 +58,14 @@ impl DrawableComponent for TableStatusComponent {
                 "columns: {}, ",
                 self.column_count.map_or("-".to_string(), |c| c.to_string())
             )),
-            Span::from(format!(
-                "engine: {}, ",
-                self.table.as_ref().map_or("-".to_string(), |c| {
-                    c.engine.as_ref().map_or("-".to_string(), |e| e.to_string())
-                })
-            )),
-            Span::from(format!("{}", self.table_value.as_deref().unwrap_or(""))),
-        ]))
+        ];
+        if let Some(table) = &self.table {
+            if let Some(engine) = &table.engine {
+                spans.push(Span::from(format!("engine: {}, ", engine.to_string())))
+            }
+        }
+        spans.push(Span::from(format!("{}", self.table_value.as_deref().unwrap_or(""))));
+        let status = Paragraph::new(Spans::from(spans))
         .block(Block::default().borders(Borders::TOP).style(if focused {
             Style::default()
         } else {
