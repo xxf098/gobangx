@@ -124,7 +124,7 @@ pub struct KeyConfig {
     pub extend_or_shorten_widget_width_to_left: Key,
     pub expand_column_width: Key,
     pub shorten_column_width: Key,
-    pub reset_column_width: [Key; 2],
+    // pub reset_column_width: [Key; 2],
     pub delete: Key, // drop table/ delete record by primary key
     pub edit_cell: Key, // edit table cell
     pub orderby_asc: Key,
@@ -220,7 +220,7 @@ impl Default for KeyConfig {
             extend_or_shorten_widget_width_to_left: Key::Char('<'),
             expand_column_width: Key::Char('='),
             shorten_column_width: Key::Char('-'),
-            reset_column_width: [Key::Char('0'), Key::Char('0')],
+            // reset_column_width: [Key::Char('0'), Key::Char('0')],
             delete: Key::Char('D'),
             edit_cell: Key::Char('C'),
             orderby_asc: Key::Char('o'),

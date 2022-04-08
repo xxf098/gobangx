@@ -58,7 +58,7 @@ If you want to add connections, you need to edit your config file. For more info
 | <kbd>D</kbd> | Delete row by primary key or `id` or first column |
 | <kbd>C</kbd> | Change current cell value, set value to `NULL` with `<NULL>` |
 | <kbd>o</kbd>, <kbd>O</kbd> | Order column asc/desc |
-| <kbd>=</kbd>, <kbd>-</kbd>, <kbd>00</kbd> | expand, shorten, reset column width |
+| <kbd>=</kbd>, <kbd>-</kbd> | Expand/Shorten column width |
 | <kbd>←</kbd>, <kbd>→</kbd> | Move focus to left/right |
 | <kbd>c</kbd> | Move focus to connections |
 | <kbd>/</kbd> | Filter |

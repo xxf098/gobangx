@@ -237,13 +237,13 @@ impl TableComponent {
         self.constraint_adjust[index] = adjust - 1;
     }
 
-    fn reset_column(&mut self) {
-        if self.rows.is_empty() {
-            return;
-        }
-        let index = self.selected_column_index()+1;
-        self.constraint_adjust[index] = 0;
-    }
+    // fn reset_column(&mut self) {
+    //     if self.rows.is_empty() {
+    //         return;
+    //     }
+    //     let index = self.selected_column_index()+1;
+    //     self.constraint_adjust[index] = 0;
+    // }
 
     fn expand_selected_area_x(&mut self, positive: bool) {
         if self.selection_area_corner.is_none() {
@@ -680,8 +680,14 @@ impl Component for TableComponent {
             let header = &self.headers[self.selected_column];
             copy_to_clipboard(&header.name)?;
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.reset_column_width {
-            self.reset_column();
+        // } else if key == self.key_config.reset_column_width {
+        //     self.reset_column();
+        //     return Ok(EventState::Consumed);
+        } else if key == [self.key_config.jump_to_start] {
+            self.first_column();
+            return Ok(EventState::Consumed);
+        } else if key == [self.key_config.jump_to_end] {
+            self.last_column();
             return Ok(EventState::Consumed);
         }
         let key = key[0];
@@ -730,12 +736,12 @@ impl Component for TableComponent {
         // } else if key == self.key_config.reset_column_width {
         //     self.reset_column();
         //     return Ok(EventState::Consumed);
-        } else if key == self.key_config.jump_to_start {
-            self.first_column();
-            return Ok(EventState::Consumed);
-        } else if key == self.key_config.jump_to_end {
-            self.last_column();
-            return Ok(EventState::Consumed);
+        // } else if key == self.key_config.jump_to_start {
+        //     self.first_column();
+        //     return Ok(EventState::Consumed);
+        // } else if key == self.key_config.jump_to_end {
+        //     self.last_column();
+        //     return Ok(EventState::Consumed);
         } else if key == self.key_config.edit_cell {
             self.focus = Focus::Editor;
             let s = self.selected_cell().map(|c| if c.is_null { NULL.to_string() } else { c.to_string() });
