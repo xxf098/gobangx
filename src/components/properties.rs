@@ -37,19 +37,19 @@ pub struct PropertiesComponent<'a> {
     index_table: TableComponent,
     focus: Focus,
     key_config: &'a KeyConfig,
-    theme: &'a Settings,
+    settings: &'a Settings,
 }
 
 impl<'a> PropertiesComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, theme: &'a Settings) -> Self {
+    pub fn new(key_config: &'a KeyConfig, settings: &'a Settings) -> Self {
         Self {
-            column_table: TableComponent::new(key_config.clone(), theme.clone()),
-            constraint_table: TableComponent::new(key_config.clone(), theme.clone()),
-            foreign_key_table: TableComponent::new(key_config.clone(), theme.clone()),
-            index_table: TableComponent::new(key_config.clone(), theme.clone()),
+            column_table: TableComponent::new(key_config.clone(), settings.clone()),
+            constraint_table: TableComponent::new(key_config.clone(), settings.clone()),
+            foreign_key_table: TableComponent::new(key_config.clone(), settings.clone()),
+            index_table: TableComponent::new(key_config.clone(), settings.clone()),
             focus: Focus::Column,
             key_config,
-            theme,
+            settings,
         }
     }
 
@@ -155,7 +155,7 @@ impl<'a> StatefulDrawableComponent for PropertiesComponent<'a> {
             .iter()
             .map(|(f, c)| {
                 ListItem::new(c.to_string()).style(if *f == self.focus {
-                    Style::default().bg(self.theme.color)
+                    Style::default().bg(self.settings.color)
                 } else {
                     Style::default()
                 })

@@ -18,7 +18,7 @@ const ALL_RESERVED_WORDS: &[&str] = &[
 
 pub struct CompletionComponent {
     key_config: KeyConfig,
-    theme: Settings,
+    settings: Settings,
     state: ListState,
     word: String,
     candidates: Vec<String>,
@@ -26,10 +26,10 @@ pub struct CompletionComponent {
 }
 
 impl CompletionComponent {
-    pub fn new(key_config: KeyConfig, theme: Settings, word: impl Into<String>, all: bool) -> Self {
+    pub fn new(key_config: KeyConfig, settings: Settings, word: impl Into<String>, all: bool) -> Self {
         Self {
             key_config,
-            theme,
+            settings,
             state: ListState::default(),
             word: word.into(),
             candidates: if all {
@@ -44,13 +44,13 @@ impl CompletionComponent {
         }
     }
 
-    pub fn new_with_candidates(key_config: KeyConfig, theme: Settings, candidates: Vec<&str>) -> Self {
+    pub fn new_with_candidates(key_config: KeyConfig, settings: Settings, candidates: Vec<&str>) -> Self {
         let mut candidates: Vec<_> = candidates.iter().map(|w| w.to_string()).collect();
         candidates.sort();
         candidates.dedup();
         Self {
             key_config,
-            theme,
+            settings,
             state: ListState::default(),
             word: "".to_string(),
             candidates,
@@ -148,7 +148,7 @@ impl MovableComponent for CompletionComponent {
             self.visible = true;
             let candidate_list = List::new(candidates)
                 .block(Block::default().borders(Borders::ALL))
-                .highlight_style(Style::default().bg(self.theme.color))
+                .highlight_style(Style::default().bg(self.settings.color))
                 .style(Style::default());
 
             let area = Rect::new(

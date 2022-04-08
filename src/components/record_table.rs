@@ -26,10 +26,10 @@ pub struct RecordTableComponent {
 }
 
 impl RecordTableComponent {
-    pub fn new(key_config: KeyConfig, theme: Settings) -> Self {
+    pub fn new(key_config: KeyConfig, settings: Settings) -> Self {
         Self {
-            filter: TableFilterComponent::new(key_config.clone(), theme.clone()),
-            table: TableComponent::new(key_config.clone(), theme),
+            filter: TableFilterComponent::new(key_config.clone(), settings.clone()),
+            table: TableComponent::new(key_config.clone(), settings),
             focus: Focus::Table,
             key_config,
         }

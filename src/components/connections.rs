@@ -17,11 +17,11 @@ pub struct ConnectionsComponent<'a> {
     connections: &'a Vec<Connection>,
     state: ListState,
     key_config: &'a KeyConfig,
-    theme: &'a Settings,
+    settings: &'a Settings,
 }
 
 impl<'a> ConnectionsComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, connections: &'a Vec<Connection>, theme: &'a Settings) -> Self {
+    pub fn new(key_config: &'a KeyConfig, connections: &'a Vec<Connection>, settings: &'a Settings) -> Self {
         let mut state = ListState::default();
         if !connections.is_empty() {
             state.select(Some(0));
@@ -30,7 +30,7 @@ impl<'a> ConnectionsComponent<'a> {
             connections,
             key_config,
             state,
-            theme,
+            settings,
         }
     }
 
@@ -98,7 +98,7 @@ impl<'a> StatefulDrawableComponent for ConnectionsComponent<'a> {
         }
         let connections = List::new(connections)
             .block(Block::default().borders(Borders::ALL).title("Connections"))
-            .highlight_style(Style::default().bg(self.theme.color))
+            .highlight_style(Style::default().bg(self.settings.color))
             .style(Style::default());
 
         let area = Rect::new(

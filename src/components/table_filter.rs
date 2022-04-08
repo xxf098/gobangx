@@ -19,7 +19,7 @@ use unicode_width::UnicodeWidthStr;
 
 pub struct TableFilterComponent {
     key_config: KeyConfig,
-    theme: Settings,
+    settings: Settings,
     pub table: Option<Table>,
     input: Vec<char>,
     input_idx: usize,
@@ -28,15 +28,15 @@ pub struct TableFilterComponent {
 }
 
 impl TableFilterComponent {
-    pub fn new(key_config: KeyConfig, theme: Settings) -> Self {
+    pub fn new(key_config: KeyConfig, settings: Settings) -> Self {
         Self {
             key_config: key_config.clone(),
             table: None,
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position: 0,
-            completion: CompletionComponent::new(key_config, theme.clone(),"", false),
-            theme,
+            completion: CompletionComponent::new(key_config, settings.clone(),"", false),
+            settings,
         }
     }
 
@@ -142,7 +142,7 @@ impl StatefulDrawableComponent for TableFilterComponent {
                 self.table
                     .as_ref()
                     .map_or("-".to_string(), |table| table.name.to_string()),
-                Style::default().fg(self.theme.color),
+                Style::default().fg(self.settings.color),
             ),
             Span::from(format!(
                 " {}",

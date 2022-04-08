@@ -42,7 +42,7 @@ pub struct DatabasesComponent<'a> {
     scroll: VerticalScroll,
     focus: Focus,
     key_config: &'a KeyConfig,
-    theme: &'a Settings,
+    settings: &'a Settings,
 }
 
 // impl Default for DatabasesComponent {
@@ -52,7 +52,7 @@ pub struct DatabasesComponent<'a> {
 // }
 
 impl<'a> DatabasesComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, theme: &'a Settings) -> Self {
+    pub fn new(key_config: &'a KeyConfig, settings: &'a Settings) -> Self {
         Self {
             tree: DatabaseTree::default(),
             filter: DatabaseFilterComponent::new(),
@@ -60,7 +60,7 @@ impl<'a> DatabasesComponent<'a> {
             scroll: VerticalScroll::new(false, false),
             focus: Focus::Tree,
             key_config,
-            theme,
+            settings,
         }
     }
 
@@ -121,7 +121,7 @@ impl<'a> DatabasesComponent<'a> {
                     Span::styled(
                         format!("{}{}{}", indent_str, arrow, first),
                         if selected {
-                            Style::default().bg(self.theme.color)
+                            Style::default().bg(self.settings.color)
                         } else {
                             Style::default()
                         },
@@ -129,15 +129,15 @@ impl<'a> DatabasesComponent<'a> {
                     Span::styled(
                         middle.to_string(),
                         if selected {
-                            Style::default().bg(self.theme.color).fg(self.theme.color)
+                            Style::default().bg(self.settings.color).fg(self.settings.color)
                         } else {
-                            Style::default().fg(self.theme.color)
+                            Style::default().fg(self.settings.color)
                         },
                     ),
                     Span::styled(
                         format!("{:w$}", last.to_string(), w = width as usize),
                         if selected {
-                            Style::default().bg(self.theme.color)
+                            Style::default().bg(self.settings.color)
                         } else {
                             Style::default()
                         },
@@ -149,7 +149,7 @@ impl<'a> DatabasesComponent<'a> {
         Spans::from(Span::styled(
             format!("{}{}{:w$}", indent_str, arrow, name, w = width as usize),
             if selected {
-                Style::default().bg(self.theme.color)
+                Style::default().bg(self.settings.color)
             } else {
                 Style::default()
             },
@@ -325,8 +325,8 @@ mod test {
     fn test_tree_database_tree_item_to_span() {
         const WIDTH: u16 = 10;
         let key = KeyConfig::default(); 
-        let theme = Settings::default();
-        let dc = DatabasesComponent::new(&key, &theme);
+        let settings = Settings::default();
+        let dc = DatabasesComponent::new(&key, &settings);
         assert_eq!(
             dc.tree_item_to_span(
                 DatabaseTreeItem::new_database(
@@ -371,8 +371,8 @@ mod test {
     fn test_tree_table_tree_item_to_span() {
         const WIDTH: u16 = 10;
         let key = KeyConfig::default(); 
-        let theme = Settings::default();
-        let dc = DatabasesComponent::new(&key, &theme);
+        let settings = Settings::default();
+        let dc = DatabasesComponent::new(&key, &settings);
         assert_eq!(
             dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(
@@ -429,8 +429,8 @@ mod test {
     fn test_filterd_tree_item_to_span() {
         const WIDTH: u16 = 10;
         let key = KeyConfig::default(); 
-        let theme = Settings::default();
-        let dc = DatabasesComponent::new(&key, &theme);
+        let settings = Settings::default();
+        let dc = DatabasesComponent::new(&key, &settings);
         assert_eq!(
             dc.tree_item_to_span(
                 DatabaseTreeItem::new_table(

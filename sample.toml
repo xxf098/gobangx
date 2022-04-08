@@ -60,5 +60,6 @@ type = "sqlite"
 path = "$HOME/Downloads/chinook.db"
 
 
-[theme]
+[settings]
 color = "red"
+page_size = 100

@@ -42,26 +42,26 @@ pub struct SqlEditorComponent<'a> {
     query_result: Option<QueryResult>,
     completion: CompletionComponent,
     key_config: &'a KeyConfig,
-    theme: Settings,
+    settings: Settings,
     paragraph_state: ParagraphState,
     focus: Focus,
     database_type: DatabaseType,
 }
 
 impl<'a> SqlEditorComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, theme: Settings, database_type: DatabaseType) -> Self {
+    pub fn new(key_config: &'a KeyConfig, settings: Settings, database_type: DatabaseType) -> Self {
         let db_type = database_type.clone();
         Self {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position_x: 0,
-            table: TableComponent::new(key_config.clone(), theme.clone()),
-            completion: CompletionComponent::new_with_candidates(key_config.clone(), theme.clone(), db_type.into()),
+            table: TableComponent::new(key_config.clone(), settings.clone()),
+            completion: CompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into()),
             focus: Focus::Editor,
             paragraph_state: ParagraphState::default(),
             query_result: None,
             key_config,
-            theme,
+            settings,
             database_type,
         }
     }
@@ -162,7 +162,7 @@ impl<'a> StatefulDrawableComponent for SqlEditorComponent<'a> {
             .split(area);
 
         let input = self.input.iter().collect::<String>();
-        let editor = StatefulParagraph::new(highlight_sql(input.trim(), &self.theme, &self.database_type))
+        let editor = StatefulParagraph::new(highlight_sql(input.trim(), &self.settings, &self.database_type))
             .wrap(Wrap { trim: true })
             .block(Block::default().borders(Borders::ALL));
 
