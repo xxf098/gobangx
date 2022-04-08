@@ -29,6 +29,12 @@ pub enum Focus {
     Editor,
 }
 
+#[derive(Copy, Clone)]
+pub enum Movement {
+    Forward(char),
+    Backward(char)
+}
+
 pub struct TableComponent {
     pub headers: Vec<Header>,
     pub rows: Vec<Vec<Arc<RwLock<Value>>>>,
@@ -45,7 +51,8 @@ pub struct TableComponent {
     settings: Settings,
     area_width: u16,
     cell_editor: CellEditorComponent,
-    orderby_status: Option<String>
+    orderby_status: Option<String>,
+    movement: Option<Movement>
 }
 
 impl TableComponent {
@@ -67,6 +74,7 @@ impl TableComponent {
             settings,
             focus: Focus::Status,
             orderby_status: None,
+            movement: None,
         }
     }
 
@@ -192,13 +200,15 @@ impl TableComponent {
 
     fn forward_by_character(&mut self, c: char) {
         if let Some((i, _)) = self.headers.iter().enumerate().find(|(i, h)| *i > self.selected_column && h.name.starts_with(c)) {
-            self.selected_column = i
+            self.selected_column = i;
+            self.movement = Some(Movement::Forward(c));
         }
     }
 
     fn backward_by_character(&mut self, c: char) {
         if let Some((i, _)) = self.headers.iter().enumerate().find(|(i, h)| *i < self.selected_column && h.name.starts_with(c)) {
-            self.selected_column = i
+            self.selected_column = i;
+            self.movement = Some(Movement::Backward(c));
         }
     }
 
@@ -700,6 +710,14 @@ impl Component for TableComponent {
             return Ok(EventState::Consumed);
         } else if key == [self.key_config.jump_to_end] {
             self.last_column();
+            return Ok(EventState::Consumed);
+        } else if key == [self.key_config.repeat_movement] {
+            if let Some(movement) = self.movement {
+                match movement {
+                    Movement::Forward(c) => self.forward_by_character(c),
+                    Movement::Backward(c) => self.backward_by_character(c),
+                }
+            }
             return Ok(EventState::Consumed);
         } else if key[0] == self.key_config.forward && key.len() > 1 {
             match key[1] {

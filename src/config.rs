@@ -133,6 +133,7 @@ pub struct KeyConfig {
     pub jump_to_end: Key,
     pub forward: Key,
     pub backward: Key,
+    pub repeat_movement: Key,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -231,7 +232,7 @@ impl Default for KeyConfig {
             jump_to_end: Key::Char('$'),
             forward: Key::Char('f'),
             backward: Key::Char('F'),
-
+            repeat_movement: Key::Char(';'),
         }
     }
 }
