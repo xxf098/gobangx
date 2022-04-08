@@ -1,6 +1,6 @@
 use super::{Component, EventState, StatefulDrawableComponent};
 use crate::components::command::CommandInfo;
-use crate::config::{Connection, KeyConfig, Params};
+use crate::config::{Connection, KeyConfig, Settings};
 use crate::event::Key;
 use crate::clipboard::copy_to_clipboard;
 use anyhow::Result;
@@ -17,11 +17,11 @@ pub struct ConnectionsComponent<'a> {
     connections: &'a Vec<Connection>,
     state: ListState,
     key_config: &'a KeyConfig,
-    theme: &'a Params,
+    theme: &'a Settings,
 }
 
 impl<'a> ConnectionsComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, connections: &'a Vec<Connection>, theme: &'a Params) -> Self {
+    pub fn new(key_config: &'a KeyConfig, connections: &'a Vec<Connection>, theme: &'a Settings) -> Self {
         let mut state = ListState::default();
         if !connections.is_empty() {
             state.select(Some(0));

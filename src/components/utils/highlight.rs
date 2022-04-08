@@ -1,7 +1,7 @@
 use std::convert::TryFrom;
 use tui::text::{Text, Spans, Span};
 use tui::style::{Color, Style};
-use crate::config::{Params, DatabaseType};
+use crate::config::{Settings, DatabaseType};
 use crate::sql::token::{tokenizer::Tokenizer, token_type::TokenType };
 
 
@@ -44,7 +44,7 @@ use crate::sql::token::{tokenizer::Tokenizer, token_type::TokenType };
 // }
 
 // TODO: sql formatter
-pub fn highlight_sql<'a>(input: &'a str, theme: &'a Params, database_type: &DatabaseType) -> Text<'a> {
+pub fn highlight_sql<'a>(input: &'a str, theme: &'a Settings, database_type: &DatabaseType) -> Text<'a> {
     let style_hl = Style::default().fg(theme.color);
     let style_normal = Style::default().fg(Color::White);
     let mut spans = vec![];

@@ -4,7 +4,7 @@ use super::{
     utils::highlight_sql,
 };
 use crate::components::command::CommandInfo;
-use crate::config::{KeyConfig, Params, DatabaseType};
+use crate::config::{KeyConfig, Settings, DatabaseType};
 use crate::database::{ExecuteResult, Pool};
 use crate::event::{Key, Store};
 use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
@@ -42,14 +42,14 @@ pub struct SqlEditorComponent<'a> {
     query_result: Option<QueryResult>,
     completion: CompletionComponent,
     key_config: &'a KeyConfig,
-    theme: Params,
+    theme: Settings,
     paragraph_state: ParagraphState,
     focus: Focus,
     database_type: DatabaseType,
 }
 
 impl<'a> SqlEditorComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, theme: Params, database_type: DatabaseType) -> Self {
+    pub fn new(key_config: &'a KeyConfig, theme: Settings, database_type: DatabaseType) -> Self {
         let db_type = database_type.clone();
         Self {
             input: Vec::new(),

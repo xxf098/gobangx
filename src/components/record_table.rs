@@ -1,7 +1,7 @@
 use super::{Component, EventState, StatefulDrawableComponent};
 use crate::components::command::CommandInfo;
 use crate::components::{TableComponent, TableFilterComponent};
-use crate::config::{KeyConfig, Params};
+use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
 use crate::database::{Pool, Header, Value};
 use anyhow::Result;
@@ -26,7 +26,7 @@ pub struct RecordTableComponent {
 }
 
 impl RecordTableComponent {
-    pub fn new(key_config: KeyConfig, theme: Params) -> Self {
+    pub fn new(key_config: KeyConfig, theme: Settings) -> Self {
         Self {
             filter: TableFilterComponent::new(key_config.clone(), theme.clone()),
             table: TableComponent::new(key_config.clone(), theme),

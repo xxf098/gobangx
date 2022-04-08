@@ -15,10 +15,6 @@ A cross-platform TUI database management tool written in Rust with more useful f
 - Multiple Database support (MySQL, PostgreSQL, SQLite)
 - Intuitive keyboard only control
 
-## What does "gobang" come from?
-
-gobang means a Japanese game played on goban, a go board. The appearance of goban looks like table structure. And I live in Kyoto, Japan. In Kyoto city, streets are laid out on a grid (We call it “goban no me no youna (碁盤の目のような)”). They are why I named this project "gobang".
-
 ## Installation
 
 ### From binaries (Linux, macOS, Windows)
@@ -105,7 +101,7 @@ database = "bar"
 type = "sqlite"
 path = "/path/to/baz.db"
 
-[params]
+[settings]
 # support: red,green,yellow,blue,magenta,cyan or color code 
 color = "red"
 # page size limit, page_size >= 20 && page_size <= 2000

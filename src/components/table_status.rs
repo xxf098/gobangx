@@ -46,6 +46,7 @@ impl TableStatusComponent {
     }
 }
 
+// TODO:
 impl DrawableComponent for TableStatusComponent {
     fn draw<B: Backend>(&self, f: &mut Frame<B>, area: Rect, focused: bool) -> Result<()> {
         let status = Paragraph::new(Spans::from(vec![

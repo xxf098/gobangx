@@ -2,7 +2,7 @@ use super::{Component, EventState, StatefulDrawableComponent};
 use crate::clipboard::copy_to_clipboard;
 use crate::components::command::{self, CommandInfo};
 use crate::components::TableComponent;
-use crate::config::{KeyConfig, Params};
+use crate::config::{KeyConfig, Settings};
 use crate::database::{Pool, Header, ColType, Value};
 use crate::event::Key;
 use anyhow::Result;
@@ -37,11 +37,11 @@ pub struct PropertiesComponent<'a> {
     index_table: TableComponent,
     focus: Focus,
     key_config: &'a KeyConfig,
-    theme: &'a Params,
+    theme: &'a Settings,
 }
 
 impl<'a> PropertiesComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, theme: &'a Params) -> Self {
+    pub fn new(key_config: &'a KeyConfig, theme: &'a Settings) -> Self {
         Self {
             column_table: TableComponent::new(key_config.clone(), theme.clone()),
             constraint_table: TableComponent::new(key_config.clone(), theme.clone()),
