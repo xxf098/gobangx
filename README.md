@@ -2,7 +2,7 @@
 
 gobangx is based on [gobang](https://github.com/TaKO8Ki/gobang)
 
-A cross-platform TUI database management tool written in Rust with more useful features
+A cross-platform Vim-like database management tool written in Rust
 
 [![github workflow status](https://img.shields.io/github/workflow/status/xxf098/gobangx/CI/main)](https://github.com/xxf098/gobangx/actions)
 
@@ -53,6 +53,7 @@ If you want to add connections, you need to edit your config file. For more info
 | <kbd>g</kbd> , <kbd>G</kbd> | Scroll to top/bottom |
 | <kbd>f</kbd>+<kbd>_</kbd> | Forward to next column starts with the character `_` |
 | <kbd>F</kbd>+<kbd>_</kbd> | Backward to next column starts with the character `_` |
+| <kbd>;</kbd> | Repeat previous f, F movement |
 | <kbd>H</kbd>, <kbd>J</kbd>, <kbd>K</kbd>, <kbd>L</kbd> | Extend selection by one cell left/down/up/right |
 | <kbd>y</kbd> | Yank a cell value |
 | <kbd>yc</kbd> | Yank column name |
