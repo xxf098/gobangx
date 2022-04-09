@@ -168,7 +168,7 @@ impl MovableComponent for CompletionComponent {
 }
 
 impl Component for CompletionComponent {
-    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let key = key[0];

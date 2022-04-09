@@ -70,7 +70,7 @@ impl<'a> DrawableComponent for TabComponent<'a> {
 }
 
 impl<'a> Component for TabComponent<'a> {
-    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         if key == [self.key_config.tab_records] {

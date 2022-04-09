@@ -50,7 +50,7 @@ impl DrawableComponent for DebugComponent {
 }
 
 impl Component for DebugComponent {
-    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         if self.visible {

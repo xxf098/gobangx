@@ -72,7 +72,7 @@ impl<'a> DrawableComponent for HelpComponent<'a> {
 }
 
 impl<'a> Component for HelpComponent<'a> {
-    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let key = key[0];

@@ -142,9 +142,9 @@ impl<'a> App<'a> {
             )),
         ];
 
-        self.databases.commands(&mut res);
-        self.record_table.commands(&mut res);
-        self.properties.commands(&mut res);
+        self.databases.helps(&mut res);
+        self.record_table.helps(&mut res);
+        self.properties.helps(&mut res);
         res
     }
 

@@ -1,5 +1,6 @@
 pub mod completion;
 pub mod connections;
+pub mod command;
 pub mod database_filter;
 pub mod databases;
 pub mod error;
@@ -91,7 +92,7 @@ pub trait MovableComponent {
 /// base component trait
 #[async_trait]
 pub trait Component {
-    fn commands(&self, out: &mut Vec<HelpInfo>);
+    fn helps(&self, out: &mut Vec<HelpInfo>);
 
     fn event(&mut self, key: &[crate::event::Key]) -> Result<EventState>;
 

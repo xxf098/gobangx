@@ -197,7 +197,7 @@ impl StatefulDrawableComponent for TableFilterComponent {
 }
 
 impl Component for TableFilterComponent {
-    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();

@@ -231,7 +231,7 @@ impl<'a> DrawableComponent for DatabasesComponent<'a> {
 
 #[async_trait]
 impl<'a> Component for DatabasesComponent<'a> {
-    fn commands(&self, out: &mut Vec<HelpInfo>) {
+    fn helps(&self, out: &mut Vec<HelpInfo>) {
         out.push(HelpInfo::new(help_info::expand_collapse(&self.key_config)))
     }
 

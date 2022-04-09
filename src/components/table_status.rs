@@ -77,7 +77,7 @@ impl DrawableComponent for TableStatusComponent {
 }
 
 impl Component for TableStatusComponent {
-    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, _key: &[Key]) -> Result<EventState> {
         Ok(EventState::NotConsumed)

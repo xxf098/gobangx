@@ -685,7 +685,7 @@ impl StatefulDrawableComponent for TableComponent {
 
 #[async_trait]
 impl Component for TableComponent {
-    fn commands(&self, out: &mut Vec<HelpInfo>) {
+    fn helps(&self, out: &mut Vec<HelpInfo>) {
         out.push(HelpInfo::new(help_info::extend_selection_by_one_cell(
             &self.key_config,
         )));

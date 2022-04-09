@@ -166,7 +166,7 @@ impl StatefulDrawableComponent for CellEditorComponent {
 }
 
 impl Component for CellEditorComponent {
-    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> anyhow::Result<EventState> {
         let input_str: String = self.input.iter().collect();

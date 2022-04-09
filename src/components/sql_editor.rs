@@ -213,7 +213,7 @@ impl<'a> StatefulDrawableComponent for SqlEditorComponent<'a> {
 
 #[async_trait]
 impl<'a> Component for SqlEditorComponent<'a> {
-    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();

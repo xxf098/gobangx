@@ -115,7 +115,7 @@ impl<'a> StatefulDrawableComponent for RecentComponent<'a> {
 }
 
 impl<'a> Component for RecentComponent<'a> {
-    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let key = key[0];

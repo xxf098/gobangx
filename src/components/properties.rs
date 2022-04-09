@@ -179,7 +179,7 @@ impl<'a> StatefulDrawableComponent for PropertiesComponent<'a> {
 
 #[async_trait]
 impl<'a> Component for PropertiesComponent<'a> {
-    fn commands(&self, out: &mut Vec<HelpInfo>) {
+    fn helps(&self, out: &mut Vec<HelpInfo>) {
         out.push(HelpInfo::new(help_info::toggle_property_tabs(
             &self.key_config,
         )));

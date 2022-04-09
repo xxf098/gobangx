@@ -35,7 +35,7 @@ impl DrawableComponent for TableValueComponent {
 }
 
 impl Component for TableValueComponent {
-    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, _key: &[Key]) -> Result<EventState> {
         todo!("scroll");
