@@ -276,6 +276,10 @@ impl<'a> App<'a> {
                 self.update_record_table(true, orderby, selected_column).await?;
                 return Ok(EventState::Consumed)
             }
+            Event::ToggleTree => {
+                self.show_database = !self.show_database;
+                return Ok(EventState::Consumed)
+            }
             _ => {},
         };
         return Ok(EventState::NotConsumed)

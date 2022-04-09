@@ -24,6 +24,7 @@ pub enum Event {
     RedrawDatabase(bool),
     RedrawTable(bool),
     OrderByTable((String, usize)),
+    ToggleTree,
     Tick,
 }
 

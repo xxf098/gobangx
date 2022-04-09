@@ -555,6 +555,13 @@ impl TableComponent {
         anyhow::bail!("primary key not found")
     }
 
+    async fn dispatch_command(&self, command: &str, store: &Store) -> anyhow::Result<()>  {
+        if command == "tree" {
+            store.dispatch(Event::ToggleTree).await?;
+        }
+        Ok(())
+    }
+
 }
 
 impl StatefulDrawableComponent for TableComponent {
@@ -876,6 +883,9 @@ impl Component for TableComponent {
         // execute command
         if key == self.key_config.enter && self.focus == Focus::Command {
             self.focus = Focus::Status;
+            let command = self.command_editor.value();
+            self.command_editor.reset();
+            self.dispatch_command(command.trim(), store).await?;
             return Ok(EventState::Consumed)
         }
         Ok(EventState::NotConsumed)

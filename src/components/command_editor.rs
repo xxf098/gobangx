@@ -18,6 +18,11 @@ impl CommandEditorComponent {
     pub fn value(&self) -> String {
         self.editor.value()
     }
+
+    pub fn reset(&mut self) {
+        self.editor = LineEditorComponent::new("".to_string());
+    }
+
 }
 
 impl StatefulDrawableComponent for CommandEditorComponent {
