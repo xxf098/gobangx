@@ -115,11 +115,11 @@ impl<'a> App<'a> {
         Ok(())
     }
 
-    fn update_commands(&mut self) {
-        self.help.set_cmds(self.commands());
+    fn _update_commands(&mut self) {
+        self.help.set_cmds(self._commands());
     }
 
-    fn commands(&self) -> Vec<CommandInfo> {
+    fn _commands(&self) -> Vec<CommandInfo> {
         let mut res = vec![
             CommandInfo::new(command::filter(&self.config.key_config)),
             CommandInfo::new(command::help(&self.config.key_config)),
@@ -138,7 +138,6 @@ impl<'a> App<'a> {
         self.databases.commands(&mut res);
         self.record_table.commands(&mut res);
         self.properties.commands(&mut res);
-
         res
     }
 
@@ -240,7 +239,7 @@ impl<'a> App<'a> {
     }
 
     pub async fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
-        self.update_commands();
+        // self.update_commands();
         self.keys.push(key);
         if self.components_event(self.keys.clone()).await?.is_consumed() {
             self.keys.clear();
