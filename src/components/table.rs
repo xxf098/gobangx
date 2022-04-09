@@ -2,7 +2,7 @@ use super::{
     utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
     StatefulDrawableComponent, TableStatusComponent, CellEditorComponent,
 };
-use crate::components::help_info::{self, CommandInfo};
+use crate::components::help_info::{self, HelpInfo};
 use crate::config::{KeyConfig, Settings};
 use crate::event::{Key, Store, Event};
 use crate::database::{Pool, Header, Value};
@@ -685,8 +685,8 @@ impl StatefulDrawableComponent for TableComponent {
 
 #[async_trait]
 impl Component for TableComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {
-        out.push(CommandInfo::new(help_info::extend_selection_by_one_cell(
+    fn commands(&self, out: &mut Vec<HelpInfo>) {
+        out.push(HelpInfo::new(help_info::extend_selection_by_one_cell(
             &self.key_config,
         )));
     }

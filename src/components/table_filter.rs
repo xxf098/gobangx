@@ -2,7 +2,7 @@ use super::{
     compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
     StatefulDrawableComponent,
 };
-use crate::components::help_info::CommandInfo;
+use crate::components::help_info::HelpInfo;
 use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
 use anyhow::Result;
@@ -197,7 +197,7 @@ impl StatefulDrawableComponent for TableFilterComponent {
 }
 
 impl Component for TableFilterComponent {
-    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();

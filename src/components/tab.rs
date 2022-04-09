@@ -1,5 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
-use crate::components::help_info::{self, CommandInfo};
+use crate::components::help_info::{self, HelpInfo};
 use crate::config::KeyConfig;
 use crate::event::Key;
 use anyhow::Result;
@@ -70,7 +70,7 @@ impl<'a> DrawableComponent for TabComponent<'a> {
 }
 
 impl<'a> Component for TabComponent<'a> {
-    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         if key == [self.key_config.tab_records] {

@@ -3,7 +3,7 @@ use super::{
     StatefulDrawableComponent, TableComponent,
     utils::highlight_sql,
 };
-use crate::components::help_info::CommandInfo;
+use crate::components::help_info::HelpInfo;
 use crate::config::{KeyConfig, Settings, DatabaseType};
 use crate::database::{ExecuteResult, Pool};
 use crate::event::{Key, Store};
@@ -213,7 +213,7 @@ impl<'a> StatefulDrawableComponent for SqlEditorComponent<'a> {
 
 #[async_trait]
 impl<'a> Component for SqlEditorComponent<'a> {
-    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();

@@ -1,5 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
-use crate::components::help_info::CommandInfo;
+use crate::components::help_info::HelpInfo;
 use crate::config::KeyConfig;
 use crate::event::Key;
 use crate::clipboard::copy_to_clipboard;
@@ -59,7 +59,7 @@ impl<'a> DrawableComponent for ErrorComponent<'a> {
 }
 
 impl<'a> Component for ErrorComponent<'a> {
-    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         if self.visible {

@@ -22,11 +22,11 @@ impl CommandText {
     }
 }
 
-pub struct CommandInfo {
+pub struct HelpInfo {
     pub text: CommandText,
 }
 
-impl CommandInfo {
+impl HelpInfo {
     pub const fn new(text: CommandText) -> Self {
         Self { text }
     }

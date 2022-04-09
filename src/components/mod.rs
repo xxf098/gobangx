@@ -20,7 +20,7 @@ pub mod recent;
 #[cfg(debug_assertions)]
 pub mod debug;
 
-pub use help_info::{CommandInfo, CommandText};
+pub use help_info::{HelpInfo, CommandText};
 pub use completion::CompletionComponent;
 pub use connections::ConnectionsComponent;
 pub use database_filter::DatabaseFilterComponent;
@@ -91,7 +91,7 @@ pub trait MovableComponent {
 /// base component trait
 #[async_trait]
 pub trait Component {
-    fn commands(&self, out: &mut Vec<CommandInfo>);
+    fn commands(&self, out: &mut Vec<HelpInfo>);
 
     fn event(&mut self, key: &[crate::event::Key]) -> Result<EventState>;
 

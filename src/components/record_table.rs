@@ -1,5 +1,5 @@
 use super::{Component, EventState, StatefulDrawableComponent};
-use crate::components::help_info::CommandInfo;
+use crate::components::help_info::HelpInfo;
 use crate::components::{TableComponent, TableFilterComponent};
 use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
@@ -77,7 +77,7 @@ impl StatefulDrawableComponent for RecordTableComponent {
 
 #[async_trait]
 impl Component for RecordTableComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {
+    fn commands(&self, out: &mut Vec<HelpInfo>) {
         self.table.commands(out)
     }
 

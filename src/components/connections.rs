@@ -1,5 +1,5 @@
 use super::{Component, EventState, StatefulDrawableComponent};
-use crate::components::help_info::CommandInfo;
+use crate::components::help_info::HelpInfo;
 use crate::config::{Connection, KeyConfig, Settings};
 use crate::event::Key;
 use crate::clipboard::copy_to_clipboard;
@@ -115,7 +115,7 @@ impl<'a> StatefulDrawableComponent for ConnectionsComponent<'a> {
 }
 
 impl<'a> Component for ConnectionsComponent<'a> {
-    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let key = key[0];

@@ -2,7 +2,7 @@ use super::{
     utils::scroll_vertical::VerticalScroll, Component, DatabaseFilterComponent, DrawableComponent,
     EventState,
 };
-use crate::components::help_info::{self, CommandInfo};
+use crate::components::help_info::{self, HelpInfo};
 use crate::config::{Connection, KeyConfig, Settings};
 use crate::database::{Pool};
 use crate::event::{Key, Store};
@@ -231,8 +231,8 @@ impl<'a> DrawableComponent for DatabasesComponent<'a> {
 
 #[async_trait]
 impl<'a> Component for DatabasesComponent<'a> {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {
-        out.push(CommandInfo::new(help_info::expand_collapse(&self.key_config)))
+    fn commands(&self, out: &mut Vec<HelpInfo>) {
+        out.push(HelpInfo::new(help_info::expand_collapse(&self.key_config)))
     }
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {

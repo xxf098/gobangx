@@ -2,7 +2,7 @@ use tui::{backend::Backend, layout::Rect, Frame};
 use tui::widgets::{Wrap, Block, Borders};
 use unicode_width::UnicodeWidthStr;
 use super::{compute_character_width, Component, EventState, StatefulDrawableComponent};
-use crate::components::help_info::CommandInfo;
+use crate::components::help_info::HelpInfo;
 use crate::event::Key;
 use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
 
@@ -166,7 +166,7 @@ impl StatefulDrawableComponent for CellEditorComponent {
 }
 
 impl Component for CellEditorComponent {
-    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
+    fn commands(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> anyhow::Result<EventState> {
         let input_str: String = self.input.iter().collect();

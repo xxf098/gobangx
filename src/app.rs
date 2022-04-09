@@ -1,6 +1,6 @@
 use crate::clipboard::copy_to_clipboard;
 use crate::components::{
-    CommandInfo, Component as _, DrawableComponent as _, EventState, StatefulDrawableComponent,
+    HelpInfo, Component as _, DrawableComponent as _, EventState, StatefulDrawableComponent,
 };
 use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, MssqlPool};
 use crate::event::{Key, Event, Store};
@@ -124,18 +124,18 @@ impl<'a> App<'a> {
         self.help.set_cmds(self._commands());
     }
 
-    fn _commands(&self) -> Vec<CommandInfo> {
+    fn _commands(&self) -> Vec<HelpInfo> {
         let mut res = vec![
-            CommandInfo::new(help_info::filter(&self.config.key_config)),
-            CommandInfo::new(help_info::help(&self.config.key_config)),
-            CommandInfo::new(help_info::toggle_tabs(&self.config.key_config)),
-            CommandInfo::new(help_info::scroll(&self.config.key_config)),
-            CommandInfo::new(help_info::scroll_to_top_bottom(&self.config.key_config)),
-            CommandInfo::new(help_info::scroll_up_down_multiple_lines(
+            HelpInfo::new(help_info::filter(&self.config.key_config)),
+            HelpInfo::new(help_info::help(&self.config.key_config)),
+            HelpInfo::new(help_info::toggle_tabs(&self.config.key_config)),
+            HelpInfo::new(help_info::scroll(&self.config.key_config)),
+            HelpInfo::new(help_info::scroll_to_top_bottom(&self.config.key_config)),
+            HelpInfo::new(help_info::scroll_up_down_multiple_lines(
                 &self.config.key_config,
             )),
-            CommandInfo::new(help_info::move_focus(&self.config.key_config)),
-            CommandInfo::new(help_info::extend_or_shorten_widget_width(
+            HelpInfo::new(help_info::move_focus(&self.config.key_config)),
+            HelpInfo::new(help_info::extend_or_shorten_widget_width(
                 &self.config.key_config,
             )),
         ];
