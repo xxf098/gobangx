@@ -60,6 +60,7 @@ If you want to add connections, you need to edit your config file. For more info
 | <kbd>Y</kbd> | Yank `CREATE TABLE` or `INSERT INTO` sql |
 | <kbd>D</kbd> | Delete row by primary key or `id` or first column |
 | <kbd>C</kbd> | Change current cell value, set value to `NULL` with `<NULL>` |
+| <kbd>:</kbd> | Start ex command, see below for commands list |
 | <kbd>o</kbd>, <kbd>O</kbd> | Order column asc/desc |
 | <kbd>=</kbd>, <kbd>-</kbd> | Expand/Shorten column width |
 | <kbd>←</kbd>, <kbd>→</kbd> | Move focus to left/right |
@@ -67,6 +68,11 @@ If you want to add connections, you need to edit your config file. For more info
 | <kbd>/</kbd> | Filter |
 | <kbd>?</kbd> | Help |
 | <kbd>1</kbd>, <kbd>2</kbd>, <kbd>3</kbd>, <kbd>4</kbd>, <kbd>5</kbd> | Switch to records/columns/constraints/foreign keys/indexes tab |
+
+## Command
+| Command | Description |
+| ---- | ---- |
+| <kbd>tree</kbd> | Toggle database tree |
 
 ## Configuration
 
