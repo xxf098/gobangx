@@ -49,14 +49,15 @@ impl CharKind {
 
 }
 
-pub struct CellEditorComponent {
+// single line editor
+pub struct LineEditorComponent {
     input: Vec<char>,
     input_idx: usize,
     paragraph_state: ParagraphState,
     input_cursor_position_x: u16,
 }
 
-impl CellEditorComponent {
+impl LineEditorComponent {
 
     pub fn new(input: String) -> Self {
         let input_cursor_position_x = input.len() as u16;
@@ -148,7 +149,7 @@ impl CellEditorComponent {
 }
 
 
-impl StatefulDrawableComponent for CellEditorComponent {
+impl StatefulDrawableComponent for LineEditorComponent {
 
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, area: Rect, _focused: bool) -> anyhow::Result<()> {
         let editor = StatefulParagraph::new(self.input.iter().collect::<String>())
@@ -165,7 +166,7 @@ impl StatefulDrawableComponent for CellEditorComponent {
     }
 }
 
-impl Component for CellEditorComponent {
+impl Component for LineEditorComponent {
     fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> anyhow::Result<EventState> {

@@ -1,6 +1,6 @@
 use super::{
     utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
-    StatefulDrawableComponent, TableStatusComponent, CellEditorComponent,
+    StatefulDrawableComponent, TableStatusComponent, LineEditorComponent,
 };
 use crate::components::help_info::{self, HelpInfo};
 use crate::config::{KeyConfig, Settings};
@@ -50,7 +50,7 @@ pub struct TableComponent {
     key_config: KeyConfig,
     settings: Settings,
     area_width: u16,
-    cell_editor: CellEditorComponent,
+    cell_editor: LineEditorComponent,
     orderby_status: Option<String>,
     movement: Option<Movement>
 }
@@ -59,7 +59,7 @@ impl TableComponent {
     pub fn new(key_config: KeyConfig, settings: Settings) -> Self {
         Self {
             selected_row: TableState::default(),
-            cell_editor: CellEditorComponent::new("".to_string()),
+            cell_editor: LineEditorComponent::new("".to_string()),
             headers: vec![],
             rows: vec![],
             table: None,
@@ -846,6 +846,7 @@ impl Component for TableComponent {
             return Ok(EventState::Consumed);
         }
 
+        // update cell value
         if key == self.key_config.enter && self.focus == Focus::Editor {
             self.focus = Focus::Status;
             if let Some((database, table)) = &self.table {

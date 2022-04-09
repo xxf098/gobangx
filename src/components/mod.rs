@@ -9,7 +9,7 @@ pub mod help_info;
 pub mod properties;
 pub mod record_table;
 pub mod sql_editor;
-pub mod cell_editor;
+pub mod line_editor;
 pub mod tab;
 pub mod table;
 pub mod table_filter;
@@ -36,7 +36,7 @@ pub use table::TableComponent;
 pub use table_filter::TableFilterComponent;
 pub use table_status::TableStatusComponent;
 pub use table_value::TableValueComponent;
-pub use cell_editor::CellEditorComponent;
+pub use line_editor::LineEditorComponent;
 
 #[cfg(debug_assertions)]
 pub use debug::DebugComponent;
