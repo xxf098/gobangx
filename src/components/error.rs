@@ -1,5 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
-use crate::components::command::CommandInfo;
+use crate::components::help_info::CommandInfo;
 use crate::config::KeyConfig;
 use crate::event::Key;
 use crate::clipboard::copy_to_clipboard;

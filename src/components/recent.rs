@@ -1,8 +1,8 @@
 use super::{Component, EventState, StatefulDrawableComponent};
 use crate::components::help_info::CommandInfo;
-use crate::config::{Connection, KeyConfig, Settings};
+use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
-use crate::clipboard::copy_to_clipboard;
+use database_tree::{Database, Table};
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -13,21 +13,26 @@ use tui::{
     Frame,
 };
 
-pub struct ConnectionsComponent<'a> {
-    connections: &'a Vec<Connection>,
+pub struct Recent {
+    database: Database,
+    table: Table,
+}
+
+pub struct RecentComponent<'a> {
+    recents: &'a Vec<Recent>,
     state: ListState,
     key_config: &'a KeyConfig,
     settings: &'a Settings,
 }
 
-impl<'a> ConnectionsComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, connections: &'a Vec<Connection>, settings: &'a Settings) -> Self {
+impl<'a> RecentComponent<'a> {
+    pub fn new(key_config: &'a KeyConfig, recents: &'a Vec<Recent>, settings: &'a Settings) -> Self {
         let mut state = ListState::default();
-        if !connections.is_empty() {
+        if !recents.is_empty() {
             state.select(Some(0));
         }
         Self {
-            connections,
+            recents,
             key_config,
             state,
             settings,
@@ -37,8 +42,8 @@ impl<'a> ConnectionsComponent<'a> {
     fn next_connection(&mut self, lines: usize) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i + lines >= self.connections.len() {
-                    Some(self.connections.len() - 1)
+                if i + lines >= self.recents.len() {
+                    Some(self.recents.len() - 1)
                 } else {
                     Some(i + lines)
                 }
@@ -63,41 +68,36 @@ impl<'a> ConnectionsComponent<'a> {
     }
 
     fn scroll_to_top(&mut self) {
-        if self.connections.is_empty() {
+        if self.recents.is_empty() {
             return;
         }
         self.state.select(Some(0));
     }
 
     fn scroll_to_bottom(&mut self) {
-        if self.connections.is_empty() {
+        if self.recents.is_empty() {
             return;
         }
-        self.state.select(Some(self.connections.len() - 1));
+        self.state.select(Some(self.recents.len() - 1));
     }
 
-    pub fn selected_connection(&self) -> Option<&Connection> {
-        match self.state.selected() {
-            Some(i) => self.connections.get(i),
-            None => None,
-        }
-    }
 }
 
-impl<'a> StatefulDrawableComponent for ConnectionsComponent<'a> {
+
+impl<'a> StatefulDrawableComponent for RecentComponent<'a> {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
         let width = 80;
         let height = 20;
-        let conns = &self.connections;
+        let conns = &self.recents;
         let mut connections: Vec<ListItem> = Vec::new();
         for c in conns.iter() {
             connections.push(
-                ListItem::new(vec![Spans::from(Span::raw(c.database_url_with_name()?))])
+                ListItem::new(vec![Spans::from(Span::raw(c.table.name.clone()))])
                     .style(Style::default()),
             )
         }
         let connections = List::new(connections)
-            .block(Block::default().borders(Borders::ALL).title("Connections"))
+            .block(Block::default().borders(Borders::ALL).title("Recents"))
             .highlight_style(Style::default().bg(self.settings.color))
             .style(Style::default());
 
@@ -114,7 +114,7 @@ impl<'a> StatefulDrawableComponent for ConnectionsComponent<'a> {
     }
 }
 
-impl<'a> Component for ConnectionsComponent<'a> {
+impl<'a> Component for RecentComponent<'a> {
     fn commands(&self, _out: &mut Vec<CommandInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
@@ -136,12 +136,6 @@ impl<'a> Component for ConnectionsComponent<'a> {
             return Ok(EventState::Consumed);
         } else if key == self.key_config.scroll_to_bottom {
             self.scroll_to_bottom();
-            return Ok(EventState::Consumed);
-        } else if key == self.key_config.copy {
-            if let Some(c) = self.selected_connection() {
-                let s = c.database_url_with_name()?;
-                copy_to_clipboard(&s)?;
-            }
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)

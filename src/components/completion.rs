@@ -1,5 +1,5 @@
 use super::{Component, EventState, MovableComponent};
-use crate::components::command::CommandInfo;
+use crate::components::help_info::CommandInfo;
 use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
 use anyhow::Result;

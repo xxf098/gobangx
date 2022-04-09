@@ -8,7 +8,7 @@ use crate::config::DatabaseType;
 use crate::{
     components::tab::Tab,
     components::{
-        command, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
+        help_info, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
         PropertiesComponent, RecordTableComponent, SqlEditorComponent, TabComponent,
     },
     config::{Config, Connection},
@@ -34,6 +34,7 @@ pub struct App<'a> {
     tab: TabComponent<'a>,
     help: HelpComponent<'a>,
     databases: DatabasesComponent<'a>,
+    show_database: bool,
     connections: ConnectionsComponent<'a>,
     pool: Option<Box<dyn Pool>>,
     left_main_chunk_percentage: u16,
@@ -55,6 +56,7 @@ impl<'a> App<'a> {
             tab: TabComponent::new(&config.key_config),
             help: HelpComponent::new(&config.key_config),
             databases: DatabasesComponent::new(&config.key_config, &config.settings),
+            show_database: true,
             error: ErrorComponent::new(&config.key_config),
             focus: Focus::ConnectionList,
             pool: None,
@@ -78,16 +80,19 @@ impl<'a> App<'a> {
             return Ok(());
         }
 
+        let left_main_chunk_percentage = if self.show_database { self.left_main_chunk_percentage } else { 0 };
         let main_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(self.left_main_chunk_percentage),
-                Constraint::Percentage((100_u16).saturating_sub(self.left_main_chunk_percentage)),
+                Constraint::Percentage(left_main_chunk_percentage),
+                Constraint::Percentage((100_u16).saturating_sub(left_main_chunk_percentage)),
             ])
             .split(f.size());
 
-        self.databases
-            .draw(f, main_chunks[0], matches!(self.focus, Focus::DabataseList))?;
+        if self.show_database {
+            self.databases
+              .draw(f, main_chunks[0], matches!(self.focus, Focus::DabataseList))?;
+        }
 
         let right_chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -121,16 +126,16 @@ impl<'a> App<'a> {
 
     fn _commands(&self) -> Vec<CommandInfo> {
         let mut res = vec![
-            CommandInfo::new(command::filter(&self.config.key_config)),
-            CommandInfo::new(command::help(&self.config.key_config)),
-            CommandInfo::new(command::toggle_tabs(&self.config.key_config)),
-            CommandInfo::new(command::scroll(&self.config.key_config)),
-            CommandInfo::new(command::scroll_to_top_bottom(&self.config.key_config)),
-            CommandInfo::new(command::scroll_up_down_multiple_lines(
+            CommandInfo::new(help_info::filter(&self.config.key_config)),
+            CommandInfo::new(help_info::help(&self.config.key_config)),
+            CommandInfo::new(help_info::toggle_tabs(&self.config.key_config)),
+            CommandInfo::new(help_info::scroll(&self.config.key_config)),
+            CommandInfo::new(help_info::scroll_to_top_bottom(&self.config.key_config)),
+            CommandInfo::new(help_info::scroll_up_down_multiple_lines(
                 &self.config.key_config,
             )),
-            CommandInfo::new(command::move_focus(&self.config.key_config)),
-            CommandInfo::new(command::extend_or_shorten_widget_width(
+            CommandInfo::new(help_info::move_focus(&self.config.key_config)),
+            CommandInfo::new(help_info::extend_or_shorten_widget_width(
                 &self.config.key_config,
             )),
         ];

@@ -3,7 +3,7 @@ use super::{
     StatefulDrawableComponent, TableComponent,
     utils::highlight_sql,
 };
-use crate::components::command::CommandInfo;
+use crate::components::help_info::CommandInfo;
 use crate::config::{KeyConfig, Settings, DatabaseType};
 use crate::database::{ExecuteResult, Pool};
 use crate::event::{Key, Store};

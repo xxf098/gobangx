@@ -1,5 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
-use crate::components::command::CommandInfo;
+use crate::components::help_info::CommandInfo;
 use crate::config::KeyConfig;
 use crate::event::Key;
 use crate::version::Version;
@@ -176,8 +176,8 @@ mod test {
         let key_config = KeyConfig::default();
         let mut component = HelpComponent::new(&key_config);
         component.set_cmds(vec![
-            CommandInfo::new(crate::components::command::scroll(&key_config)),
-            CommandInfo::new(crate::components::command::filter(&key_config)),
+            CommandInfo::new(crate::components::help_info::scroll(&key_config)),
+            CommandInfo::new(crate::components::help_info::filter(&key_config)),
         ]);
         assert_eq!(
             component.get_text(width),

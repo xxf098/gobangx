@@ -1,10 +1,10 @@
-pub mod command;
 pub mod completion;
 pub mod connections;
 pub mod database_filter;
 pub mod databases;
 pub mod error;
 pub mod help;
+pub mod help_info;
 pub mod properties;
 pub mod record_table;
 pub mod sql_editor;
@@ -15,11 +15,12 @@ pub mod table_filter;
 pub mod table_status;
 pub mod table_value;
 pub mod utils;
+pub mod recent;
 
 #[cfg(debug_assertions)]
 pub mod debug;
 
-pub use command::{CommandInfo, CommandText};
+pub use help_info::{CommandInfo, CommandText};
 pub use completion::CompletionComponent;
 pub use connections::ConnectionsComponent;
 pub use database_filter::DatabaseFilterComponent;

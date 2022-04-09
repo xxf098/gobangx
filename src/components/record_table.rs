@@ -1,5 +1,5 @@
 use super::{Component, EventState, StatefulDrawableComponent};
-use crate::components::command::CommandInfo;
+use crate::components::help_info::CommandInfo;
 use crate::components::{TableComponent, TableFilterComponent};
 use crate::config::{KeyConfig, Settings};
 use crate::event::Key;

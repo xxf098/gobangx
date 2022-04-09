@@ -1,5 +1,5 @@
 use super::{compute_character_width, Component, DrawableComponent, EventState};
-use crate::components::command::CommandInfo;
+use crate::components::help_info::CommandInfo;
 use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
