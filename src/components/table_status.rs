@@ -55,7 +55,7 @@ impl DrawableComponent for TableStatusComponent {
                 self.row_count.map_or("-".to_string(), |c| c.to_string())
             )),
             Span::from(format!(
-                "columns: {}, ",
+                "cols: {}, ",
                 self.column_count.map_or("-".to_string(), |c| c.to_string())
             )),
         ];

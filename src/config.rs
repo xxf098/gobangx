@@ -127,6 +127,7 @@ pub struct KeyConfig {
     // pub reset_column_width: [Key; 2],
     pub delete: Key, // drop table/ delete record by primary key
     pub edit_cell: Key, // edit table cell
+    pub edit_command: Key, // toggle command
     pub orderby_asc: Key,
     pub orderby_desc: Key,
     pub jump_to_start: Key,
@@ -226,6 +227,7 @@ impl Default for KeyConfig {
             // reset_column_width: [Key::Char('0'), Key::Char('0')],
             delete: Key::Char('D'),
             edit_cell: Key::Char('C'),
+            edit_command: Key::Char(':'),
             orderby_asc: Key::Char('o'),
             orderby_desc: Key::Char('O'),
             jump_to_start: Key::Char('0'),

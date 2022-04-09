@@ -1,6 +1,6 @@
 use super::{
     utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
-    StatefulDrawableComponent, TableStatusComponent, LineEditorComponent,
+    StatefulDrawableComponent, TableStatusComponent, LineEditorComponent, CommandEditorComponent,
 };
 use crate::components::help_info::{self, HelpInfo};
 use crate::config::{KeyConfig, Settings};
@@ -27,6 +27,7 @@ const NULL: &str = "<NULL>";
 pub enum Focus {
     Status,
     Editor,
+    Command,
 }
 
 #[derive(Copy, Clone)]
@@ -51,6 +52,7 @@ pub struct TableComponent {
     settings: Settings,
     area_width: u16,
     cell_editor: LineEditorComponent,
+    command_editor: CommandEditorComponent,
     orderby_status: Option<String>,
     movement: Option<Movement>
 }
@@ -60,6 +62,7 @@ impl TableComponent {
         Self {
             selected_row: TableState::default(),
             cell_editor: LineEditorComponent::new("".to_string()),
+            command_editor: CommandEditorComponent::new("".to_string()),
             headers: vec![],
             rows: vec![],
             table: None,
@@ -673,6 +676,7 @@ impl StatefulDrawableComponent for TableComponent {
                 )
                 .draw(f, chunks[1], focused)?;
             }
+            Focus::Command => { self.command_editor.draw(f, chunks[1], focused)?; },
             _ => {
                 self.cell_editor.draw(f, chunks[1], focused)?;
             },
@@ -694,6 +698,12 @@ impl Component for TableComponent {
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         if self.focus == Focus::Editor {
             let state = self.cell_editor.event(key)?;
+            if state == EventState::Consumed {
+                return Ok(EventState::Consumed)
+            }
+        }
+        if self.focus == Focus::Command {
+            let state = self.command_editor.event(key)?;
             if state == EventState::Consumed {
                 return Ok(EventState::Consumed)
             }
@@ -785,10 +795,13 @@ impl Component for TableComponent {
         // } else if key == self.key_config.jump_to_end {
         //     self.last_column();
         //     return Ok(EventState::Consumed);
-        } else if key == self.key_config.edit_cell {
+        } else if key == self.key_config.edit_cell && self.focus == Focus::Status {
             self.focus = Focus::Editor;
             let s = self.selected_cell().map(|c| if c.is_null { NULL.to_string() } else { c.to_string() });
             self.cell_editor.update(s.unwrap_or("".to_string()));
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.edit_command && self.focus == Focus::Status {
+            self.focus = Focus::Command;
             return Ok(EventState::Consumed);
         } else if key == self.key_config.exit_popup {
             self.focus = Focus::Status;
@@ -859,6 +872,11 @@ impl Component for TableComponent {
                 pool.execute(&sql).await?;
                 return Ok(EventState::Consumed)
             }
+        }
+        // execute command
+        if key == self.key_config.enter && self.focus == Focus::Command {
+            self.focus = Focus::Status;
+            return Ok(EventState::Consumed)
         }
         Ok(EventState::NotConsumed)
     }

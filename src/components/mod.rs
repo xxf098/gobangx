@@ -1,6 +1,6 @@
 pub mod completion;
 pub mod connections;
-pub mod command;
+pub mod command_editor;
 pub mod database_filter;
 pub mod databases;
 pub mod error;
@@ -37,6 +37,7 @@ pub use table_filter::TableFilterComponent;
 pub use table_status::TableStatusComponent;
 pub use table_value::TableValueComponent;
 pub use line_editor::LineEditorComponent;
+pub use command_editor::CommandEditorComponent;
 
 #[cfg(debug_assertions)]
 pub use debug::DebugComponent;
@@ -92,7 +93,7 @@ pub trait MovableComponent {
 /// base component trait
 #[async_trait]
 pub trait Component {
-    fn helps(&self, out: &mut Vec<HelpInfo>);
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[crate::event::Key]) -> Result<EventState>;
 

@@ -1,5 +1,4 @@
 use super::{Component, EventState, StatefulDrawableComponent};
-use crate::components::help_info::HelpInfo;
 use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
 use database_tree::{Database, Table};
@@ -115,7 +114,6 @@ impl<'a> StatefulDrawableComponent for RecentComponent<'a> {
 }
 
 impl<'a> Component for RecentComponent<'a> {
-    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let key = key[0];
