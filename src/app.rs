@@ -458,7 +458,7 @@ impl<'a> App<'a> {
                     return Ok(EventState::Consumed);
                 }
                 if key[0] == self.config.key_config.focus_left {
-                    self.focus = Focus::DabataseList;
+                    if self.show_database { self.focus = Focus::DabataseList; }
                     return Ok(EventState::Consumed);
                 }
             }
