@@ -121,6 +121,10 @@ impl TableComponent {
         self.eod = false;
         self.table = None;
         self.constraint_adjust = vec![];
+        self.area_width = 0;
+        self.focus = Focus::Status;
+        self.orderby_status = None;
+        self.movement = None;
     }
 
     fn reset_selection(&mut self) {
