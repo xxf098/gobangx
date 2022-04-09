@@ -47,7 +47,7 @@ pub struct App<'a> {
 impl<'a> App<'a> {
     pub fn new(config: &'a Config, sender: mpsc::Sender<Event>) -> App<'a> {
         let store = Store::new(sender);
-        Self {
+        let mut app = Self {
             config: config.clone(),
             connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.settings),
             record_table: RecordTableComponent::new(config.key_config.clone(), config.settings.clone()),
@@ -63,7 +63,9 @@ impl<'a> App<'a> {
             left_main_chunk_percentage: 15,
             store,
             keys: Vec::with_capacity(8),
-        }
+        };
+        app.update_helps();
+        app
     }
 
     pub fn draw<B: Backend>(&mut self, f: &mut Frame<'_, B>) -> anyhow::Result<()> {
@@ -120,11 +122,11 @@ impl<'a> App<'a> {
         Ok(())
     }
 
-    fn _update_commands(&mut self) {
-        self.help.set_cmds(self._commands());
+    fn update_helps(&mut self) {
+        self.help.set_cmds(self.helps());
     }
 
-    fn _commands(&self) -> Vec<HelpInfo> {
+    fn helps(&self) -> Vec<HelpInfo> {
         let mut res = vec![
             HelpInfo::new(help_info::filter(&self.config.key_config)),
             HelpInfo::new(help_info::help(&self.config.key_config)),

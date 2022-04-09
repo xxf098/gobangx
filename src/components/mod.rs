@@ -20,7 +20,7 @@ pub mod recent;
 #[cfg(debug_assertions)]
 pub mod debug;
 
-pub use help_info::{HelpInfo, CommandText};
+pub use help_info::{HelpInfo, HelpText};
 pub use completion::CompletionComponent;
 pub use connections::ConnectionsComponent;
 pub use database_filter::DatabaseFilterComponent;
