@@ -8,7 +8,7 @@ use uuid::Uuid;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Style},
+    style::{Style, Color},
     text::{Span, Spans},
     widgets::{Block, Borders, Clear, List, ListItem, ListState},
     Frame,
@@ -114,9 +114,14 @@ impl<'a> StatefulDrawableComponent for RecentComponent<'a> {
         let conns = &self.recents;
         let mut connections: Vec<ListItem> = Vec::new();
         for c in conns.iter() {
-            // TODO: scehma
+            let schema = c.table.schema.clone().unwrap_or("".to_string());
+            let spans = vec![
+                Span::raw(&c.table.name),
+                Span::raw("  "),
+                Span::styled(format!("{}/{}", c.database.name, schema), Style::default().fg(Color::DarkGray)),
+            ];
             connections.push(
-                ListItem::new(vec![Spans::from(Span::raw(format!("{} {}", c.database.name, c.table.name)))])
+                ListItem::new(vec![Spans::from(spans)])
                     .style(Style::default()),
             )
         }
