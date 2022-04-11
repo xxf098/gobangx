@@ -316,9 +316,10 @@ impl<'a> App<'a> {
                 if self.connections.event(&key)?.is_consumed() {
                     return Ok(EventState::Consumed);
                 }
-
+                
                 if key[0] == self.config.key_config.enter {
                     self.update_databases(true).await?;
+                    self.recents.reset();
                     return Ok(EventState::Consumed);
                 }
             }

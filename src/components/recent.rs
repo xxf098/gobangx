@@ -83,6 +83,11 @@ impl<'a> RecentComponent<'a> {
         self.state.select(Some(0));
     }
 
+    pub fn reset(&mut self) {
+        self.recents = VecDeque::default();
+        self.state = ListState::default();
+    }
+
     fn scroll_to_top(&mut self) {
         if self.recents.is_empty() {
             return;
