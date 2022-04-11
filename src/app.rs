@@ -326,24 +326,31 @@ impl<'a> App<'a> {
                 if self.recents.event(&key)?.is_consumed() {
                     return Ok(EventState::Consumed);
                 }
-                let recent = self.recents.selected_recent().map(|r| r.clone());
-                if let Some(Recent{id, database, table}) = recent {
-                    self.databases.set_selection(id);
-                    self.recents.add(id, &database, &table);
-                    self.record_table.reset();
-                    let (headers, records) = self
-                        .pool
-                        .as_ref()
-                        .unwrap()
-                        .get_records(&database, &table, 0, None, None)
-                        .await?;
-                    self.record_table
-                        .update(records, headers, database.clone(), table.clone(), 0);
-                    self.properties
-                        .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
-                        .await?;
+                if key[0] == self.config.key_config.enter {
+                    let recent = self.recents.selected_recent().map(|r| r.clone());
+                    if let Some(Recent{id, database, table}) = recent {
+                        self.databases.set_selection(id);
+                        self.recents.add(id, &database, &table);
+                        self.record_table.reset();
+                        let (headers, records) = self
+                            .pool
+                            .as_ref()
+                            .unwrap()
+                            .get_records(&database, &table, 0, None, None)
+                            .await?;
+                        self.record_table
+                            .update(records, headers, database.clone(), table.clone(), 0);
+                        self.properties
+                            .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
+                            .await?;
+                        self.focus = Focus::Table;
+                    }
+                }
+
+                if key[0] == self.config.key_config.exit_popup {
                     self.focus = Focus::Table;
                 }
+               
                 return Ok(EventState::Consumed);
             }
             Focus::DabataseList => {

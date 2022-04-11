@@ -121,7 +121,7 @@ impl<'a> StatefulDrawableComponent for RecentComponent<'a> {
             )
         }
         let connections = List::new(connections)
-            .block(Block::default().borders(Borders::ALL).title("Recents"))
+            .block(Block::default().borders(Borders::ALL).title("Recent Tables"))
             .highlight_style(Style::default().bg(self.settings.color))
             .style(Style::default());
 
