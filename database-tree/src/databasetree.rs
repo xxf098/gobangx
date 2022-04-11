@@ -138,6 +138,18 @@ impl DatabaseTree {
         })
     }
 
+    pub fn set_selection(&mut self, id: Uuid) -> bool {
+        self.selection.map_or(false, |selection| {
+            let new_index = self.items.tree_items.iter().enumerate().find(|(_, t)| t.id == id).map(|t| t.0);
+            let changed_index = new_index.map(|i| i != selection).unwrap_or_default();
+            if changed_index {
+                self.selection = new_index;
+                self.visual_selection = self.calc_visual_selection();
+            }
+            changed_index || new_index.is_some()
+        })
+    }
+
     fn visual_index_to_absolute(&self, visual_index: usize) -> Option<usize> {
         self.items
             .iterate(0, self.items.len())

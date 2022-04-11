@@ -9,7 +9,7 @@ use crate::{
     components::tab::Tab,
     components::{
         help_info, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
-        PropertiesComponent, RecordTableComponent, SqlEditorComponent, TabComponent,
+        PropertiesComponent, RecordTableComponent, SqlEditorComponent, TabComponent, RecentComponent, Recent
     },
     config::{Config, Connection},
 };
@@ -20,11 +20,13 @@ use tui::{
 };
 use tokio::sync::mpsc;
 use std::sync::{Arc, RwLock};
+use std::collections::VecDeque;
 
 pub enum Focus {
     DabataseList,
     Table,
     ConnectionList,
+    RecentList,
 }
 pub struct App<'a> {
     record_table: RecordTableComponent,
@@ -36,6 +38,7 @@ pub struct App<'a> {
     databases: DatabasesComponent<'a>,
     show_database: bool,
     connections: ConnectionsComponent<'a>,
+    recents: RecentComponent<'a>,
     pool: Option<Box<dyn Pool>>,
     left_main_chunk_percentage: u16,
     pub config: Config,
@@ -56,6 +59,7 @@ impl<'a> App<'a> {
             tab: TabComponent::new(&config.key_config),
             help: HelpComponent::new(&config.key_config),
             databases: DatabasesComponent::new(&config.key_config, &config.settings),
+            recents: RecentComponent::new(&config.key_config, VecDeque::new(), &config.settings),
             show_database: true,
             error: ErrorComponent::new(&config.key_config),
             focus: Focus::ConnectionList,
@@ -71,6 +75,19 @@ impl<'a> App<'a> {
     pub fn draw<B: Backend>(&mut self, f: &mut Frame<'_, B>) -> anyhow::Result<()> {
         if let Focus::ConnectionList = self.focus {
             self.connections.draw(
+                f,
+                Layout::default()
+                    .constraints([Constraint::Percentage(100)])
+                    .split(f.size())[0],
+                false,
+            )?;
+            self.error.draw(f, Rect::default(), false)?;
+            self.help.draw(f, Rect::default(), false)?;
+            return Ok(());
+        }
+
+        if let Focus::RecentList = self.focus {
+            self.recents.draw(
                 f,
                 Layout::default()
                     .constraints([Constraint::Percentage(100)])
@@ -305,6 +322,30 @@ impl<'a> App<'a> {
                     return Ok(EventState::Consumed);
                 }
             }
+            Focus::RecentList => {
+                if self.recents.event(&key)?.is_consumed() {
+                    return Ok(EventState::Consumed);
+                }
+                let recent = self.recents.selected_recent().map(|r| r.clone());
+                if let Some(Recent{id, database, table}) = recent {
+                    self.databases.set_selection(id);
+                    self.recents.add(id, &database, &table);
+                    self.record_table.reset();
+                    let (headers, records) = self
+                        .pool
+                        .as_ref()
+                        .unwrap()
+                        .get_records(&database, &table, 0, None, None)
+                        .await?;
+                    self.record_table
+                        .update(records, headers, database.clone(), table.clone(), 0);
+                    self.properties
+                        .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
+                        .await?;
+                    self.focus = Focus::Table;
+                }
+                return Ok(EventState::Consumed);
+            }
             Focus::DabataseList => {
                 if self.databases.event(&key)?.is_consumed() ||
                     self.databases.async_event(key[0], self.pool.as_ref().unwrap(), &self.store).await?.is_consumed() {
@@ -312,7 +353,8 @@ impl<'a> App<'a> {
                 }
 
                 if key[0] == self.config.key_config.enter && self.databases.tree_focused() {
-                    if let Some((database, table, _)) = self.databases.tree().selected_table() {
+                    if let Some((database, table, id)) = self.databases.tree().selected_table() {
+                        self.recents.add(id, &database, &table);
                         self.record_table.reset();
                         let (headers, records) = self
                             .pool
@@ -439,9 +481,19 @@ impl<'a> App<'a> {
             self.focus = Focus::ConnectionList;
             return Ok(EventState::Consumed);
         }
+        if key[0] == self.config.key_config.focus_recents {
+            self.focus = Focus::RecentList;
+            return Ok(EventState::Consumed);
+        }
 
         match self.focus {
             Focus::ConnectionList => {
+                if key[0] == self.config.key_config.enter {
+                    self.focus = Focus::DabataseList;
+                    return Ok(EventState::Consumed);
+                }
+            }
+            Focus::RecentList => {
                 if key[0] == self.config.key_config.enter {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);

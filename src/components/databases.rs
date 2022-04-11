@@ -12,6 +12,7 @@ use crate::ui::scrolllist::draw_list_block;
 use anyhow::Result;
 use database_tree::{Database, DatabaseTree, DatabaseTreeItem};
 use async_trait::async_trait;
+use uuid::Uuid;
 use std::collections::BTreeSet;
 use std::convert::From;
 use tui::{
@@ -77,6 +78,10 @@ impl<'a> DatabasesComponent<'a> {
         self.filterd_tree = None;
         self.filter.reset();
         Ok(())
+    }
+
+    pub fn set_selection(&mut self, id: Uuid) {
+        self.tree.set_selection(id);
     }
 
     pub fn tree_focused(&self) -> bool {

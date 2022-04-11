@@ -4,6 +4,7 @@ use crate::event::Key;
 use std::collections::VecDeque;
 use database_tree::{Database, Table};
 use anyhow::Result;
+use uuid::Uuid;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -13,9 +14,11 @@ use tui::{
     Frame,
 };
 
+#[derive(Clone)]
 pub struct Recent {
-    database: Database,
-    table: Table,
+    pub id: Uuid,
+    pub database: Database,
+    pub table: Table,
 }
 
 pub struct RecentComponent<'a> {
@@ -67,11 +70,15 @@ impl<'a> RecentComponent<'a> {
         self.state.select(i);
     }
 
-    pub fn add(&mut self, database: &Database, table: &Table) {
+    pub fn add(&mut self, id: Uuid, database: &Database, table: &Table) {
         if self.recents.len() > 20 {
             self.recents.pop_back();
         }
-        let recent = Recent{ database: database.clone(), table: table.clone() };
+        // check repeat / reorder
+        if let Some(index) = self.recents.iter().enumerate().find(|(_, r)| r.id == id).map(|r| r.0) {
+            self.recents.remove(index);
+        }
+        let recent = Recent{ id, database: database.clone(), table: table.clone() };
         self.recents.push_front(recent);
         self.state.select(Some(0));
     }
@@ -88,6 +95,13 @@ impl<'a> RecentComponent<'a> {
             return;
         }
         self.state.select(Some(self.recents.len() - 1));
+    }
+
+    pub fn selected_recent(&self) -> Option<&Recent> {
+        match self.state.selected() {
+            Some(i) => self.recents.get(i),
+            None => None,
+        }
     }
 
 }
