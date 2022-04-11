@@ -170,6 +170,13 @@ impl<'a> Component for RecentComponent<'a> {
         } else if key == self.key_config.scroll_to_bottom {
             self.scroll_to_bottom();
             return Ok(EventState::Consumed);
+        } else if key == self.key_config.delete {
+            if let Some(i) = self.state.selected() {
+                self.recents.remove(i);
+                let new_index = if self.recents.len() > 0 { Some(i.saturating_sub(1)) } else { None };
+                self.state.select(new_index);
+            }
+            return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
     }
