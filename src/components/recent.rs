@@ -1,6 +1,7 @@
 use super::{Component, EventState, StatefulDrawableComponent};
 use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
+use std::collections::VecDeque;
 use database_tree::{Database, Table};
 use anyhow::Result;
 use tui::{
@@ -18,14 +19,14 @@ pub struct Recent {
 }
 
 pub struct RecentComponent<'a> {
-    recents: &'a Vec<Recent>,
+    recents: VecDeque<Recent>,
     state: ListState,
     key_config: &'a KeyConfig,
     settings: &'a Settings,
 }
 
 impl<'a> RecentComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, recents: &'a Vec<Recent>, settings: &'a Settings) -> Self {
+    pub fn new(key_config: &'a KeyConfig, recents: VecDeque<Recent>, settings: &'a Settings) -> Self {
         let mut state = ListState::default();
         if !recents.is_empty() {
             state.select(Some(0));
@@ -66,6 +67,15 @@ impl<'a> RecentComponent<'a> {
         self.state.select(i);
     }
 
+    pub fn add(&mut self, database: &Database, table: &Table) {
+        if self.recents.len() > 20 {
+            self.recents.pop_back();
+        }
+        let recent = Recent{ database: database.clone(), table: table.clone() };
+        self.recents.push_front(recent);
+        self.state.select(Some(0));
+    }
+
     fn scroll_to_top(&mut self) {
         if self.recents.is_empty() {
             return;
@@ -90,8 +100,9 @@ impl<'a> StatefulDrawableComponent for RecentComponent<'a> {
         let conns = &self.recents;
         let mut connections: Vec<ListItem> = Vec::new();
         for c in conns.iter() {
+            // TODO: scehma
             connections.push(
-                ListItem::new(vec![Spans::from(Span::raw(c.table.name.clone()))])
+                ListItem::new(vec![Spans::from(Span::raw(format!("{} {}", c.database.name, c.table.name)))])
                     .style(Style::default()),
             )
         }

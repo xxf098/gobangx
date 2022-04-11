@@ -103,6 +103,7 @@ pub struct KeyConfig {
     pub focus_left: Key,
     pub focus_above: Key,
     pub focus_connections: Key,
+    pub focus_recents: Key,
     pub open_help: Key,
     pub filter: Key,
     pub scroll_down_multiple_lines: Key,
@@ -135,6 +136,7 @@ pub struct KeyConfig {
     pub forward: Key,
     pub backward: Key,
     pub repeat_movement: Key,
+    pub jump_to_parent: Key, // jump to database parent
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -203,6 +205,7 @@ impl Default for KeyConfig {
             focus_left: Key::Left,
             focus_above: Key::Up,
             focus_connections: Key::Char('c'),
+            focus_recents: Key::Char('r'),
             open_help: Key::Char('?'),
             filter: Key::Char('/'),
             scroll_down_multiple_lines: Key::Ctrl('d'),
@@ -235,6 +238,7 @@ impl Default for KeyConfig {
             forward: Key::Char('f'),
             backward: Key::Char('F'),
             repeat_movement: Key::Char(';'),
+            jump_to_parent: Key::Char('p'),
         }
     }
 }

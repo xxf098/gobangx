@@ -38,6 +38,7 @@ pub use table_status::TableStatusComponent;
 pub use table_value::TableValueComponent;
 pub use line_editor::LineEditorComponent;
 pub use command_editor::CommandEditorComponent;
+pub use recent::RecentComponent;
 
 #[cfg(debug_assertions)]
 pub use debug::DebugComponent;
