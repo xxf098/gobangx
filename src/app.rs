@@ -399,6 +399,11 @@ impl<'a> App<'a> {
                             self.update_record_table(true, None, 0).await?;
                         }
 
+                        if key[0] == self.config.key_config.exit_popup && self.record_table.filter_focused()
+                        {
+                            self.record_table.focus = crate::components::record_table::Focus::Table;
+                        }
+
                         if self.record_table.table.eod {
                             return Ok(EventState::Consumed);
                         }
