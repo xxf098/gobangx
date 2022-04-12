@@ -42,7 +42,7 @@ impl DatabaseTreeItems {
         }
     }
 
-    pub fn filter_by_id(&self, id: uuid::Uuid, reverse: bool) -> Self {
+    pub fn filter_by_id(&self, id: usize, reverse: bool) -> Self {
         Self {
             tree_items: self
                 .tree_items

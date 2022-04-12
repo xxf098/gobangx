@@ -4,7 +4,6 @@ use crate::{
 };
 use crate::{Database, Table};
 use std::{collections::BTreeSet, usize};
-use uuid::Uuid;
 
 ///
 #[derive(Copy, Clone, Debug)]
@@ -58,7 +57,7 @@ impl DatabaseTree {
         new_self
     }
 
-    pub fn filter_by_id(&self, id: Uuid, reverse: bool) -> Self {
+    pub fn filter_by_id(&self, id: usize, reverse: bool) -> Self {
         let mut new_self = Self {
             items: self.items.filter_by_id(id, reverse),
             selection: Some(0),
@@ -90,7 +89,7 @@ impl DatabaseTree {
             .and_then(|index| self.items.tree_items.get(index))
     }
 
-    pub fn selected_table(&self) -> Option<(Database, Table, Uuid)> {
+    pub fn selected_table(&self) -> Option<(Database, Table, usize)> {
         self.selection.and_then(|index| {
             let item = &self.items.tree_items[index];
             match item.kind() {
@@ -142,7 +141,7 @@ impl DatabaseTree {
         })
     }
 
-    pub fn set_selection(&mut self, id: Uuid) -> bool {
+    pub fn set_selection(&mut self, id: usize) -> bool {
         self.selection.map_or(false, |selection| {
             let new_index = self.items.tree_items.iter().enumerate().find(|(_, t)| t.id == id).map(|t| t.0);
             let changed_index = new_index.map(|i| i != selection).unwrap_or_default();

@@ -4,7 +4,6 @@ use crate::event::Key;
 use std::collections::VecDeque;
 use database_tree::{Database, Table};
 use anyhow::Result;
-use uuid::Uuid;
 use tui::{
     backend::Backend,
     layout::Rect,
@@ -16,7 +15,7 @@ use tui::{
 
 #[derive(Clone)]
 pub struct Recent {
-    pub id: Uuid,
+    pub id: usize,
     pub database: Database,
     pub table: Table,
 }
@@ -70,7 +69,7 @@ impl<'a> RecentComponent<'a> {
         self.state.select(i);
     }
 
-    pub fn add(&mut self, id: Uuid, database: &Database, table: &Table) {
+    pub fn add(&mut self, id: usize, database: &Database, table: &Table) {
         if self.recents.len() > 20 {
             self.recents.pop_back();
         }
