@@ -250,7 +250,8 @@ impl<'a> Component for SqlEditorComponent<'a> {
                     let last_c = self.input.remove(self.input_idx - 1);
                     self.input_idx -= 1;
                     self.input_cursor_position_x -= compute_character_width(last_c);
-                    self.completion.update("");
+                    // self.completion.update("");
+                    self.update_completion();
                 }
 
                 return Ok(EventState::Consumed);
