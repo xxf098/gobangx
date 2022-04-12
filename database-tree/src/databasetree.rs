@@ -360,18 +360,29 @@ impl DatabaseTree {
 
         let mut index = current_index;
 
-        while let Some(selection) = self.selection_updown(index, false) {
-            if self.items.tree_items[index].info().indent() > indent {
+        while index < self.items.tree_items.len() - 1 {
+            if self.items.tree_items[index+1].info().indent() < indent {
                 break;
             } else {
-                index = selection;
+                index += 1;
             }
         }
 
-        if index.saturating_sub(1) == current_index {
-            return None
+        if self.items.tree_items[index].info().indent() != indent {
+            while index > 0 {
+                index = index - 1;
+                if self.items.tree_items[index].info().indent() == indent {
+                    break;
+                }
+            }
         }
-        self.selection_down(current_index, index-current_index)
+
+        if index == current_index {
+            return None
+        } else {
+            return Some(index)
+        }
+        
     }
 
     fn selection_left(&mut self, current_index: usize) -> Option<usize> {
