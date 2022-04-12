@@ -1,5 +1,5 @@
 use super::{
-    compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
+    compute_character_width, PlainCompletionComponent, Component, EventState, MovableComponent,
     StatefulDrawableComponent, TableComponent,
     utils::highlight_sql,
 };
@@ -40,7 +40,7 @@ pub struct SqlEditorComponent<'a> {
     input_idx: usize,
     table: TableComponent,
     query_result: Option<QueryResult>,
-    completion: CompletionComponent,
+    completion: PlainCompletionComponent,
     key_config: &'a KeyConfig,
     settings: Settings,
     paragraph_state: ParagraphState,
@@ -56,7 +56,7 @@ impl<'a> SqlEditorComponent<'a> {
             input_idx: 0,
             input_cursor_position_x: 0,
             table: TableComponent::new(key_config.clone(), settings.clone()),
-            completion: CompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into()),
+            completion: PlainCompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into()),
             focus: Focus::Editor,
             paragraph_state: ParagraphState::default(),
             query_result: None,

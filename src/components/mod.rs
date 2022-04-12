@@ -22,7 +22,7 @@ pub mod recent;
 pub mod debug;
 
 pub use help_info::{HelpInfo, HelpText};
-pub use completion::CompletionComponent;
+pub use completion::{CompletionComponent, PlainCompletionComponent};
 pub use connections::ConnectionsComponent;
 pub use database_filter::DatabaseFilterComponent;
 pub use databases::DatabasesComponent;

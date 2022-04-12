@@ -2,6 +2,7 @@ use super::{Component, EventState, MovableComponent};
 use crate::components::help_info::HelpInfo;
 use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
+use crate::sql::{Completion, Plain};
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -16,30 +17,31 @@ const ALL_RESERVED_WORDS: &[&str] = &[
     "IN", "AND", "OR", "NOT", "NULL", "IS", "SELECT", "UPDATE", "DELETE", "FROM", "LIMIT", "WHERE",
 ];
 
-pub struct CompletionComponent {
+pub struct CompletionComponent<T: Completion> {
     key_config: KeyConfig,
     settings: Settings,
     state: ListState,
     word: String,
-    candidates: Vec<String>,
+    completion: T,
     visible: bool,
 }
 
-impl CompletionComponent {
+impl<T: Completion> CompletionComponent<T> {
     pub fn new(key_config: KeyConfig, settings: Settings, word: impl Into<String>, all: bool) -> Self {
+        let candidates: Vec<_> = if all {
+            ALL_RESERVED_WORDS.iter().map(|w| w.to_string()).collect()
+        } else {
+            RESERVED_WORDS_IN_WHERE_CLAUSE
+                .iter()
+                .map(|w| w.to_string())
+                .collect()
+        };
         Self {
             key_config,
             settings,
             state: ListState::default(),
             word: word.into(),
-            candidates: if all {
-                ALL_RESERVED_WORDS.iter().map(|w| w.to_string()).collect()
-            } else {
-                RESERVED_WORDS_IN_WHERE_CLAUSE
-                    .iter()
-                    .map(|w| w.to_string())
-                    .collect()
-            },
+            completion: T::new(candidates),
             visible: false, 
         }
     }
@@ -53,7 +55,7 @@ impl CompletionComponent {
             settings,
             state: ListState::default(),
             word: "".to_string(),
-            candidates,
+            completion: T::new(candidates),
             visible: false,
         }
     }
@@ -66,17 +68,18 @@ impl CompletionComponent {
     }
 
     pub fn update_candidates(&mut self, candidates: &[String]) {
-        for candidate in candidates {
-            if self.candidates.iter().find(|x| *x == candidate).is_none() {
-                self.candidates.push(candidate.clone())
-            }
-        }
+        // for candidate in candidates {
+        //     if self.candidates.iter().find(|x| *x == candidate).is_none() {
+        //         self.candidates.push(candidate.clone())
+        //     }
+        // }
+        self.completion.update_candidates(candidates)
     }
 
     fn next(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.filterd_candidates().count() - 1 {
+                if i >= self.filterd_candidates().len() - 1 {
                     0
                 } else {
                     i + 1
@@ -91,7 +94,7 @@ impl CompletionComponent {
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.filterd_candidates().count() - 1
+                    self.filterd_candidates().len() - 1
                 } else {
                     i - 1
                 }
@@ -101,17 +104,18 @@ impl CompletionComponent {
         self.state.select(Some(i));
     }
 
-    fn filterd_candidates(&self) -> impl Iterator<Item = &String> {
-        self.candidates.iter().filter(move |c| {
-            (c.starts_with(self.word.to_lowercase().as_str())
-                || c.starts_with(self.word.to_uppercase().as_str()))
-                && !self.word.is_empty()
-        })
+    fn filterd_candidates(&self) -> Vec<&String> {
+        // self.candidates.iter().filter(move |c| {
+        //     (c.starts_with(self.word.to_lowercase().as_str())
+        //         || c.starts_with(self.word.to_uppercase().as_str()))
+        //         && !self.word.is_empty()
+        // })
+        self.completion.complete("".to_string(), &self.word)
     }
 
     pub fn selected_candidate(&self) -> Option<String> {
         self.filterd_candidates()
-            .collect::<Vec<&String>>()
+            // .collect::<Vec<&String>>()
             .get(self.state.selected()?)
             .map(|c| c.to_string())
     }
@@ -125,7 +129,7 @@ impl CompletionComponent {
     }
 }
 
-impl MovableComponent for CompletionComponent {
+impl<T: Completion> MovableComponent for CompletionComponent<T> {
     fn draw<B: Backend>(
         &mut self,
         f: &mut Frame<B>,
@@ -138,6 +142,7 @@ impl MovableComponent for CompletionComponent {
             let width = 30;
             let candidates = self
                 .filterd_candidates()
+                .iter()
                 .map(|c| ListItem::new(c.to_string()))
                 .collect::<Vec<ListItem>>();
             let candidates_len = candidates.len(); 
@@ -167,7 +172,7 @@ impl MovableComponent for CompletionComponent {
     }
 }
 
-impl Component for CompletionComponent {
+impl<T: Completion> Component for CompletionComponent<T> {
     fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
@@ -183,16 +188,17 @@ impl Component for CompletionComponent {
     }
 }
 
+pub type PlainCompletionComponent  = CompletionComponent<Plain>;
+
 #[cfg(test)]
 mod test {
-    use super::{CompletionComponent, KeyConfig, Settings};
+    use super::{KeyConfig, Settings, PlainCompletionComponent};
 
     #[test]
     fn test_filterd_candidates_lowercase() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), Settings::default(),"an", false)
-                .filterd_candidates()
-                .collect::<Vec<&String>>(),
+            PlainCompletionComponent::new(KeyConfig::default(), Settings::default(),"an", false)
+                .filterd_candidates(),
             vec![&"AND".to_string()]
         );
     }
@@ -200,9 +206,8 @@ mod test {
     #[test]
     fn test_filterd_candidates_uppercase() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), Settings::default(), "AN", false)
-                .filterd_candidates()
-                .collect::<Vec<&String>>(),
+            PlainCompletionComponent::new(KeyConfig::default(), Settings::default(), "AN", false)
+                .filterd_candidates(),
             vec![&"AND".to_string()]
         );
     }
@@ -210,16 +215,14 @@ mod test {
     #[test]
     fn test_filterd_candidates_multiple_candidates() {
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), Settings::default(), "n", false)
-                .filterd_candidates()
-                .collect::<Vec<&String>>(),
+            PlainCompletionComponent::new(KeyConfig::default(), Settings::default(), "n", false)
+                .filterd_candidates(),
             vec![&"NOT".to_string(), &"NULL".to_string()]
         );
 
         assert_eq!(
-            CompletionComponent::new(KeyConfig::default(), Settings::default(), "N", false)
-                .filterd_candidates()
-                .collect::<Vec<&String>>(),
+            PlainCompletionComponent::new(KeyConfig::default(), Settings::default(), "N", false)
+                .filterd_candidates(),
             vec![&"NOT".to_string(), &"NULL".to_string()]
         );
     }
