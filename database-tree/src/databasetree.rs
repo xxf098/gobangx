@@ -17,6 +17,8 @@ pub enum MoveSelection {
     Right,
     Top,
     End,
+    FirstChild,
+    LastChild,
     Enter,
 }
 
@@ -125,6 +127,8 @@ impl DatabaseTree {
                 MoveSelection::Top => Self::selection_start(selection),
                 MoveSelection::End => self.selection_end(selection),
                 MoveSelection::Enter => self.expand(selection),
+                MoveSelection::FirstChild => self.select_first_child(selection),
+                MoveSelection::LastChild => self.select_last_child(selection),
             };
 
             let changed_index = new_index.map(|i| i != selection).unwrap_or_default();
@@ -322,6 +326,53 @@ impl DatabaseTree {
         } else {
             Some(index)
         }
+    }
+
+    fn select_first_child(&mut self, current_index: usize) -> Option<usize> {
+        if current_index == 0 {
+            return None
+        }
+        let indent = self.items.tree_items.get(current_index)?.info().indent();
+
+        let mut index = current_index;
+
+        while let Some(selection) = self.selection_updown(index, true) {
+            index = selection;
+
+            if self.items.tree_items[index].info().indent() < indent {
+                break;
+            }
+        }
+
+        index = index + 1;
+        if index == current_index {
+            None
+        } else {
+            Some(index)
+        }
+
+    }
+
+    fn select_last_child(&mut self, current_index: usize) -> Option<usize> {
+        if current_index + 1 >= self.items.tree_items.len() {
+            return None
+        }
+        let indent = self.items.tree_items.get(current_index)?.info().indent();
+
+        let mut index = current_index;
+
+        while let Some(selection) = self.selection_updown(index, false) {
+            if self.items.tree_items[index].info().indent() > indent {
+                break;
+            } else {
+                index = selection;
+            }
+        }
+
+        if index.saturating_sub(1) == current_index {
+            return None
+        }
+        self.selection_down(current_index, index-current_index)
     }
 
     fn selection_left(&mut self, current_index: usize) -> Option<usize> {

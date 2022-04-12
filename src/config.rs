@@ -112,8 +112,8 @@ pub struct KeyConfig {
     pub scroll_to_bottom: Key,
     pub extend_selection_by_one_cell_left: Key,
     pub extend_selection_by_one_cell_right: Key,
-    pub extend_selection_by_one_cell_up: Key,
-    pub extend_selection_by_one_cell_down: Key,
+    pub extend_selection_by_one_cell_up: Key,  // Jump to the first child of the current nodes parent.
+    pub extend_selection_by_one_cell_down: Key, // Jump to the last child of the current nodes parent.
     pub tab_records: Key,
     pub tab_columns: Key,
     pub tab_constraints: Key,
@@ -136,7 +136,6 @@ pub struct KeyConfig {
     pub forward: Key,
     pub backward: Key,
     pub repeat_movement: Key,
-    pub jump_to_parent: Key, // jump to database parent
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -238,7 +237,6 @@ impl Default for KeyConfig {
             forward: Key::Char('f'),
             backward: Key::Char('F'),
             repeat_movement: Key::Char(';'),
-            jump_to_parent: Key::Char('p'),
         }
     }
 }
