@@ -1,4 +1,5 @@
 pub mod plain;
+pub mod advance;
 
 pub trait Completion {
     fn new(candidates: Vec<String>) ->Self;
