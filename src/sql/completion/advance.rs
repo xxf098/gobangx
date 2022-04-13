@@ -120,5 +120,14 @@ mod tests {
         adv.suggest_type(sql, sql).unwrap();
         let tables = adv.extract_from_part(false);
         assert_eq!(tables, vec!["users"]);
+        let sql = "select * from sch.users";
+        adv.suggest_type(sql, sql).unwrap();
+        let tables = adv.extract_from_part(false);
+        assert_eq!(tables, vec!["sch", ".", "users"]);
+        let sql = "select * from db.sch.users";
+        adv.suggest_type(sql, sql).unwrap();
+        let tables = adv.extract_from_part(false);
+        assert_eq!(tables, vec!["db", ".", "sch", ".", "users"]);
+
     }
 }
