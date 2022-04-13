@@ -1,4 +1,5 @@
 use super::Completion;
+use crate::config::{DatabaseType};
 
 pub struct Plain {
     candidates: Vec<String>,
@@ -10,7 +11,7 @@ impl Plain {
 
 impl Completion for Plain {
 
-    fn new(mut candidates: Vec<String>) -> Self {
+    fn new(_db_type: DatabaseType,mut candidates: Vec<String>) -> Self {
         // let mut candidates: Vec<_> = candidates.iter().map(|w| w.to_string()).collect();
         candidates.sort();
         candidates.dedup();

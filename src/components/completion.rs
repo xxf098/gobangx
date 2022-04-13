@@ -1,6 +1,6 @@
 use super::{Component, EventState, MovableComponent};
 use crate::components::help_info::HelpInfo;
-use crate::config::{KeyConfig, Settings};
+use crate::config::{KeyConfig, Settings, DatabaseType};
 use crate::event::Key;
 use crate::sql::{Completion, Plain};
 use anyhow::Result;
@@ -41,7 +41,7 @@ impl<T: Completion> CompletionComponent<T> {
             settings,
             state: ListState::default(),
             word: word.into(),
-            completion: T::new(candidates),
+            completion: T::new(DatabaseType::MySql, candidates),
             visible: false, 
         }
     }
@@ -55,7 +55,7 @@ impl<T: Completion> CompletionComponent<T> {
             settings,
             state: ListState::default(),
             word: "".to_string(),
-            completion: T::new(candidates),
+            completion: T::new(DatabaseType::MySql, candidates),
             visible: false,
         }
     }
