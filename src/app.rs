@@ -1,6 +1,6 @@
 use crate::clipboard::copy_to_clipboard;
 use crate::components::{
-    CommandInfo, Component as _, DrawableComponent as _, EventState, StatefulDrawableComponent,
+    HelpInfo, Component as _, DrawableComponent as _, EventState, StatefulDrawableComponent,
 };
 use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, MssqlPool};
 use crate::event::{Key, Event, Store};
@@ -8,8 +8,8 @@ use crate::config::DatabaseType;
 use crate::{
     components::tab::Tab,
     components::{
-        command, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
-        PropertiesComponent, RecordTableComponent, SqlEditorComponent, TabComponent,
+        help_info, ConnectionsComponent, DatabasesComponent, ErrorComponent, HelpComponent,
+        PropertiesComponent, RecordTableComponent, SqlEditorComponent, TabComponent, RecentComponent, Recent
     },
     config::{Config, Connection},
 };
@@ -20,11 +20,13 @@ use tui::{
 };
 use tokio::sync::mpsc;
 use std::sync::{Arc, RwLock};
+use std::collections::VecDeque;
 
 pub enum Focus {
     DabataseList,
     Table,
     ConnectionList,
+    RecentList,
 }
 pub struct App<'a> {
     record_table: RecordTableComponent,
@@ -34,7 +36,9 @@ pub struct App<'a> {
     tab: TabComponent<'a>,
     help: HelpComponent<'a>,
     databases: DatabasesComponent<'a>,
+    show_database: bool,
     connections: ConnectionsComponent<'a>,
+    recents: RecentComponent<'a>,
     pool: Option<Box<dyn Pool>>,
     left_main_chunk_percentage: u16,
     pub config: Config,
@@ -46,7 +50,7 @@ pub struct App<'a> {
 impl<'a> App<'a> {
     pub fn new(config: &'a Config, sender: mpsc::Sender<Event>) -> App<'a> {
         let store = Store::new(sender);
-        Self {
+        let mut app = Self {
             config: config.clone(),
             connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.settings),
             record_table: RecordTableComponent::new(config.key_config.clone(), config.settings.clone()),
@@ -55,13 +59,17 @@ impl<'a> App<'a> {
             tab: TabComponent::new(&config.key_config),
             help: HelpComponent::new(&config.key_config),
             databases: DatabasesComponent::new(&config.key_config, &config.settings),
+            recents: RecentComponent::new(&config.key_config, VecDeque::new(), &config.settings),
+            show_database: true,
             error: ErrorComponent::new(&config.key_config),
             focus: Focus::ConnectionList,
             pool: None,
             left_main_chunk_percentage: 15,
             store,
             keys: Vec::with_capacity(8),
-        }
+        };
+        app.update_helps();
+        app
     }
 
     pub fn draw<B: Backend>(&mut self, f: &mut Frame<'_, B>) -> anyhow::Result<()> {
@@ -78,16 +86,32 @@ impl<'a> App<'a> {
             return Ok(());
         }
 
+        if let Focus::RecentList = self.focus {
+            self.recents.draw(
+                f,
+                Layout::default()
+                    .constraints([Constraint::Percentage(100)])
+                    .split(f.size())[0],
+                false,
+            )?;
+            self.error.draw(f, Rect::default(), false)?;
+            self.help.draw(f, Rect::default(), false)?;
+            return Ok(());
+        }
+
+        let left_main_chunk_percentage = if self.show_database { self.left_main_chunk_percentage } else { 0 };
         let main_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(self.left_main_chunk_percentage),
-                Constraint::Percentage((100_u16).saturating_sub(self.left_main_chunk_percentage)),
+                Constraint::Percentage(left_main_chunk_percentage),
+                Constraint::Percentage((100_u16).saturating_sub(left_main_chunk_percentage)),
             ])
             .split(f.size());
 
-        self.databases
-            .draw(f, main_chunks[0], matches!(self.focus, Focus::DabataseList))?;
+        if self.show_database {
+            self.databases
+              .draw(f, main_chunks[0], matches!(self.focus, Focus::DabataseList))?;
+        }
 
         let right_chunks = Layout::default()
             .direction(Direction::Vertical)
@@ -115,30 +139,29 @@ impl<'a> App<'a> {
         Ok(())
     }
 
-    fn update_commands(&mut self) {
-        self.help.set_cmds(self.commands());
+    fn update_helps(&mut self) {
+        self.help.set_cmds(self.helps());
     }
 
-    fn commands(&self) -> Vec<CommandInfo> {
+    fn helps(&self) -> Vec<HelpInfo> {
         let mut res = vec![
-            CommandInfo::new(command::filter(&self.config.key_config)),
-            CommandInfo::new(command::help(&self.config.key_config)),
-            CommandInfo::new(command::toggle_tabs(&self.config.key_config)),
-            CommandInfo::new(command::scroll(&self.config.key_config)),
-            CommandInfo::new(command::scroll_to_top_bottom(&self.config.key_config)),
-            CommandInfo::new(command::scroll_up_down_multiple_lines(
+            HelpInfo::new(help_info::filter(&self.config.key_config)),
+            HelpInfo::new(help_info::help(&self.config.key_config)),
+            HelpInfo::new(help_info::toggle_tabs(&self.config.key_config)),
+            HelpInfo::new(help_info::scroll(&self.config.key_config)),
+            HelpInfo::new(help_info::scroll_to_top_bottom(&self.config.key_config)),
+            HelpInfo::new(help_info::scroll_up_down_multiple_lines(
                 &self.config.key_config,
             )),
-            CommandInfo::new(command::move_focus(&self.config.key_config)),
-            CommandInfo::new(command::extend_or_shorten_widget_width(
+            HelpInfo::new(help_info::move_focus(&self.config.key_config)),
+            HelpInfo::new(help_info::extend_or_shorten_widget_width(
                 &self.config.key_config,
             )),
         ];
 
-        self.databases.commands(&mut res);
-        self.record_table.commands(&mut res);
-        self.properties.commands(&mut res);
-
+        self.databases.helps(&mut res);
+        self.record_table.helps(&mut res);
+        self.properties.helps(&mut res);
         res
     }
 
@@ -240,7 +263,7 @@ impl<'a> App<'a> {
     }
 
     pub async fn event(&mut self, key: Key) -> anyhow::Result<EventState> {
-        self.update_commands();
+        // self.update_commands();
         self.keys.push(key);
         if self.components_event(self.keys.clone()).await?.is_consumed() {
             self.keys.clear();
@@ -270,6 +293,10 @@ impl<'a> App<'a> {
                 self.update_record_table(true, orderby, selected_column).await?;
                 return Ok(EventState::Consumed)
             }
+            Event::ToggleTree => {
+                self.show_database = !self.show_database;
+                return Ok(EventState::Consumed)
+            }
             _ => {},
         };
         return Ok(EventState::NotConsumed)
@@ -289,11 +316,43 @@ impl<'a> App<'a> {
                 if self.connections.event(&key)?.is_consumed() {
                     return Ok(EventState::Consumed);
                 }
-
+                
                 if key[0] == self.config.key_config.enter {
                     self.update_databases(true).await?;
+                    self.recents.reset();
                     return Ok(EventState::Consumed);
                 }
+            }
+            Focus::RecentList => {
+                if self.recents.event(&key)?.is_consumed() {
+                    return Ok(EventState::Consumed);
+                }
+                if key[0] == self.config.key_config.enter {
+                    let recent = self.recents.selected_recent().map(|r| r.clone());
+                    if let Some(Recent{id, database, table}) = recent {
+                        self.databases.set_selection(id);
+                        self.recents.add(id, &database, &table);
+                        self.record_table.reset();
+                        let (headers, records) = self
+                            .pool
+                            .as_ref()
+                            .unwrap()
+                            .get_records(&database, &table, 0, None, None)
+                            .await?;
+                        self.record_table
+                            .update(records, headers, database.clone(), table.clone(), 0);
+                        self.properties
+                            .update(database.clone(), table.clone(), self.pool.as_ref().unwrap())
+                            .await?;
+                        self.focus = Focus::Table;
+                    }
+                }
+
+                if key[0] == self.config.key_config.exit_popup {
+                    self.focus = Focus::Table;
+                }
+               
+                return Ok(EventState::Consumed);
             }
             Focus::DabataseList => {
                 if self.databases.event(&key)?.is_consumed() ||
@@ -302,7 +361,8 @@ impl<'a> App<'a> {
                 }
 
                 if key[0] == self.config.key_config.enter && self.databases.tree_focused() {
-                    if let Some((database, table, _)) = self.databases.tree().selected_table() {
+                    if let Some((database, table, id)) = self.databases.tree().selected_table() {
+                        self.recents.add(id, &database, &table);
                         self.record_table.reset();
                         let (headers, records) = self
                             .pool
@@ -337,6 +397,11 @@ impl<'a> App<'a> {
                         if key[0] == self.config.key_config.enter && self.record_table.filter_focused()
                         {
                             self.update_record_table(true, None, 0).await?;
+                        }
+
+                        if key[0] == self.config.key_config.exit_popup && self.record_table.filter_focused()
+                        {
+                            self.record_table.focus = crate::components::record_table::Focus::Table;
                         }
 
                         if self.record_table.table.eod {
@@ -429,9 +494,19 @@ impl<'a> App<'a> {
             self.focus = Focus::ConnectionList;
             return Ok(EventState::Consumed);
         }
+        if key[0] == self.config.key_config.focus_recents {
+            self.focus = Focus::RecentList;
+            return Ok(EventState::Consumed);
+        }
 
         match self.focus {
             Focus::ConnectionList => {
+                if key[0] == self.config.key_config.enter {
+                    self.focus = Focus::DabataseList;
+                    return Ok(EventState::Consumed);
+                }
+            }
+            Focus::RecentList => {
                 if key[0] == self.config.key_config.enter {
                     self.focus = Focus::DabataseList;
                     return Ok(EventState::Consumed);
@@ -448,7 +523,7 @@ impl<'a> App<'a> {
                     return Ok(EventState::Consumed);
                 }
                 if key[0] == self.config.key_config.focus_left {
-                    self.focus = Focus::DabataseList;
+                    if self.show_database { self.focus = Focus::DabataseList; }
                     return Ok(EventState::Consumed);
                 }
             }

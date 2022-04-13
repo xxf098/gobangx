@@ -1,5 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
-use crate::components::command::CommandInfo;
+use crate::components::help_info::HelpInfo;
 use crate::config::KeyConfig;
 use crate::event::Key;
 use crate::version::Version;
@@ -16,7 +16,7 @@ use tui::{
 };
 
 pub struct HelpComponent<'a> {
-    cmds: Vec<CommandInfo>,
+    cmds: Vec<HelpInfo>,
     visible: bool,
     selection: u16,
     key_config: &'a KeyConfig,
@@ -72,7 +72,7 @@ impl<'a> DrawableComponent for HelpComponent<'a> {
 }
 
 impl<'a> Component for HelpComponent<'a> {
-    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let key = key[0];
@@ -116,7 +116,7 @@ impl<'a> HelpComponent<'a> {
         }
     }
 
-    pub fn set_cmds(&mut self, cmds: Vec<CommandInfo>) {
+    pub fn set_cmds(&mut self, cmds: Vec<HelpInfo>) {
         self.cmds = cmds
             .into_iter()
             .filter(|e| !e.text.hide_help)
@@ -168,7 +168,7 @@ impl<'a> HelpComponent<'a> {
 
 #[cfg(test)]
 mod test {
-    use super::{Color, CommandInfo, HelpComponent, KeyConfig, Modifier, Span, Spans, Style};
+    use super::{Color, HelpInfo, HelpComponent, KeyConfig, Modifier, Span, Spans, Style};
 
     #[test]
     fn test_get_text() {
@@ -176,8 +176,8 @@ mod test {
         let key_config = KeyConfig::default();
         let mut component = HelpComponent::new(&key_config);
         component.set_cmds(vec![
-            CommandInfo::new(crate::components::command::scroll(&key_config)),
-            CommandInfo::new(crate::components::command::filter(&key_config)),
+            HelpInfo::new(crate::components::help_info::scroll(&key_config)),
+            HelpInfo::new(crate::components::help_info::filter(&key_config)),
         ]);
         assert_eq!(
             component.get_text(width),

@@ -1,6 +1,6 @@
 use super::{Component, EventState, StatefulDrawableComponent};
 use crate::clipboard::copy_to_clipboard;
-use crate::components::command::{self, CommandInfo};
+use crate::components::help_info::{self, HelpInfo};
 use crate::components::TableComponent;
 use crate::config::{KeyConfig, Settings};
 use crate::database::{Pool, Header, ColType, Value};
@@ -129,16 +129,16 @@ impl<'a> PropertiesComponent<'a> {
 
     fn tab_names(&self) -> Vec<(Focus, String)> {
         vec![
-            (Focus::Column, command::tab_columns(&self.key_config).name),
+            (Focus::Column, help_info::tab_columns(&self.key_config).name),
             (
                 Focus::Constraint,
-                command::tab_constraints(&self.key_config).name,
+                help_info::tab_constraints(&self.key_config).name,
             ),
             (
                 Focus::ForeignKey,
-                command::tab_foreign_keys(&self.key_config).name,
+                help_info::tab_foreign_keys(&self.key_config).name,
             ),
-            (Focus::Index, command::tab_indexes(&self.key_config).name),
+            (Focus::Index, help_info::tab_indexes(&self.key_config).name),
         ]
     }
 }
@@ -179,8 +179,8 @@ impl<'a> StatefulDrawableComponent for PropertiesComponent<'a> {
 
 #[async_trait]
 impl<'a> Component for PropertiesComponent<'a> {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {
-        out.push(CommandInfo::new(command::toggle_property_tabs(
+    fn helps(&self, out: &mut Vec<HelpInfo>) {
+        out.push(HelpInfo::new(help_info::toggle_property_tabs(
             &self.key_config,
         )));
     }

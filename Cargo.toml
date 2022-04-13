@@ -1,7 +1,7 @@
 [package]
 name = "gobang"
-version = "0.1.0-alpha.5"
-authors = ["Takayuki Maeda <takoyaki0316@gmail.com>"]
+version = "0.3.0"
+authors = ["xxf098 <xxf098@protonmail.com>"]
 edition = "2018"
 license = "MIT"
 homepage = "https://github.com/xxf098/gobangx"
@@ -39,7 +39,6 @@ clap = { version = "3.1.5", features = ["derive"] }
 syntect = { version = "4.6", default-features = false, features = ["metadata", "default-fancy"]}
 unicode-segmentation = "1.9"
 url = "2.2.2"
-uuid = { version = "0.8", features = ["serde", "v4"] }
 regex = "1"
 
 [target.'cfg(all(target_family="unix",not(target_os="macos")))'.dependencies]

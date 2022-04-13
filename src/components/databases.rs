@@ -2,7 +2,7 @@ use super::{
     utils::scroll_vertical::VerticalScroll, Component, DatabaseFilterComponent, DrawableComponent,
     EventState,
 };
-use crate::components::command::{self, CommandInfo};
+use crate::components::help_info::{self, HelpInfo};
 use crate::config::{Connection, KeyConfig, Settings};
 use crate::database::{Pool};
 use crate::event::{Key, Store};
@@ -77,6 +77,10 @@ impl<'a> DatabasesComponent<'a> {
         self.filterd_tree = None;
         self.filter.reset();
         Ok(())
+    }
+
+    pub fn set_selection(&mut self, id: usize) {
+        self.tree.set_selection(id);
     }
 
     pub fn tree_focused(&self) -> bool {
@@ -231,8 +235,8 @@ impl<'a> DrawableComponent for DatabasesComponent<'a> {
 
 #[async_trait]
 impl<'a> Component for DatabasesComponent<'a> {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {
-        out.push(CommandInfo::new(command::expand_collapse(&self.key_config)))
+    fn helps(&self, out: &mut Vec<HelpInfo>) {
+        out.push(HelpInfo::new(help_info::expand_collapse(&self.key_config)))
     }
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {

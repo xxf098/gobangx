@@ -1,8 +1,8 @@
 use super::{
-    compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
+    compute_character_width, PlainCompletionComponent, Component, EventState, MovableComponent,
     StatefulDrawableComponent,
 };
-use crate::components::command::CommandInfo;
+use crate::components::help_info::HelpInfo;
 use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
 use anyhow::Result;
@@ -24,7 +24,7 @@ pub struct TableFilterComponent {
     input: Vec<char>,
     input_idx: usize,
     input_cursor_position: u16,
-    completion: CompletionComponent,
+    completion: PlainCompletionComponent,
 }
 
 impl TableFilterComponent {
@@ -35,7 +35,7 @@ impl TableFilterComponent {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position: 0,
-            completion: CompletionComponent::new(key_config, settings.clone(),"", false),
+            completion: PlainCompletionComponent::new(key_config, settings.clone(),"", false),
             settings,
         }
     }
@@ -197,7 +197,7 @@ impl StatefulDrawableComponent for TableFilterComponent {
 }
 
 impl Component for TableFilterComponent {
-    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();

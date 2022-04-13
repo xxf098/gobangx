@@ -4,7 +4,6 @@ use crate::{
 };
 use crate::{Database, Table};
 use std::{collections::BTreeSet, usize};
-use uuid::Uuid;
 
 ///
 #[derive(Copy, Clone, Debug)]
@@ -17,6 +16,8 @@ pub enum MoveSelection {
     Right,
     Top,
     End,
+    FirstChild,
+    LastChild,
     Enter,
 }
 
@@ -56,7 +57,7 @@ impl DatabaseTree {
         new_self
     }
 
-    pub fn filter_by_id(&self, id: Uuid, reverse: bool) -> Self {
+    pub fn filter_by_id(&self, id: usize, reverse: bool) -> Self {
         let mut new_self = Self {
             items: self.items.filter_by_id(id, reverse),
             selection: Some(0),
@@ -88,7 +89,7 @@ impl DatabaseTree {
             .and_then(|index| self.items.tree_items.get(index))
     }
 
-    pub fn selected_table(&self) -> Option<(Database, Table, Uuid)> {
+    pub fn selected_table(&self) -> Option<(Database, Table, usize)> {
         self.selection.and_then(|index| {
             let item = &self.items.tree_items[index];
             match item.kind() {
@@ -125,6 +126,8 @@ impl DatabaseTree {
                 MoveSelection::Top => Self::selection_start(selection),
                 MoveSelection::End => self.selection_end(selection),
                 MoveSelection::Enter => self.expand(selection),
+                MoveSelection::FirstChild => self.select_first_child(selection),
+                MoveSelection::LastChild => self.select_last_child(selection),
             };
 
             let changed_index = new_index.map(|i| i != selection).unwrap_or_default();
@@ -134,6 +137,18 @@ impl DatabaseTree {
                 self.visual_selection = self.calc_visual_selection();
             }
 
+            changed_index || new_index.is_some()
+        })
+    }
+
+    pub fn set_selection(&mut self, id: usize) -> bool {
+        self.selection.map_or(false, |selection| {
+            let new_index = self.items.tree_items.iter().enumerate().find(|(_, t)| t.id == id).map(|t| t.0);
+            let changed_index = new_index.map(|i| i != selection).unwrap_or_default();
+            if changed_index {
+                self.selection = new_index;
+                self.visual_selection = self.calc_visual_selection();
+            }
             changed_index || new_index.is_some()
         })
     }
@@ -310,6 +325,64 @@ impl DatabaseTree {
         } else {
             Some(index)
         }
+    }
+
+    fn select_first_child(&mut self, current_index: usize) -> Option<usize> {
+        if current_index == 0 {
+            return None
+        }
+        let indent = self.items.tree_items.get(current_index)?.info().indent();
+
+        let mut index = current_index;
+
+        while let Some(selection) = self.selection_updown(index, true) {
+            index = selection;
+
+            if self.items.tree_items[index].info().indent() < indent {
+                break;
+            }
+        }
+
+        index = index + 1;
+        if index == current_index {
+            None
+        } else {
+            Some(index)
+        }
+
+    }
+
+    fn select_last_child(&mut self, current_index: usize) -> Option<usize> {
+        if current_index + 1 >= self.items.tree_items.len() {
+            return None
+        }
+        let indent = self.items.tree_items.get(current_index)?.info().indent();
+
+        let mut index = current_index;
+
+        while index < self.items.tree_items.len() - 1 {
+            if self.items.tree_items[index+1].info().indent() < indent {
+                break;
+            } else {
+                index += 1;
+            }
+        }
+
+        if self.items.tree_items[index].info().indent() != indent {
+            while index > 0 {
+                index = index - 1;
+                if self.items.tree_items[index].info().indent() == indent {
+                    break;
+                }
+            }
+        }
+
+        if index == current_index {
+            return None
+        } else {
+            return Some(index)
+        }
+        
     }
 
     fn selection_left(&mut self, current_index: usize) -> Option<usize> {

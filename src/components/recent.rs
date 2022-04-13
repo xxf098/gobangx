@@ -1,33 +1,40 @@
 use super::{Component, EventState, StatefulDrawableComponent};
-use crate::components::help_info::HelpInfo;
-use crate::config::{Connection, KeyConfig, Settings};
+use crate::config::{KeyConfig, Settings};
 use crate::event::Key;
-use crate::clipboard::copy_to_clipboard;
+use std::collections::VecDeque;
+use database_tree::{Database, Table};
 use anyhow::Result;
 use tui::{
     backend::Backend,
     layout::Rect,
-    style::{Style},
+    style::{Style, Color},
     text::{Span, Spans},
     widgets::{Block, Borders, Clear, List, ListItem, ListState},
     Frame,
 };
 
-pub struct ConnectionsComponent<'a> {
-    connections: &'a Vec<Connection>,
+#[derive(Clone)]
+pub struct Recent {
+    pub id: usize,
+    pub database: Database,
+    pub table: Table,
+}
+
+pub struct RecentComponent<'a> {
+    recents: VecDeque<Recent>,
     state: ListState,
     key_config: &'a KeyConfig,
     settings: &'a Settings,
 }
 
-impl<'a> ConnectionsComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, connections: &'a Vec<Connection>, settings: &'a Settings) -> Self {
+impl<'a> RecentComponent<'a> {
+    pub fn new(key_config: &'a KeyConfig, recents: VecDeque<Recent>, settings: &'a Settings) -> Self {
         let mut state = ListState::default();
-        if !connections.is_empty() {
+        if !recents.is_empty() {
             state.select(Some(0));
         }
         Self {
-            connections,
+            recents,
             key_config,
             state,
             settings,
@@ -37,8 +44,8 @@ impl<'a> ConnectionsComponent<'a> {
     fn next_connection(&mut self, lines: usize) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i + lines >= self.connections.len() {
-                    Some(self.connections.len() - 1)
+                if i + lines >= self.recents.len() {
+                    Some(self.recents.len() - 1)
                 } else {
                     Some(i + lines)
                 }
@@ -62,42 +69,68 @@ impl<'a> ConnectionsComponent<'a> {
         self.state.select(i);
     }
 
+    pub fn add(&mut self, id: usize, database: &Database, table: &Table) {
+        if self.recents.len() > 20 {
+            self.recents.pop_back();
+        }
+        // check repeat / reorder
+        if let Some(index) = self.recents.iter().enumerate().find(|(_, r)| r.id == id).map(|r| r.0) {
+            self.recents.remove(index);
+        }
+        let recent = Recent{ id, database: database.clone(), table: table.clone() };
+        self.recents.push_front(recent);
+        self.state.select(Some(0));
+    }
+
+    pub fn reset(&mut self) {
+        self.recents = VecDeque::default();
+        self.state = ListState::default();
+    }
+
     fn scroll_to_top(&mut self) {
-        if self.connections.is_empty() {
+        if self.recents.is_empty() {
             return;
         }
         self.state.select(Some(0));
     }
 
     fn scroll_to_bottom(&mut self) {
-        if self.connections.is_empty() {
+        if self.recents.is_empty() {
             return;
         }
-        self.state.select(Some(self.connections.len() - 1));
+        self.state.select(Some(self.recents.len() - 1));
     }
 
-    pub fn selected_connection(&self) -> Option<&Connection> {
+    pub fn selected_recent(&self) -> Option<&Recent> {
         match self.state.selected() {
-            Some(i) => self.connections.get(i),
+            Some(i) => self.recents.get(i),
             None => None,
         }
     }
+
 }
 
-impl<'a> StatefulDrawableComponent for ConnectionsComponent<'a> {
+
+impl<'a> StatefulDrawableComponent for RecentComponent<'a> {
     fn draw<B: Backend>(&mut self, f: &mut Frame<B>, _area: Rect, _focused: bool) -> Result<()> {
         let width = 80;
         let height = 20;
-        let conns = &self.connections;
+        let conns = &self.recents;
         let mut connections: Vec<ListItem> = Vec::new();
         for c in conns.iter() {
+            let schema = c.table.schema.clone().unwrap_or("".to_string());
+            let spans = vec![
+                Span::raw(&c.table.name),
+                Span::raw("  "),
+                Span::styled(format!("{}/{}", c.database.name, schema), Style::default().fg(Color::DarkGray)),
+            ];
             connections.push(
-                ListItem::new(vec![Spans::from(Span::raw(c.database_url_with_name()?))])
+                ListItem::new(vec![Spans::from(spans)])
                     .style(Style::default()),
             )
         }
         let connections = List::new(connections)
-            .block(Block::default().borders(Borders::ALL).title("Connections"))
+            .block(Block::default().borders(Borders::ALL).title("Recent Tables"))
             .highlight_style(Style::default().bg(self.settings.color))
             .style(Style::default());
 
@@ -114,8 +147,7 @@ impl<'a> StatefulDrawableComponent for ConnectionsComponent<'a> {
     }
 }
 
-impl<'a> Component for ConnectionsComponent<'a> {
-    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
+impl<'a> Component for RecentComponent<'a> {
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let key = key[0];
@@ -137,10 +169,11 @@ impl<'a> Component for ConnectionsComponent<'a> {
         } else if key == self.key_config.scroll_to_bottom {
             self.scroll_to_bottom();
             return Ok(EventState::Consumed);
-        } else if key == self.key_config.copy {
-            if let Some(c) = self.selected_connection() {
-                let s = c.database_url_with_name()?;
-                copy_to_clipboard(&s)?;
+        } else if key == self.key_config.delete {
+            if let Some(i) = self.state.selected() {
+                self.recents.remove(i);
+                let new_index = if self.recents.len() > 0 { Some(i.saturating_sub(1)) } else { None };
+                self.state.select(new_index);
             }
             return Ok(EventState::Consumed);
         }

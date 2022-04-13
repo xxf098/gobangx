@@ -1,8 +1,8 @@
 use super::{
     utils::scroll_vertical::VerticalScroll, Component, DrawableComponent, EventState,
-    StatefulDrawableComponent, TableStatusComponent, CellEditorComponent,
+    StatefulDrawableComponent, TableStatusComponent, LineEditorComponent, CommandEditorComponent,
 };
-use crate::components::command::{self, CommandInfo};
+use crate::components::help_info::{self, HelpInfo};
 use crate::config::{KeyConfig, Settings};
 use crate::event::{Key, Store, Event};
 use crate::database::{Pool, Header, Value};
@@ -27,6 +27,13 @@ const NULL: &str = "<NULL>";
 pub enum Focus {
     Status,
     Editor,
+    Command,
+}
+
+#[derive(Copy, Clone)]
+pub enum Movement {
+    Forward(char),
+    Backward(char)
 }
 
 pub struct TableComponent {
@@ -44,15 +51,18 @@ pub struct TableComponent {
     key_config: KeyConfig,
     settings: Settings,
     area_width: u16,
-    cell_editor: CellEditorComponent,
-    orderby_status: Option<String>
+    cell_editor: LineEditorComponent,
+    command_editor: CommandEditorComponent,
+    orderby_status: Option<String>,
+    movement: Option<Movement>
 }
 
 impl TableComponent {
     pub fn new(key_config: KeyConfig, settings: Settings) -> Self {
         Self {
             selected_row: TableState::default(),
-            cell_editor: CellEditorComponent::new("".to_string()),
+            cell_editor: LineEditorComponent::new("".to_string()),
+            command_editor: CommandEditorComponent::new("".to_string()),
             headers: vec![],
             rows: vec![],
             table: None,
@@ -67,6 +77,7 @@ impl TableComponent {
             settings,
             focus: Focus::Status,
             orderby_status: None,
+            movement: None,
         }
     }
 
@@ -110,6 +121,10 @@ impl TableComponent {
         self.eod = false;
         self.table = None;
         self.constraint_adjust = vec![];
+        self.area_width = 0;
+        self.focus = Focus::Status;
+        self.orderby_status = None;
+        self.movement = None;
     }
 
     fn reset_selection(&mut self) {
@@ -188,6 +203,20 @@ impl TableComponent {
             return;
         }
         self.selected_column = self.headers.len().saturating_sub(1);
+    }
+
+    fn forward_by_character(&mut self, c: char) {
+        if let Some((i, _)) = self.headers.iter().enumerate().find(|(i, h)| *i > self.selected_column && h.name.starts_with(c)) {
+            self.selected_column = i;
+            self.movement = Some(Movement::Forward(c));
+        }
+    }
+
+    fn backward_by_character(&mut self, c: char) {
+        if let Some((i, _)) = self.headers.iter().enumerate().rev().find(|(i, h)| *i < self.selected_column && h.name.starts_with(c)) {
+            self.selected_column = i;
+            self.movement = Some(Movement::Backward(c));
+        }
     }
 
     fn previous_column(&mut self) {
@@ -530,6 +559,13 @@ impl TableComponent {
         anyhow::bail!("primary key not found")
     }
 
+    async fn dispatch_command(&self, command: &str, store: &Store) -> anyhow::Result<()>  {
+        if command == "tree" {
+            store.dispatch(Event::ToggleTree).await?;
+        }
+        Ok(())
+    }
+
 }
 
 impl StatefulDrawableComponent for TableComponent {
@@ -651,6 +687,7 @@ impl StatefulDrawableComponent for TableComponent {
                 )
                 .draw(f, chunks[1], focused)?;
             }
+            Focus::Command => { self.command_editor.draw(f, chunks[1], focused)?; },
             _ => {
                 self.cell_editor.draw(f, chunks[1], focused)?;
             },
@@ -663,8 +700,8 @@ impl StatefulDrawableComponent for TableComponent {
 
 #[async_trait]
 impl Component for TableComponent {
-    fn commands(&self, out: &mut Vec<CommandInfo>) {
-        out.push(CommandInfo::new(command::extend_selection_by_one_cell(
+    fn helps(&self, out: &mut Vec<HelpInfo>) {
+        out.push(HelpInfo::new(help_info::extend_selection_by_one_cell(
             &self.key_config,
         )));
     }
@@ -672,6 +709,12 @@ impl Component for TableComponent {
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         if self.focus == Focus::Editor {
             let state = self.cell_editor.event(key)?;
+            if state == EventState::Consumed {
+                return Ok(EventState::Consumed)
+            }
+        }
+        if self.focus == Focus::Command {
+            let state = self.command_editor.event(key)?;
             if state == EventState::Consumed {
                 return Ok(EventState::Consumed)
             }
@@ -689,7 +732,28 @@ impl Component for TableComponent {
         } else if key == [self.key_config.jump_to_end] {
             self.last_column();
             return Ok(EventState::Consumed);
+        } else if key == [self.key_config.repeat_movement] {
+            if let Some(movement) = self.movement {
+                match movement {
+                    Movement::Forward(c) => self.forward_by_character(c),
+                    Movement::Backward(c) => self.backward_by_character(c),
+                }
+            }
+            return Ok(EventState::Consumed);
+        } else if key[0] == self.key_config.forward && key.len() > 1 {
+            match key[1] {
+                Key::Char(c) => self.forward_by_character(c),
+                _ => {},
+            };
+            return Ok(EventState::Consumed);
+        } else if key[0] == self.key_config.backward && key.len() > 1 {
+            match key[1] {
+                Key::Char(c) => self.backward_by_character(c),
+                _ => {},
+            };
+            return Ok(EventState::Consumed);
         }
+        
         let key = key[0];
         if key == self.key_config.scroll_left {
             self.previous_column();
@@ -742,10 +806,13 @@ impl Component for TableComponent {
         // } else if key == self.key_config.jump_to_end {
         //     self.last_column();
         //     return Ok(EventState::Consumed);
-        } else if key == self.key_config.edit_cell {
+        } else if key == self.key_config.edit_cell && self.focus == Focus::Status {
             self.focus = Focus::Editor;
             let s = self.selected_cell().map(|c| if c.is_null { NULL.to_string() } else { c.to_string() });
             self.cell_editor.update(s.unwrap_or("".to_string()));
+            return Ok(EventState::Consumed);
+        } else if key == self.key_config.edit_command && self.focus == Focus::Status {
+            self.focus = Focus::Command;
             return Ok(EventState::Consumed);
         } else if key == self.key_config.exit_popup {
             self.focus = Focus::Status;
@@ -803,6 +870,7 @@ impl Component for TableComponent {
             return Ok(EventState::Consumed);
         }
 
+        // update cell value
         if key == self.key_config.enter && self.focus == Focus::Editor {
             self.focus = Focus::Status;
             if let Some((database, table)) = &self.table {
@@ -815,6 +883,14 @@ impl Component for TableComponent {
                 pool.execute(&sql).await?;
                 return Ok(EventState::Consumed)
             }
+        }
+        // execute command
+        if key == self.key_config.enter && self.focus == Focus::Command {
+            self.focus = Focus::Status;
+            let command = self.command_editor.value();
+            self.command_editor.reset();
+            self.dispatch_command(command.trim(), store).await?;
+            return Ok(EventState::Consumed)
         }
         Ok(EventState::NotConsumed)
     }

@@ -6,13 +6,13 @@ static CMD_GROUP_DATABASES: &str = "-- Databases --";
 static CMD_GROUP_PROPERTIES: &str = "-- Properties --";
 
 #[derive(Clone, PartialEq, PartialOrd, Ord, Eq)]
-pub struct CommandText {
+pub struct HelpText {
     pub name: String,
     pub group: &'static str,
     pub hide_help: bool,
 }
 
-impl CommandText {
+impl HelpText {
     pub const fn new(name: String, group: &'static str) -> Self {
         Self {
             name,
@@ -22,18 +22,18 @@ impl CommandText {
     }
 }
 
-pub struct CommandInfo {
-    pub text: CommandText,
+pub struct HelpInfo {
+    pub text: HelpText,
 }
 
-impl CommandInfo {
-    pub const fn new(text: CommandText) -> Self {
+impl HelpInfo {
+    pub const fn new(text: HelpText) -> Self {
         Self { text }
     }
 }
 
-pub fn scroll(key: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn scroll(key: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!(
             "Scroll up/down/left/right [{},{},{},{}]",
             key.scroll_up, key.scroll_down, key.scroll_left, key.scroll_right
@@ -42,8 +42,8 @@ pub fn scroll(key: &KeyConfig) -> CommandText {
     )
 }
 
-pub fn scroll_up_down_multiple_lines(key: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn scroll_up_down_multiple_lines(key: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!(
             "Scroll up/down multiple lines [{},{}]",
             key.scroll_up_multiple_lines, key.scroll_down_multiple_lines,
@@ -52,8 +52,8 @@ pub fn scroll_up_down_multiple_lines(key: &KeyConfig) -> CommandText {
     )
 }
 
-pub fn scroll_to_top_bottom(key: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn scroll_to_top_bottom(key: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!(
             "Scroll to top/bottom [{},{}]",
             key.scroll_to_top, key.scroll_to_bottom,
@@ -62,19 +62,19 @@ pub fn scroll_to_top_bottom(key: &KeyConfig) -> CommandText {
     )
 }
 
-pub fn expand_collapse(key: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn expand_collapse(key: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!("Expand/Collapse [{},{}]", key.scroll_right, key.scroll_left,),
         CMD_GROUP_DATABASES,
     )
 }
 
-pub fn filter(key: &KeyConfig) -> CommandText {
-    CommandText::new(format!("Filter [{}]", key.filter), CMD_GROUP_GENERAL)
+pub fn filter(key: &KeyConfig) -> HelpText {
+    HelpText::new(format!("Filter [{}]", key.filter), CMD_GROUP_GENERAL)
 }
 
-pub fn move_focus(key: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn move_focus(key: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!(
             "Move focus to left/right [{},{}]",
             key.focus_left, key.focus_right
@@ -83,8 +83,8 @@ pub fn move_focus(key: &KeyConfig) -> CommandText {
     )
 }
 
-pub fn extend_selection_by_one_cell(key: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn extend_selection_by_one_cell(key: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!(
             "Extend selection by one cell up/down/left/right [{},{},{},{}]",
             key.extend_selection_by_one_cell_up,
@@ -96,8 +96,8 @@ pub fn extend_selection_by_one_cell(key: &KeyConfig) -> CommandText {
     )
 }
 
-pub fn extend_or_shorten_widget_width(key: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn extend_or_shorten_widget_width(key: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!(
             "Extend/shorten widget width to left/right [{},{}]",
             key.extend_or_shorten_widget_width_to_left, key.extend_or_shorten_widget_width_to_right
@@ -106,45 +106,45 @@ pub fn extend_or_shorten_widget_width(key: &KeyConfig) -> CommandText {
     )
 }
 
-pub fn tab_records(key: &KeyConfig) -> CommandText {
-    CommandText::new(format!("Records [{}]", key.tab_records), CMD_GROUP_TABLE)
+pub fn tab_records(key: &KeyConfig) -> HelpText {
+    HelpText::new(format!("Records [{}]", key.tab_records), CMD_GROUP_TABLE)
 }
 
-pub fn tab_columns(key: &KeyConfig) -> CommandText {
-    CommandText::new(format!("Columns [{}]", key.tab_columns), CMD_GROUP_TABLE)
+pub fn tab_columns(key: &KeyConfig) -> HelpText {
+    HelpText::new(format!("Columns [{}]", key.tab_columns), CMD_GROUP_TABLE)
 }
 
-pub fn tab_constraints(key: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn tab_constraints(key: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!("Constraints [{}]", key.tab_constraints),
         CMD_GROUP_TABLE,
     )
 }
 
-pub fn tab_foreign_keys(key: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn tab_foreign_keys(key: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!("Foreign keys [{}]", key.tab_foreign_keys),
         CMD_GROUP_TABLE,
     )
 }
 
-pub fn tab_indexes(key: &KeyConfig) -> CommandText {
-    CommandText::new(format!("Indexes [{}]", key.tab_indexes), CMD_GROUP_TABLE)
+pub fn tab_indexes(key: &KeyConfig) -> HelpText {
+    HelpText::new(format!("Indexes [{}]", key.tab_indexes), CMD_GROUP_TABLE)
 }
 
-pub fn tab_sql_editor(key: &KeyConfig) -> CommandText {
-    CommandText::new(format!("SQL [{}]", key.tab_sql_editor), CMD_GROUP_TABLE)
+pub fn tab_sql_editor(key: &KeyConfig) -> HelpText {
+    HelpText::new(format!("SQL [{}]", key.tab_sql_editor), CMD_GROUP_TABLE)
 }
 
-pub fn tab_properties(key: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn tab_properties(key: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!("Properties [{}]", key.tab_properties),
         CMD_GROUP_TABLE,
     )
 }
 
-pub fn toggle_tabs(key_config: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn toggle_tabs(key_config: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!(
             "Tab [{},{},{}]",
             key_config.tab_records, key_config.tab_properties, key_config.tab_sql_editor
@@ -153,8 +153,8 @@ pub fn toggle_tabs(key_config: &KeyConfig) -> CommandText {
     )
 }
 
-pub fn toggle_property_tabs(key_config: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn toggle_property_tabs(key_config: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!(
             "Tab [{},{},{},{}]",
             key_config.tab_columns,
@@ -166,8 +166,8 @@ pub fn toggle_property_tabs(key_config: &KeyConfig) -> CommandText {
     )
 }
 
-pub fn help(key_config: &KeyConfig) -> CommandText {
-    CommandText::new(
+pub fn help(key_config: &KeyConfig) -> HelpText {
+    HelpText::new(
         format!("Help [{}]", key_config.open_help),
         CMD_GROUP_GENERAL,
     )

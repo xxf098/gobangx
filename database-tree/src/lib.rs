@@ -10,6 +10,7 @@ pub use crate::{
     databasetree::MoveSelection,
     item::{DatabaseTreeItem, TreeItemInfo},
 };
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Database {
@@ -65,4 +66,9 @@ impl Table {
     pub fn pg_schema(&self) -> String {
         self.schema.clone().unwrap_or_else(|| "public".to_string())
     }
+}
+
+static COUNTER: AtomicUsize = AtomicUsize::new(0);
+pub(crate) fn next_id() -> usize {
+    COUNTER.fetch_add(1, Ordering::Relaxed)
 }

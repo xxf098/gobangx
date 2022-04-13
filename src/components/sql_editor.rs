@@ -1,9 +1,9 @@
 use super::{
-    compute_character_width, CompletionComponent, Component, EventState, MovableComponent,
+    compute_character_width, PlainCompletionComponent, Component, EventState, MovableComponent,
     StatefulDrawableComponent, TableComponent,
     utils::highlight_sql,
 };
-use crate::components::command::CommandInfo;
+use crate::components::help_info::HelpInfo;
 use crate::config::{KeyConfig, Settings, DatabaseType};
 use crate::database::{ExecuteResult, Pool};
 use crate::event::{Key, Store};
@@ -40,7 +40,7 @@ pub struct SqlEditorComponent<'a> {
     input_idx: usize,
     table: TableComponent,
     query_result: Option<QueryResult>,
-    completion: CompletionComponent,
+    completion: PlainCompletionComponent,
     key_config: &'a KeyConfig,
     settings: Settings,
     paragraph_state: ParagraphState,
@@ -56,7 +56,7 @@ impl<'a> SqlEditorComponent<'a> {
             input_idx: 0,
             input_cursor_position_x: 0,
             table: TableComponent::new(key_config.clone(), settings.clone()),
-            completion: CompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into()),
+            completion: PlainCompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into()),
             focus: Focus::Editor,
             paragraph_state: ParagraphState::default(),
             query_result: None,
@@ -213,7 +213,7 @@ impl<'a> StatefulDrawableComponent for SqlEditorComponent<'a> {
 
 #[async_trait]
 impl<'a> Component for SqlEditorComponent<'a> {
-    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, key: &[Key]) -> Result<EventState> {
         let input_str: String = self.input.iter().collect();
@@ -250,7 +250,8 @@ impl<'a> Component for SqlEditorComponent<'a> {
                     let last_c = self.input.remove(self.input_idx - 1);
                     self.input_idx -= 1;
                     self.input_cursor_position_x -= compute_character_width(last_c);
-                    self.completion.update("");
+                    // self.completion.update("");
+                    self.update_completion();
                 }
 
                 return Ok(EventState::Consumed);

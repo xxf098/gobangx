@@ -1,5 +1,5 @@
 use super::{Component, DrawableComponent, EventState};
-use crate::components::command::CommandInfo;
+use crate::components::help_info::HelpInfo;
 use crate::event::Key;
 use anyhow::Result;
 use database_tree::Table;
@@ -55,7 +55,7 @@ impl DrawableComponent for TableStatusComponent {
                 self.row_count.map_or("-".to_string(), |c| c.to_string())
             )),
             Span::from(format!(
-                "columns: {}, ",
+                "cols: {}, ",
                 self.column_count.map_or("-".to_string(), |c| c.to_string())
             )),
         ];
@@ -77,7 +77,7 @@ impl DrawableComponent for TableStatusComponent {
 }
 
 impl Component for TableStatusComponent {
-    fn commands(&self, _out: &mut Vec<CommandInfo>) {}
+    fn helps(&self, _out: &mut Vec<HelpInfo>) {}
 
     fn event(&mut self, _key: &[Key]) -> Result<EventState> {
         Ok(EventState::NotConsumed)

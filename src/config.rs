@@ -103,6 +103,7 @@ pub struct KeyConfig {
     pub focus_left: Key,
     pub focus_above: Key,
     pub focus_connections: Key,
+    pub focus_recents: Key,
     pub open_help: Key,
     pub filter: Key,
     pub scroll_down_multiple_lines: Key,
@@ -111,8 +112,8 @@ pub struct KeyConfig {
     pub scroll_to_bottom: Key,
     pub extend_selection_by_one_cell_left: Key,
     pub extend_selection_by_one_cell_right: Key,
-    pub extend_selection_by_one_cell_up: Key,
-    pub extend_selection_by_one_cell_down: Key,
+    pub extend_selection_by_one_cell_up: Key,  // Jump to the first child of the current nodes parent.
+    pub extend_selection_by_one_cell_down: Key, // Jump to the last child of the current nodes parent.
     pub tab_records: Key,
     pub tab_columns: Key,
     pub tab_constraints: Key,
@@ -127,10 +128,14 @@ pub struct KeyConfig {
     // pub reset_column_width: [Key; 2],
     pub delete: Key, // drop table/ delete record by primary key
     pub edit_cell: Key, // edit table cell
+    pub edit_command: Key, // toggle command
     pub orderby_asc: Key,
     pub orderby_desc: Key,
     pub jump_to_start: Key,
     pub jump_to_end: Key,
+    pub forward: Key,
+    pub backward: Key,
+    pub repeat_movement: Key,
 }
 
 #[derive(Debug, Deserialize, Clone)]
@@ -199,6 +204,7 @@ impl Default for KeyConfig {
             focus_left: Key::Left,
             focus_above: Key::Up,
             focus_connections: Key::Char('c'),
+            focus_recents: Key::Char('r'),
             open_help: Key::Char('?'),
             filter: Key::Char('/'),
             scroll_down_multiple_lines: Key::Ctrl('d'),
@@ -223,10 +229,14 @@ impl Default for KeyConfig {
             // reset_column_width: [Key::Char('0'), Key::Char('0')],
             delete: Key::Char('D'),
             edit_cell: Key::Char('C'),
+            edit_command: Key::Char(':'),
             orderby_asc: Key::Char('o'),
             orderby_desc: Key::Char('O'),
             jump_to_start: Key::Char('0'),
             jump_to_end: Key::Char('$'),
+            forward: Key::Char('f'),
+            backward: Key::Char('F'),
+            repeat_movement: Key::Char(';'),
         }
     }
 }

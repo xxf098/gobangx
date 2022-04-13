@@ -22,7 +22,7 @@ use crossterm::{
 use std::io;
 use tui::{backend::CrosstermBackend, Terminal};
 
-// TODO: SQL meta, foreign table
+// TODO: SQL meta, foreign table, recent list ctrl-r vscode, copy error info
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let value = crate::cli::parse();
