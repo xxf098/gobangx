@@ -36,8 +36,7 @@ impl Advance {
     // full_text is used for extract table name
     fn suggest_type(&mut self, full_text: &str, text_before_cursor: &str) -> anyhow::Result<SuggestType>{
         // FIXME: 
-        let t = Tokenizer::try_from(self.db_type.clone())?;
-        self.tokens = t.tokenize(text_before_cursor);
+        self.set_tokens(text_before_cursor)?;
         let last_token = self.tokens.last();
         Ok(self.suggest_based_on_last_token(last_token, full_text, text_before_cursor))
     }
@@ -56,17 +55,24 @@ impl Advance {
         }
     }
 
-    fn extract_tables(&self, sql: &str) -> Vec<String>{
+    fn set_tokens(&mut self, sql: &str) -> anyhow::Result<()> {
+        let t = Tokenizer::try_from(self.db_type.clone())?;
+        self.tokens = t.tokenize(sql);
+        Ok(())
+    }
+
+    fn extract_tables(&self) -> Vec<String>{
         if self.tokens.len() < 1 {
             return vec![]
         }
-
-
-        vec![]
+        let stop_at_punctuation = self.tokens.first().map(|t| t.value.to_uppercase() == "INSERT").unwrap_or(false);
+        let tables = self.extract_from_part(stop_at_punctuation);
+        tables
     }
 
     fn extract_from_part(&self, stop_at_punctuation: bool) -> Vec<String> {
         let mut tbl_prefix_seen = false;
+        let mut table = vec![];
         let mut tables = vec![];
         for item in &self.tokens {
             if tbl_prefix_seen {
@@ -81,15 +87,22 @@ impl Advance {
                         return tables
                     }
                 } else {
-                    tables.push(item.value.clone());
+                    table.push(item.value.clone());
                 }
             } else if item.typ == TokenType::Reserved || item.typ == TokenType::ReservedTopLevel {
                 let value = item.value.to_uppercase();
                 if value == "COPY" || value == "FROM" || value == "INTO" || value == "UPDATE" || value == "TABLE" || value == "JOIN" {
+                    if table.len() > 0 {
+                        tables.push(table.join(""));
+                        table = vec![];
+                    }
                     tbl_prefix_seen = true;
                 }
             }
         };
+        if table.len() > 0 {
+            tables.push(table.join(""));
+        }
         tables
     }
 }
@@ -114,20 +127,23 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_extract_from_part() {
+    fn test_extract_tables() {
         let mut adv = Advance::new(DatabaseType::Postgres, vec![]);
         let sql = "select * from users";
         adv.suggest_type(sql, sql).unwrap();
-        let tables = adv.extract_from_part(false);
+        let tables = adv.extract_tables();
+        // let tables = tables.iter().map(|t| &t.value).collect::<Vec<_>>();
         assert_eq!(tables, vec!["users"]);
         let sql = "select * from sch.users";
         adv.suggest_type(sql, sql).unwrap();
-        let tables = adv.extract_from_part(false);
-        assert_eq!(tables, vec!["sch", ".", "users"]);
+        let tables = adv.extract_tables();
+        // let tables = tables.iter().map(|t| &t.value).collect::<Vec<_>>();
+        assert_eq!(tables, vec!["sch.users"]);
         let sql = "select * from db.sch.users";
         adv.suggest_type(sql, sql).unwrap();
-        let tables = adv.extract_from_part(false);
-        assert_eq!(tables, vec!["db", ".", "sch", ".", "users"]);
+        let tables = adv.extract_tables();
+        // let tables = tables.iter().map(|t| &t.value).collect::<Vec<_>>();
+        assert_eq!(tables, vec!["db.sch.users"]);
 
     }
 }
