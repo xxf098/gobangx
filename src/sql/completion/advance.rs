@@ -47,9 +47,13 @@ impl Advance {
         }
         let token_v = &last_token.unwrap().value.to_uppercase();
         match token_v.as_ref() {
+            "SET" | "ORDER BY" | "DISTINCT" => {
+                let tables = self.extract_tables();
+                SuggestType{ typ: Type::Column, data: tables }
+            },
             "SELECT" | "WHERE" | "HAVING" => {
-                
-                SuggestType::default()
+                let tables = self.extract_tables();
+                SuggestType{ typ: Type::Column, data: tables }
             },
             _ => SuggestType::default()
         }
