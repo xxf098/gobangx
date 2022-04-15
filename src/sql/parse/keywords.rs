@@ -4,29 +4,29 @@ use crate::sql::token::regex_factory::{ create_string_regex };
 
 pub struct RegexToken {
     pub reg: Regex,
-    token: TokenType,
+    pub typ: TokenType,
 }
 
 impl RegexToken {
     
-    fn new(s: &str, token: TokenType) -> Self {
+    fn new(s: &str, typ: TokenType) -> Self {
         Self{
             reg: RegexBuilder::new(s).case_insensitive(true).build().unwrap(), 
-            token
+            typ
         }
     }
 
-    fn new_reg(r: Regex, token: TokenType) -> Self {
+    fn new_reg(r: Regex, typ: TokenType) -> Self {
         Self{
             reg: r, 
-            token
+            typ
         }
     }
 }
 
 #[inline]
-fn new_rt(s: &str, token: TokenType) -> RegexToken{
-    RegexToken::new(s, token)
+fn new_rt(s: &str, typ: TokenType) -> RegexToken{
+    RegexToken::new(s, typ)
 }
 
 
