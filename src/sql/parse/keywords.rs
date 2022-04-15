@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use regex::{Regex, RegexBuilder};
 use super::TokenType;
 use crate::sql::token::regex_factory::{ create_string_regex };
@@ -94,6 +95,26 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r"[<>=~!]+", TokenType::OperatorComparison),
         new_rt(r"[+/@#%^&|^-]+", TokenType::Operator)
     ]
+}
+
+pub fn is_keyword(k: &str) -> TokenType {
+    let keyword = k.to_uppercase();
+    match keyword.as_ref() {
+        // KEYWORDS_COMMON
+        "SELECT" | "INSERT" | "DELETE" | "UPDATE" | "UPSERT" |"REPLACE" |  "MERGE" | "DROP" | "CREATE" | "ALTER" => TokenType::KeywordDML,
+        "WHERE" |"FROM" |"INNER" |"JOIN" |"STRAIGHT_JOIN" |"AND" |"OR" |"LIKE" |"ON" |"IN" |"SET" => TokenType::Keyword,
+        "BY" | "GROUP" |"ORDER" |"LEFT" |"OUTER" |"FULL" => TokenType::Keyword,
+        "IF" |"END" |"THEN" |"LOOP" |"AS" |"ELSE" |"FOR" |"WHILE" => TokenType::Keyword,
+        "CASE" | "WHEN" | "MIN" | "MAX" | "DISTINCT" => TokenType::Keyword,
+        // PostgreSQL
+        "CONFLICT" | "WINDOW" | "PARTITION" | "OVER" | "PERFORM" | "NOTICE" | "PLPGSQL" | "INHERIT" | "INDEXES" | "ON_ERROR_STOP" => TokenType::Keyword,
+        "BYTEA" | "BIGSERIAL" | "BIT VARYING" | "BOX"  => TokenType::Keyword,
+        "CHARACTER" | "CHARACTER VARYING" | "CIDR" | "CIRCLE" => TokenType::Keyword,
+        "DOUBLE PRECISION" | "INET" | "JSON" | "JSONB" | "LINE" | "LSEG" | "MACADDR" | "MONEY" => TokenType::Keyword,
+        "PATH" | "PG_LSN" | "POINT" | "POLYGON" | "SMALLSERIAL" | "TSQUERY" | "TSVECTOR" | "TXID_SNAPSHOT" | "UUID" | "XML" => TokenType::Keyword,
+        // KEYWORDS
+        _ => TokenType::KeywordRaw,
+    }
 }
 
 #[cfg(test)]
