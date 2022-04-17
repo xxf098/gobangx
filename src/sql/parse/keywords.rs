@@ -113,7 +113,7 @@ pub fn is_keyword(k: &str) -> TokenType {
         "DOUBLE PRECISION" | "INET" | "JSON" | "JSONB" | "LINE" | "LSEG" | "MACADDR" | "MONEY" => TokenType::Keyword,
         "PATH" | "PG_LSN" | "POINT" | "POLYGON" | "SMALLSERIAL" | "TSQUERY" | "TSVECTOR" | "TXID_SNAPSHOT" | "UUID" | "XML" => TokenType::Keyword,
         // KEYWORDS
-        _ => TokenType::KeywordRaw,
+        _ => TokenType::Name,
     }
 }
 
