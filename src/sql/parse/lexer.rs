@@ -1,4 +1,4 @@
-use super::keywords::sql_regex;
+use super::keywords::{sql_regex, is_keyword};
 use super::tokens::TokenType;
 
 #[derive(Debug, Clone)]
@@ -20,6 +20,7 @@ fn get_tokens(sql: &str) -> Vec<Token> {
     let sql_len = sql.len();
     let regs = sql_regex();
     while index < sql_len {
+        let mut forawrd = 0;
         for rt in &regs {
             let t = &sql[index..];
             let opt = rt.reg.find(t);
@@ -27,10 +28,19 @@ fn get_tokens(sql: &str) -> Vec<Token> {
                 continue
             }
             let v = opt.unwrap().as_str();
-            index += v.len();
-            let t = Token::new(rt.typ.clone(), v.to_string());
+            forawrd = v.len();
+            let typ = match rt.typ {
+                TokenType::KeywordRaw => is_keyword(v),
+                _ => rt.typ.clone()
+            };
+            let t = Token::new(typ, v.to_string());
             tokens.push(t);
+            break;
         }
+        if forawrd == 0 {
+            break;
+        }
+        index += forawrd
     };
     tokens
 }
@@ -46,7 +56,7 @@ mod tests {
 
     #[test]
     fn test_get_tokens1() {
-        let sql = "SELECT * FROM users;";
+        let sql = "select * from users;";
         let tokens = get_tokens(sql);
         println!("{}", tokens.len());
         println!("{:?}", tokens);
