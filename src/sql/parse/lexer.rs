@@ -49,6 +49,26 @@ pub fn tokenize(sql: &str) -> Vec<Token> {
 }
 
 
+pub struct TokenList {
+    tokens: Vec<Token>,
+}
+
+impl TokenList {
+
+    pub fn new(tokens: Vec<Token>) -> Self {
+        Self { tokens }
+    }
+
+    fn token_matching(&self, types: &[TokenType], start: usize, end: usize) -> Option<usize> {
+        self.tokens[start..end].iter().enumerate()
+            .position(|(_, token)| types.iter().find(|t| **t == token.typ).is_some())
+    }
+
+    pub fn token_next_by(&self, types: &[TokenType]) -> Option<usize> {
+        self.token_matching(types, 0, self.tokens.len())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -57,8 +77,9 @@ mod tests {
     fn test_get_tokens1() {
         let sql = "select * from users;";
         let tokens = tokenize(sql);
-        println!("{}", tokens.len());
-        println!("{:?}", tokens);
+        let tokens = TokenList::new(tokens);
+        let next_token = tokens.token_next_by(&[TokenType::KeywordDML]);
+        assert_eq!(next_token, Some(0))
     }
 
     #[test]
