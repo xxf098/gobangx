@@ -73,4 +73,12 @@ mod tests {
         println!("{:?}", tokens);
     }
    
+    #[test]
+    fn test_get_tokens3() {
+        let sql = "SELECT Orders.OrderID, Customers.CustomerName FROM Orders INNER JOIN Customers ON Orders.CustomerID = Customers.CustomerID;";
+        let tokens = get_tokens(sql);
+        println!("{}", tokens.len());
+        println!("{:?}", tokens);
+        assert_eq!(tokens.len(), 31);
+    }
 }

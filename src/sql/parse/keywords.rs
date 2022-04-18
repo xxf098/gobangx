@@ -71,8 +71,8 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r"(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword),
 
         new_rt(r"(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name),
-        new_rt(r"([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name),
-        new_rt(r"(\.)[A-ZÀ-Ü]\w*", TokenType::Name),
+        new_cap(r"([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
+        // new_rt(r"(?:\.)[A-ZÀ-Ü]\w*", TokenType::Name),
         new_cap(r"([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
 
         new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal),
@@ -180,5 +180,13 @@ mod tests {
         let reg = Regex::new(r"([A-ZÀ-Ü]\w*)(?:\()").unwrap();
         let c = reg.captures("MAX(price)").unwrap();
         assert_eq!(c.get(1).map(|m| m.as_str()), Some("MAX"))
+    }
+
+    #[test]
+    fn test_non_capturing_group1() {
+        let reg = Regex::new(r"(?:\.)([A-ZÀ-Ü]\w*)").unwrap();
+        let c = reg.captures(".Orders").unwrap();
+        println!("{:?}", c);
+        assert_eq!(c.get(0).map(|m| m.as_str()), Some("Orders"))
     }
 }
