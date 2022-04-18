@@ -14,7 +14,7 @@ impl Token {
     }
 }
 
-fn get_tokens(sql: &str) -> Vec<Token> {
+pub fn tokenize(sql: &str) -> Vec<Token> {
     let mut tokens = vec![];
     let mut index = 0;
     let sql_len = sql.len();
@@ -48,10 +48,6 @@ fn get_tokens(sql: &str) -> Vec<Token> {
     tokens
 }
 
-pub fn tokenize(sql: &str) {
-
-}
-
 
 #[cfg(test)]
 mod tests {
@@ -60,7 +56,7 @@ mod tests {
     #[test]
     fn test_get_tokens1() {
         let sql = "select * from users;";
-        let tokens = get_tokens(sql);
+        let tokens = tokenize(sql);
         println!("{}", tokens.len());
         println!("{:?}", tokens);
     }
@@ -68,7 +64,7 @@ mod tests {
     #[test]
     fn test_get_tokens2() {
         let sql = "SELECT article, MAX(price) AS price FROM   shop GROUP BY article ORDER BY article;";
-        let tokens = get_tokens(sql);
+        let tokens = tokenize(sql);
         println!("{}", tokens.len());
         println!("{:?}", tokens);
     }
@@ -76,7 +72,7 @@ mod tests {
     #[test]
     fn test_get_tokens3() {
         let sql = "SELECT Orders.OrderID, Customers.CustomerName FROM Orders INNER JOIN Customers ON Orders.CustomerID = Customers.CustomerID;";
-        let tokens = get_tokens(sql);
+        let tokens = tokenize(sql);
         println!("{}", tokens.len());
         println!("{:?}", tokens);
         assert_eq!(tokens.len(), 31);
@@ -85,7 +81,7 @@ mod tests {
     #[test]
     fn test_get_tokens4() {
         let sql = "SELECT OrderID, Quantity, CASE WHEN Quantity > 30 THEN 'The quantity is greater than 30' WHEN Quantity = 30 THEN 'The quantity is 30' ELSE 'The quantity is under 30' END AS QuantityText FROM OrderDetails;";
-        let tokens = get_tokens(sql);
+        let tokens = tokenize(sql);
         println!("{}", tokens.len());
         println!("{:?}", tokens);
         assert_eq!(tokens.len(), 48);
