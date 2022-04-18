@@ -40,8 +40,7 @@ fn new_cap(s: &str, typ: TokenType, i: usize) -> RegexToken{
 
 
 pub fn sql_regex() -> Vec<RegexToken> {
-    let literal = create_string_regex(vec!["''", r#""""#, "``"]).unwrap();
-
+    // let literal = create_string_regex(vec!["''", r#""""#, "``"]).unwrap();
     vec![
         new_rt(r"(--|# )\+.*?(\r\n|\r|\n|$)", TokenType::CommentSingleHint),
         new_rt(r"/\*\+[\s\S]*?\*/", TokenType::CommentMultilineHint),
@@ -59,7 +58,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
 
         new_rt(r"`(``|[^`])*`", TokenType::Name),
         new_rt(r"´(´´|[^´])*´", TokenType::Name),
-        RegexToken::new_reg(literal, TokenType::Literal),
+        // RegexToken::new_reg(literal, TokenType::Literal),
 
         new_rt(r"\?", TokenType::NamePlaceholder),
         new_rt(r"%(\(\w+\))?s", TokenType::NamePlaceholder),
