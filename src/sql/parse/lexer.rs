@@ -23,7 +23,10 @@ fn get_tokens(sql: &str) -> Vec<Token> {
         let mut forawrd = 0;
         for rt in &regs {
             let t = &sql[index..];
-            let opt = rt.reg.find(t);
+            let opt = match rt.capture {
+                Some(i) =>  rt.reg.captures(t).map(|c| c.get(i)).flatten(),
+                None =>  rt.reg.find(t)
+            };
             if opt.is_none() || opt.unwrap().start() != 0 {
                 continue
             }
@@ -57,6 +60,14 @@ mod tests {
     #[test]
     fn test_get_tokens1() {
         let sql = "select * from users;";
+        let tokens = get_tokens(sql);
+        println!("{}", tokens.len());
+        println!("{:?}", tokens);
+    }
+
+    #[test]
+    fn test_get_tokens2() {
+        let sql = "SELECT article, MAX(price) AS price FROM   shop GROUP BY article ORDER BY article;";
         let tokens = get_tokens(sql);
         println!("{}", tokens.len());
         println!("{:?}", tokens);

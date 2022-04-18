@@ -6,28 +6,36 @@ use crate::sql::token::regex_factory::{ create_string_regex };
 pub struct RegexToken {
     pub reg: Regex,
     pub typ: TokenType,
+    pub capture: Option<usize>,
 }
 
 impl RegexToken {
     
-    fn new(s: &str, typ: TokenType) -> Self {
+    fn new(s: &str, typ: TokenType, capture: Option<usize>) -> Self {
         Self{
             reg: RegexBuilder::new(s).case_insensitive(true).build().unwrap(), 
-            typ
+            typ,
+            capture,
         }
     }
 
     fn new_reg(r: Regex, typ: TokenType) -> Self {
         Self{
             reg: r, 
-            typ
+            typ,
+            capture: None,
         }
     }
 }
 
 #[inline]
 fn new_rt(s: &str, typ: TokenType) -> RegexToken{
-    RegexToken::new(s, typ)
+    RegexToken::new(s, typ, None)
+}
+
+#[inline]
+fn new_cap(s: &str, typ: TokenType, i: usize) -> RegexToken{
+    RegexToken::new(s, typ, Some(i))
 }
 
 
@@ -63,9 +71,9 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r"(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword),
 
         new_rt(r"(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name),
-        new_rt(r"[A-ZÀ-Ü]\w*(?:\s*\.)", TokenType::Name),
+        new_rt(r"([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name),
         new_rt(r"(\.)[A-ZÀ-Ü]\w*", TokenType::Name),
-        new_rt(r"[A-ZÀ-Ü]\w*(?:\()", TokenType::Name),
+        new_cap(r"([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
 
         new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal),
         new_rt(r"-?\d+(\.\d+)?E-?\d+", TokenType::NumberFloat),
@@ -165,5 +173,12 @@ mod tests {
     fn test_sql_regex() {
         let regs = sql_regex();
         assert!(regs.len() > 0)
+    }
+
+    #[test]
+    fn test_non_capturing_group() {
+        let reg = Regex::new(r"([A-ZÀ-Ü]\w*)(?:\()").unwrap();
+        let c = reg.captures("MAX(price)").unwrap();
+        assert_eq!(c.get(1).map(|m| m.as_str()), Some("MAX"))
     }
 }
