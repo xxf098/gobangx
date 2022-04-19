@@ -7,6 +7,18 @@ pub struct Token {
     value: String,
 }
 
+#[derive(Debug, Clone)]
+pub struct GroupToken {
+    typ: TokenType,
+    tokens: Vec<Token>,
+}
+
+impl From<Token> for GroupToken {
+    fn from(token: Token) -> Self {
+        Self { typ: token.typ.clone(), tokens: vec![token] }
+    }
+}
+
 impl Token {
 
     pub fn new(typ: TokenType, value: String) -> Self {
@@ -66,6 +78,10 @@ impl TokenList {
 
     pub fn token_next_by(&self, types: &[TokenType]) -> Option<usize> {
         self.token_matching(types, 0, self.tokens.len())
+    }
+
+    pub fn group_tokens(&mut self) {
+
     }
 }
 
