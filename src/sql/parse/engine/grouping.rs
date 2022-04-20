@@ -21,15 +21,16 @@ impl TokenList {
     }
 
     fn token_matching(&self, types: &[TokenType], pattern: Option<&(TokenType, Vec<&str>)>, start: usize, end: usize) -> Option<usize> {
-        if types.len() > 0 {
-            return self.tokens[start..end].iter()
+        let pos = if types.len() > 0 {
+            self.tokens[start..end].iter()
                 .position(|token| types.iter().find(|t| **t == token.typ).is_some())
-        }
-        if let Some(p) = pattern {
-            return self.tokens[start..end].iter()
+        } else if let Some(p) = pattern {
+            self.tokens[start..end].iter()
                 .position(|token| p.0 == token.typ && p.1.iter().find(|v| **v == token.value.to_uppercase()).is_some())
-        }
-        None
+        } else {
+            None
+        };
+        pos.map(|p| p+start)
     }
 
     // tuple
@@ -60,7 +61,7 @@ impl TokenList {
             let edix = self.token_next_by(&vec![], Some(&where_close), idx+1);
             let edix = edix.unwrap_or(self.tokens.len()-1);
             println!("idx {} eidx {}", idx, edix);
-            self.group_tokens(TokenType::Where, idx, edix+1);
+            self.group_tokens(TokenType::Where, idx, edix);
             tidx = self.token_next_by(&vec![], Some(&where_open), idx);
         }
     }
