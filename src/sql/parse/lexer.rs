@@ -3,9 +3,9 @@ use super::tokens::TokenType;
 
 #[derive(Debug, Clone)]
 pub struct Token {
-    typ: TokenType,
-    value: String,
-    children: Vec<Token>,
+    pub typ: TokenType,
+    pub value: String,
+    pub children: Vec<Token>,
 }
 
 impl Token {
@@ -15,32 +15,11 @@ impl Token {
     }
 
 
-    fn new_parent(typ: TokenType, children: Vec<Token>) -> Self {
-        Self { typ, value: "".to_string(), children }
+    pub fn new_parent(typ: TokenType, children: Vec<Token>) -> Self {
+        let value = children.iter().map(|child| child.value.as_ref()).collect::<Vec<_>>().join("");
+        Self { typ, value, children }
     }
 }
-
-
-// #[derive(Debug, Clone)]
-// pub struct GroupToken {
-//     typ: TokenType,
-//     tokens: Vec<Token>,
-// }
-
-// impl GroupToken {
-
-//     fn new(typ: TokenType, tokens: Vec<Token>) -> Self {
-//         Self { typ, tokens }
-//     }
-// }
-
-// impl From<Token> for GroupToken {
-//     fn from(token: Token) -> Self {
-//         Self { typ: token.typ.clone(), tokens: vec![token] }
-//     }
-// }
-
-
 
 pub fn tokenize(sql: &str) -> Vec<Token> {
     let mut tokens = vec![];
@@ -76,46 +55,10 @@ pub fn tokenize(sql: &str) -> Vec<Token> {
     tokens
 }
 
-#[derive(Debug)]
-pub struct TokenList {
-    pub tokens: Vec<Token>,
-}
-
-impl TokenList {
-
-    pub fn new(tokens: Vec<Token>) -> Self {
-        // let group_tokens = tokens.into_iter().map(|t| t.into()).collect();
-        Self { tokens: tokens }
-    }
-
-    fn token_matching(&self, types: &[TokenType], start: usize, end: usize) -> Option<usize> {
-        self.tokens[start..end].iter().enumerate()
-            .position(|(_, token)| types.iter().find(|t| **t == token.typ).is_some())
-    }
-
-    pub fn token_next_by(&self, types: &[TokenType], start: usize) -> Option<usize> {
-        self.token_matching(types, start, self.tokens.len())
-    }
-
-    pub fn group_tokens(&mut self, group_type: TokenType, start: usize, end: usize) {
-        let sub_tokens = self.tokens[start..end].to_vec();
-        let group_token = vec![Token::new_parent(group_type, sub_tokens)];
-        self.tokens.splice(start..end, group_token).for_each(drop);
-    }
-}
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn test_get_tokens1() {
-        let sql = "select * from users;";
-        let tokens = tokenize(sql);
-        let tokens = TokenList::new(tokens);
-        let next_token = tokens.token_next_by(&[TokenType::KeywordDML], 0);
-        assert_eq!(next_token, Some(0))
-    }
 
     #[test]
     fn test_get_tokens2() {
