@@ -5,26 +5,42 @@ use super::tokens::TokenType;
 pub struct Token {
     typ: TokenType,
     value: String,
-}
-
-#[derive(Debug, Clone)]
-pub struct GroupToken {
-    typ: TokenType,
-    tokens: Vec<Token>,
-}
-
-impl From<Token> for GroupToken {
-    fn from(token: Token) -> Self {
-        Self { typ: token.typ.clone(), tokens: vec![token] }
-    }
+    children: Vec<Token>,
 }
 
 impl Token {
 
     pub fn new(typ: TokenType, value: String) -> Self {
-        Self { typ, value }
+        Self { typ, value, children: vec![] }
+    }
+
+
+    fn new_parent(typ: TokenType, children: Vec<Token>) -> Self {
+        Self { typ, value: "".to_string(), children }
     }
 }
+
+
+// #[derive(Debug, Clone)]
+// pub struct GroupToken {
+//     typ: TokenType,
+//     tokens: Vec<Token>,
+// }
+
+// impl GroupToken {
+
+//     fn new(typ: TokenType, tokens: Vec<Token>) -> Self {
+//         Self { typ, tokens }
+//     }
+// }
+
+// impl From<Token> for GroupToken {
+//     fn from(token: Token) -> Self {
+//         Self { typ: token.typ.clone(), tokens: vec![token] }
+//     }
+// }
+
+
 
 pub fn tokenize(sql: &str) -> Vec<Token> {
     let mut tokens = vec![];
@@ -60,15 +76,16 @@ pub fn tokenize(sql: &str) -> Vec<Token> {
     tokens
 }
 
-
+#[derive(Debug)]
 pub struct TokenList {
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
 }
 
 impl TokenList {
 
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens }
+        // let group_tokens = tokens.into_iter().map(|t| t.into()).collect();
+        Self { tokens: tokens }
     }
 
     fn token_matching(&self, types: &[TokenType], start: usize, end: usize) -> Option<usize> {
@@ -76,12 +93,14 @@ impl TokenList {
             .position(|(_, token)| types.iter().find(|t| **t == token.typ).is_some())
     }
 
-    pub fn token_next_by(&self, types: &[TokenType]) -> Option<usize> {
-        self.token_matching(types, 0, self.tokens.len())
+    pub fn token_next_by(&self, types: &[TokenType], start: usize) -> Option<usize> {
+        self.token_matching(types, start, self.tokens.len())
     }
 
-    pub fn group_tokens(&mut self) {
-
+    pub fn group_tokens(&mut self, group_type: TokenType, start: usize, end: usize) {
+        let sub_tokens = self.tokens[start..end].to_vec();
+        let group_token = vec![Token::new_parent(group_type, sub_tokens)];
+        self.tokens.splice(start..end, group_token).for_each(drop);
     }
 }
 
@@ -94,7 +113,7 @@ mod tests {
         let sql = "select * from users;";
         let tokens = tokenize(sql);
         let tokens = TokenList::new(tokens);
-        let next_token = tokens.token_next_by(&[TokenType::KeywordDML]);
+        let next_token = tokens.token_next_by(&[TokenType::KeywordDML], 0);
         assert_eq!(next_token, Some(0))
     }
 
@@ -122,5 +141,12 @@ mod tests {
         println!("{}", tokens.len());
         println!("{:?}", tokens);
         assert_eq!(tokens.len(), 48);
+    }
+
+    #[test]
+    fn test_group_token() {
+        let v = vec![0,1,2,3];
+        let sub = v[1..2].to_vec();
+        println!("{:?}", sub);
     }
 }

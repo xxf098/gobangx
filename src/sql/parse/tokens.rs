@@ -44,4 +44,6 @@ pub enum TokenType {
     DML,
     DDL,
     CTE,
+    // group type
+    Identifier,
 }
