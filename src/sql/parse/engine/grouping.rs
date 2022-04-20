@@ -20,23 +20,21 @@ impl TokenList {
         Self { tokens: tokens }
     }
 
-    fn token_matching(&self, types: &[TokenType], patterns: &HashMap<TokenType, Vec<&str>>,start: usize, end: usize) -> Option<usize> {
+    fn token_matching(&self, types: &[TokenType], pattern: Option<&(TokenType, Vec<&str>)>, start: usize, end: usize) -> Option<usize> {
         if types.len() > 0 {
             return self.tokens[start..end].iter()
-            .position(|token| types.iter().find(|t| **t == token.typ).is_some())
+                .position(|token| types.iter().find(|t| **t == token.typ).is_some())
         }
-        if patterns.len() > 0 {
+        if let Some(p) = pattern {
             return self.tokens[start..end].iter()
-                .position(|token| {
-                    patterns.iter().find(|(k, vals)| **k == token.typ && vals.iter().find(|v| **v == token.value).is_some()).is_some()
-                })
+                .position(|token| p.0 == token.typ && p.1.iter().find(|v| **v == token.value.to_uppercase()).is_some())
         }
         None
     }
 
     // tuple
-    fn token_next_by(&self, types: &[TokenType], patterns: &HashMap<TokenType, Vec<&str>>,start: usize) -> Option<usize> {
-        self.token_matching(types, patterns, start, self.tokens.len())
+    fn token_next_by(&self, types: &[TokenType], pattern: Option<&(TokenType, Vec<&str>)>,start: usize) -> Option<usize> {
+        self.token_matching(types, pattern, start, self.tokens.len())
     }
 
     fn group_tokens(&mut self, group_type: TokenType, start: usize, end: usize) {
@@ -47,22 +45,27 @@ impl TokenList {
 
     fn group_identifier(&mut self) {
         let ttypes = vec![TokenType::StringSymbol, TokenType::Name];
-        let patterns = HashMap::new();
-        let mut tidx = self.token_next_by(&ttypes, &patterns, 0);
+        let mut tidx = self.token_next_by(&ttypes, None, 0);
         while let Some(idx) = tidx {
             self.group_tokens(TokenType::Identifier, idx, idx +1);
-            tidx = self.token_next_by(&ttypes, &patterns, idx+1);
+            tidx = self.token_next_by(&ttypes, None, idx+1);
+        }
+    }   
+
+    fn group_where(&mut self) {
+        let where_open = (TokenType::Keyword, vec!["WHERE"]);
+        let where_close = (TokenType::Keyword, vec!["ORDER BY", "GROUP BY", "LIMIT", "UNION", "UNION ALL", "EXCEPT", "HAVING", "RETURNING", "INTO"]);
+        let mut tidx = self.token_next_by(&vec![], Some(&where_open), 0);
+        while let Some(idx) = tidx {
+            let edix = self.token_next_by(&vec![], Some(&where_close), idx+1);
+            let edix = edix.unwrap_or(self.tokens.len()-1);
+            println!("idx {} eidx {}", idx, edix);
+            self.group_tokens(TokenType::Where, idx, edix+1);
+            tidx = self.token_next_by(&vec![], Some(&where_open), idx);
         }
     }
 
-    fn group_where(&mut self) {
-        let mut where_open = HashMap::new();
-        where_open.insert(TokenType::Keyword, vec!["WHERE"]);
-        let mut tidx = self.token_next_by(&vec![], &where_open, 0);
-        while let Some(idx) = tidx {
-            tidx = self.token_next_by(&vec![], &where_open, 0);
-        }
-    } 
+     // group_comparison
 
 }
 
@@ -78,6 +81,15 @@ mod tests {
         let tokens = tokenize(sql);
         let mut tokens = TokenList::new(tokens);
         tokens.group_identifier();
+        println!("{:?}", tokens.tokens);
+    }
+
+    #[test]
+    fn test_group_where() {
+        let sql = "select * from users where id > 10 limit 10;";
+        let tokens = tokenize(sql);
+        let mut tokens = TokenList::new(tokens);
+        tokens.group_where();
         println!("{:?}", tokens.tokens);
     }
 }

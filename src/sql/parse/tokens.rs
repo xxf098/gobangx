@@ -1,5 +1,5 @@
 
-#[derive(PartialEq, Eq, Debug, Clone, Hash)]
+#[derive(PartialEq, Debug, Clone)]
 pub enum TokenType {
     Text,
     Whitespace,
@@ -46,4 +46,5 @@ pub enum TokenType {
     CTE,
     // group type
     Identifier,
+    Where,
 }
