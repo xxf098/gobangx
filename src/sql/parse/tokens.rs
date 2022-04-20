@@ -1,5 +1,5 @@
 
-#[derive(PartialEq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Hash)]
 pub enum TokenType {
     Text,
     Whitespace,

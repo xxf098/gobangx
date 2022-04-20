@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use crate::sql::parse::lexer::{Token};
 use crate::sql::parse::tokens::TokenType;
 
@@ -19,13 +20,23 @@ impl TokenList {
         Self { tokens: tokens }
     }
 
-    fn token_matching(&self, types: &[TokenType], start: usize, end: usize) -> Option<usize> {
-        self.tokens[start..end].iter().enumerate()
-            .position(|(_, token)| types.iter().find(|t| **t == token.typ).is_some())
+    fn token_matching(&self, types: &[TokenType], patterns: &HashMap<TokenType, Vec<&str>>,start: usize, end: usize) -> Option<usize> {
+        if types.len() > 0 {
+            return self.tokens[start..end].iter()
+            .position(|token| types.iter().find(|t| **t == token.typ).is_some())
+        }
+        if patterns.len() > 0 {
+            return self.tokens[start..end].iter()
+                .position(|token| {
+                    patterns.iter().find(|(k, vals)| **k == token.typ && vals.iter().find(|v| **v == token.value).is_some()).is_some()
+                })
+        }
+        None
     }
 
-    fn token_next_by(&self, types: &[TokenType], start: usize) -> Option<usize> {
-        self.token_matching(types, start, self.tokens.len())
+    // tuple
+    fn token_next_by(&self, types: &[TokenType], patterns: &HashMap<TokenType, Vec<&str>>,start: usize) -> Option<usize> {
+        self.token_matching(types, patterns, start, self.tokens.len())
     }
 
     fn group_tokens(&mut self, group_type: TokenType, start: usize, end: usize) {
@@ -34,14 +45,24 @@ impl TokenList {
         self.tokens.splice(start..end, group_token).for_each(drop);
     }
 
-    pub fn group_identifier(&mut self) {
+    fn group_identifier(&mut self) {
         let ttypes = vec![TokenType::StringSymbol, TokenType::Name];
-        let mut tidx = self.token_next_by(&ttypes, 0);
+        let patterns = HashMap::new();
+        let mut tidx = self.token_next_by(&ttypes, &patterns, 0);
         while let Some(idx) = tidx {
             self.group_tokens(TokenType::Identifier, idx, idx +1);
-            tidx = self.token_next_by(&ttypes, idx+1);
+            tidx = self.token_next_by(&ttypes, &patterns, idx+1);
         }
     }
+
+    fn group_where(&mut self) {
+        let mut where_open = HashMap::new();
+        where_open.insert(TokenType::Keyword, vec!["WHERE"]);
+        let mut tidx = self.token_next_by(&vec![], &where_open, 0);
+        while let Some(idx) = tidx {
+            tidx = self.token_next_by(&vec![], &where_open, 0);
+        }
+    } 
 
 }
 

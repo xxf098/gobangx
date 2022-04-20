@@ -1,7 +1,7 @@
 use super::keywords::{sql_regex, is_keyword};
 use super::tokens::TokenType;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Token {
     pub typ: TokenType,
     pub value: String,
