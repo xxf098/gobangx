@@ -59,7 +59,7 @@ impl TokenList {
         let mut tidx = self.token_next_by(&vec![], Some(&where_open), 0);
         while let Some(idx) = tidx {
             let edix = self.token_next_by(&vec![], Some(&where_close), idx+1);
-            let edix = edix.unwrap_or(self.tokens.len()-1);
+            let edix = edix.unwrap_or(self.tokens.len());
             println!("idx {} eidx {}", idx, edix);
             self.group_tokens(TokenType::Where, idx, edix);
             tidx = self.token_next_by(&vec![], Some(&where_open), idx);
@@ -88,6 +88,15 @@ mod tests {
     #[test]
     fn test_group_where() {
         let sql = "select * from users where id > 10 limit 10;";
+        let tokens = tokenize(sql);
+        let mut tokens = TokenList::new(tokens);
+        tokens.group_where();
+        println!("{:?}", tokens.tokens);
+    }
+
+    #[test]
+    fn test_group_where1() {
+        let sql = "select * from users where id > 10;";
         let tokens = tokenize(sql);
         let mut tokens = TokenList::new(tokens);
         tokens.group_where();
