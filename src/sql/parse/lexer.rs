@@ -5,19 +5,26 @@ use super::tokens::TokenType;
 pub struct Token {
     pub typ: TokenType,
     pub value: String,
-    pub children: Vec<Token>,
+    pub children: TokenList,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct TokenList {
+    pub tokens: Vec<Token>,
 }
 
 impl Token {
 
     pub fn new(typ: TokenType, value: String) -> Self {
-        Self { typ, value, children: vec![] }
+        let token_list = TokenList::new(vec![]);
+        Self { typ, value, children: token_list }
     }
 
 
     pub fn new_parent(typ: TokenType, children: Vec<Token>) -> Self {
         let value = children.iter().map(|child| child.value.as_ref()).collect::<Vec<_>>().join("");
-        Self { typ, value, children }
+        let token_list = TokenList::new(children);
+        Self { typ, value, children: token_list }
     }
 }
 

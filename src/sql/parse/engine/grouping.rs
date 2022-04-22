@@ -1,15 +1,10 @@
 use std::collections::HashMap;
-use crate::sql::parse::lexer::{Token};
+use crate::sql::parse::lexer::{Token, TokenList};
 use crate::sql::parse::tokens::TokenType;
 
 pub fn group(stmt: Vec<Token>) -> Vec<Token> {
     // stmt.into_iter().map(|s| s.into()).collect::<Vec<_>>()
     vec![]
-}
-
-#[derive(Debug)]
-pub struct TokenList {
-    pub tokens: Vec<Token>,
 }
 
 // TODO: GroupToken
@@ -18,6 +13,10 @@ impl TokenList {
     pub fn new(tokens: Vec<Token>) -> Self {
         // let group_tokens = tokens.into_iter().map(|t| t.into()).collect();
         Self { tokens: tokens }
+    }
+
+    pub fn len(&self) -> usize {
+        self.tokens.len()
     }
 
     fn token_matching(&self, types: &[TokenType], pattern: Option<&(TokenType, Vec<&str>)>, start: usize, end: usize) -> Option<usize> {
@@ -45,6 +44,12 @@ impl TokenList {
     }
 
     fn group_identifier(&mut self) {
+        // TODO: macro
+        for token in self.tokens.iter_mut() {
+            if token.children.len() > 0 {
+                token.children.group_identifier();
+            }
+        }
         let ttypes = vec![TokenType::StringSymbol, TokenType::Name];
         let mut tidx = self.token_next_by(&ttypes, None, 0);
         while let Some(idx) = tidx {
