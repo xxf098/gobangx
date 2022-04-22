@@ -78,6 +78,10 @@ impl Value {
     pub fn width(&self) -> usize {
         self.data.width()
     }
+
+    pub fn substr(&self, max: usize) -> String {
+        if max >= self.data.len() { self.data.clone() } else { self.data[..max].to_string() }
+    }
 }
 
 impl Clone for Value {
