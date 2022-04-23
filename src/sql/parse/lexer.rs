@@ -44,6 +44,21 @@ impl Token {
         self.children.len() > 0
     }
 
+    // comparisons token
+    pub fn imt(token: Option<&Token>, types: &[TokenType], pattern: Option<&(TokenType, Vec<&str>)>) -> bool {
+        if token.is_none() {
+            return false
+        }
+        let token = token.unwrap();
+        if types.len() > 0 {
+            return types.iter().find(|typ| **typ == token.typ).is_some()
+        } else if let Some(p) = pattern {
+            return p.0 == token.typ && p.1.iter().find(|v| **v == token.normalized).is_some()
+        } else {
+            return false
+        }
+    }
+
 }
 
 pub fn tokenize(sql: &str) -> Vec<Token> {
