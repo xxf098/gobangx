@@ -6,6 +6,7 @@ pub struct Token {
     pub typ: TokenType,
     pub value: String,
     pub children: TokenList,
+    pub normalized: String,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -13,19 +14,36 @@ pub struct TokenList {
     pub tokens: Vec<Token>,
 }
 
+// impl Iterator for TokenList {
+// }
+
 impl Token {
 
     pub fn new(typ: TokenType, value: String) -> Self {
         let token_list = TokenList::new(vec![]);
-        Self { typ, value, children: token_list }
+        let normalized = if typ == TokenType::Keyword { value.to_uppercase() } else { value.clone() };
+        Self { typ, value, children: token_list, normalized }
     }
-
 
     pub fn new_parent(typ: TokenType, children: Vec<Token>) -> Self {
         let value = children.iter().map(|child| child.value.as_ref()).collect::<Vec<_>>().join("");
         let token_list = TokenList::new(children);
-        Self { typ, value, children: token_list }
+        let normalized = if typ == TokenType::Keyword { value.to_uppercase() } else { value.clone() };
+        Self { typ, value, children: token_list, normalized }
     }
+
+    pub fn is_whitespace(&self) -> bool {
+        self.typ == TokenType::Whitespace
+    }
+
+    pub fn is_keyword(&self) -> bool {
+        self.typ == TokenType::Keyword        
+    }
+
+    pub fn is_group(&self) -> bool {
+        self.children.len() > 0
+    }
+
 }
 
 pub fn tokenize(sql: &str) -> Vec<Token> {
