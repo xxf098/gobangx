@@ -47,4 +47,8 @@ pub enum TokenType {
     // group type
     Identifier,
     Where,
+    Function,
+    Operation,
+    TypedLiteral,
+    Parenthesis,
 }

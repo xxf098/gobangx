@@ -1,7 +1,7 @@
-use std::collections::HashMap;
+// use std::collections::HashMap;
 use regex::{Regex, RegexBuilder};
 use super::TokenType;
-use crate::sql::token::regex_factory::{ create_string_regex };
+// use crate::sql::token::regex_factory::{ create_string_regex };
 
 pub struct RegexToken {
     pub reg: Regex,
