@@ -1,9 +1,18 @@
-use crate::sql::parse::lexer::{Token, TokenList};
+use std::convert::From;
+use crate::sql::parse::lexer::{Token, TokenList, tokenize};
 use crate::sql::parse::tokens::TokenType;
 
 pub fn group(stmt: Vec<Token>) -> Vec<Token> {
     // stmt.into_iter().map(|s| s.into()).collect::<Vec<_>>()
     vec![]
+}
+
+impl From<&str> for TokenList {
+    
+    fn from(sql: &str) -> Self {
+        let tokens = tokenize(sql);
+        TokenList::new(tokens)
+    }
 }
 
 // TODO: GroupToken
@@ -178,7 +187,6 @@ fn group_internal(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::sql::parse::lexer::{tokenize};
 
     #[test]
     fn test_group_identifier() {
@@ -223,8 +231,7 @@ mod tests {
     #[test]
     fn test_group_comparison1() {
         let sql = "select * from users where id > 0;";
-        let tokens = tokenize(sql);
-        let mut token_list = TokenList::new(tokens);
+        let mut token_list = TokenList::from(sql);
         token_list.group_where();
         token_list.group_identifier();
         token_list.group_comparison();
@@ -237,8 +244,7 @@ mod tests {
     #[test]
     fn test_group_fn() {
         let sql = "select * from users where id > 0;";
-        let tokens = tokenize(sql);
-        let mut token_list = TokenList::new(tokens);
+        let mut token_list = TokenList::from(sql);
         token_list.group();
         assert_eq!(token_list.tokens[8].typ, TokenType::Where);
     }
