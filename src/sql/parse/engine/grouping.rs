@@ -114,6 +114,12 @@ impl TokenList {
             valid, valid, post, false, true);
      }
 
+     fn group(&mut self) {
+        self.group_where();
+        self.group_identifier();
+        self.group_comparison();
+     }
+
 }
 
 fn group_internal(
@@ -156,7 +162,7 @@ fn group_internal(
                     tlist.group_tokens(group_type.clone(), from_idx, to_idx+1);
                     pidx = Some(from_idx);
                     prev_ = tlist.token_idx(pidx).map(|t| t.clone());
-                    idx += 1;
+                    // idx += 1;
                     continue
                 }
             }
@@ -212,5 +218,28 @@ mod tests {
         //     println!("{:?}", token);
         // }
        
+    }
+
+    #[test]
+    fn test_group_comparison1() {
+        let sql = "select * from users where id > 0;";
+        let tokens = tokenize(sql);
+        let mut token_list = TokenList::new(tokens);
+        token_list.group_where();
+        token_list.group_identifier();
+        token_list.group_comparison();
+        // assert_eq!(token_list.tokens[8].typ, TokenType::Where);
+        for token in token_list.tokens {
+            println!("{:?}", token);
+        }
+    }
+
+    #[test]
+    fn test_group_fn() {
+        let sql = "select * from users where id > 0;";
+        let tokens = tokenize(sql);
+        let mut token_list = TokenList::new(tokens);
+        token_list.group();
+        assert_eq!(token_list.tokens[8].typ, TokenType::Where);
     }
 }
