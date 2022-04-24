@@ -2,9 +2,10 @@ use std::convert::From;
 use crate::sql::parse::lexer::{Token, TokenList, tokenize};
 use crate::sql::parse::tokens::TokenType;
 
-pub fn group(stmt: Vec<Token>) -> Vec<Token> {
-    // stmt.into_iter().map(|s| s.into()).collect::<Vec<_>>()
-    vec![]
+pub fn group(tokens: Vec<Token>) -> Vec<Token> {
+    let mut token_list = TokenList::new(tokens);
+    token_list.group();
+    token_list.tokens
 }
 
 impl From<&str> for TokenList {
