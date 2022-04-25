@@ -41,8 +41,12 @@ impl TokenList {
         pos.map(|p| p+start)
     }
 
-    fn token_matching_fn(&self, f: fn(&Token) -> bool, start: usize, end: usize) -> Option<usize> {
-        self.tokens[start..end].iter().position(|token| f(token)).map(|p| p+start)
+    fn token_matching_fn(&self, f: fn(&Token) -> bool, start: usize, end: usize, reverse: bool) -> Option<usize> {
+        if reverse {
+            self.tokens[start..end].iter().rposition(|token| f(token)).map(|p| p+start)
+        } else {
+            self.tokens[start..end].iter().position(|token| f(token)).map(|p| p+start)
+        }
     }
 
     fn token_next_by(&self, types: &[TokenType], pattern: Option<&(TokenType, Vec<&str>)>,start: usize) -> Option<usize> {
@@ -50,10 +54,15 @@ impl TokenList {
     }
 
     fn token_next(&self, idx: usize) -> Option<usize> {
-        return self.token_matching_fn(|t| !t.is_whitespace(), idx, self.len());
+        return self.token_matching_fn(|t| !t.is_whitespace(), idx, self.len(), false);
     }
 
-    fn token_idx(&self, idx: Option<usize>) -> Option<&Token> {
+    pub fn token_prev(&self, idx: usize) -> Option<usize> {
+        if idx > self.len() || idx == 0 { None } 
+        else { self.token_matching_fn(|t| !t.is_whitespace(), 0, idx, true) }
+    }
+
+    pub fn token_idx(&self, idx: Option<usize>) -> Option<&Token> {
         idx.map(|i| self.tokens.get(i)).flatten()
     }
 
@@ -248,5 +257,14 @@ mod tests {
         let mut token_list = TokenList::from(sql);
         token_list.group();
         assert_eq!(token_list.tokens[8].typ, TokenType::Where);
+    }
+
+    #[test]
+    fn test_token_prev() {
+        let sql= "select * from ";
+        let token_list = TokenList::from(sql);
+        let t = token_list.token_prev(token_list.len());
+        let t = token_list.token_idx(t).unwrap();
+        assert_eq!(t.value, "where");
     }
 }
