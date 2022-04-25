@@ -19,7 +19,7 @@ impl RegexToken {
         }
     }
 
-    fn new_reg(r: Regex, typ: TokenType) -> Self {
+    fn _new_reg(r: Regex, typ: TokenType) -> Self {
         Self{
             reg: r, 
             typ,

@@ -1,4 +1,4 @@
-use crate::sql::parse::lexer::{Token, tokenize};
+use crate::lexer::{Token, tokenize};
 
 pub struct FilterStack {
     grouping: bool
@@ -11,7 +11,7 @@ impl FilterStack {
         Self { grouping }
     }
 
-    fn enable_grouping(&mut self) {
+    fn _enable_grouping(&mut self) {
         self.grouping = true
     }
 

@@ -1,6 +1,6 @@
 use std::convert::From;
-use crate::sql::parse::lexer::{Token, TokenList, tokenize};
-use crate::sql::parse::tokens::TokenType;
+use crate::lexer::{Token, TokenList, tokenize};
+use crate::tokens::TokenType;
 
 pub fn group(tokens: Vec<Token>) -> Vec<Token> {
     let mut token_list = TokenList::new(tokens);
