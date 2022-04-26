@@ -2,6 +2,10 @@ use std::convert::From;
 use crate::lexer::{Token, TokenList, tokenize};
 use crate::tokens::TokenType;
 
+const T_NUMERICAL: [TokenType; 3] = [TokenType::Number, TokenType::NumberInteger, TokenType::NumberFloat];
+const T_STRING: [TokenType; 3] = [TokenType::String, TokenType::StringSingle, TokenType::StringSymbol];
+const T_NAME: [TokenType; 2] = [TokenType::Name, TokenType::NamePlaceholder];
+
 pub fn group(tokens: Vec<Token>) -> Vec<Token> {
     let mut token_list = TokenList::new(tokens);
     token_list.group();
@@ -87,6 +91,37 @@ impl TokenList {
         }
     }   
 
+    fn group_identifier_list(&mut self) {
+
+        fn matcher(token: &Token) -> bool {
+            token.typ == TokenType::Punctuation
+        }
+
+        fn valid(token: Option<&Token>) -> bool {
+            if token.is_none() {
+                return false
+            }
+            let token = token.unwrap();
+            let types = T_NUMERICAL.iter()
+                .chain(&T_STRING)
+                .chain(&T_NAME)
+                .chain(&[TokenType::Keyword, TokenType::Comment, TokenType::Wildcard, 
+                    TokenType::Function, TokenType::Case, TokenType::Identifier, 
+                    TokenType::Comparison, TokenType::IdentifierList, TokenType::Operation])
+                .map(|t| t.clone())
+                .collect::<Vec<_>>();
+        
+            let patterns = (TokenType::Keyword, vec!["null", "role"]);
+            return Token::imt(token, &types, Some(&patterns))
+        }
+
+        fn post(_tlist: &TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
+            (pidx, nidx)
+        }
+
+        group_internal(self, TokenType::IdentifierList, matcher, valid, valid, post, true, true)
+    }
+
     fn group_where(&mut self) {
         let where_open = (TokenType::Keyword, vec!["WHERE"]);
         let where_close = (TokenType::Keyword, vec!["ORDER BY", "GROUP BY", "LIMIT", "UNION", "UNION ALL", "EXCEPT", "HAVING", "RETURNING", "INTO"]);
@@ -137,6 +172,7 @@ impl TokenList {
         self.group_where();
         self.group_identifier();
         self.group_comparison();
+        self.group_identifier_list();
      }
 
 }

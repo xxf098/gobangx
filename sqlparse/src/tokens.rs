@@ -45,6 +45,7 @@ pub enum TokenType {
     DDL,
     CTE,
     // group type
+    Case,
     Identifier,
     IdentifierList,
     Where,
