@@ -46,6 +46,7 @@ pub enum TokenType {
     CTE,
     // group type
     Identifier,
+    IdentifierList,
     Where,
     Function,
     Operation,
