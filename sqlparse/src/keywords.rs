@@ -74,7 +74,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
 
         new_rt(r"(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name),
         new_cap(r"([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
-        // new_rt(r"(?:\.)[A-ZÀ-Ü]\w*", TokenType::Name),
+        // FIXME: backword match
         RegexToken::new(r"(?:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1),
         new_cap(r"([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
 

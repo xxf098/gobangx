@@ -324,12 +324,17 @@ mod tests {
 
     #[test]
     fn test_group_period() {
-        // TODO: select * from sch.user
         let sql = "select * from sch.account";
         let mut token_list = TokenList::from(sql);
         token_list.group_period();
-       assert_eq!(token_list.tokens[6].typ, TokenType::Identifier);
-       assert_eq!(token_list.tokens[6].value, "sch.account");
+        assert_eq!(token_list.tokens[6].typ, TokenType::Identifier);
+        assert_eq!(token_list.tokens[6].value, "sch.account");
+
+        let sql = "select * from sch.user";
+        let mut token_list = TokenList::from(sql);
+        token_list.group_period();
+        assert_eq!(token_list.tokens[6].typ, TokenType::Identifier);
+        assert_eq!(token_list.tokens[6].value, "sch.user");
 
     }
 }
