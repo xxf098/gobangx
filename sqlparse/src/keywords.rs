@@ -7,15 +7,17 @@ pub struct RegexToken {
     pub reg: Regex,
     pub typ: TokenType,
     pub capture: Option<usize>,
+    pub backward: usize, // backward offset, match .Name
 }
 
 impl RegexToken {
     
-    fn new(s: &str, typ: TokenType, capture: Option<usize>) -> Self {
+    fn new(s: &str, typ: TokenType, capture: Option<usize>, backward: usize) -> Self {
         Self{
             reg: RegexBuilder::new(s).case_insensitive(true).build().unwrap(), 
             typ,
             capture,
+            backward,
         }
     }
 
@@ -24,18 +26,19 @@ impl RegexToken {
             reg: r, 
             typ,
             capture: None,
+            backward: 0,
         }
     }
 }
 
 #[inline]
 fn new_rt(s: &str, typ: TokenType) -> RegexToken{
-    RegexToken::new(s, typ, None)
+    RegexToken::new(s, typ, None, 0)
 }
 
 #[inline]
 fn new_cap(s: &str, typ: TokenType, i: usize) -> RegexToken{
-    RegexToken::new(s, typ, Some(i))
+    RegexToken::new(s, typ, Some(i), 0)
 }
 
 
@@ -72,6 +75,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r"(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name),
         new_cap(r"([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
         // new_rt(r"(?:\.)[A-ZÀ-Ü]\w*", TokenType::Name),
+        RegexToken::new(r"(?:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1),
         new_cap(r"([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
 
         new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal),
@@ -186,6 +190,6 @@ mod tests {
         let reg = Regex::new(r"(?:\.)([A-ZÀ-Ü]\w*)").unwrap();
         let c = reg.captures(".Orders").unwrap();
         println!("{:?}", c);
-        assert_eq!(c.get(0).map(|m| m.as_str()), Some("Orders"))
+        assert_eq!(c.get(1).map(|m| m.as_str()), Some("Orders"))
     }
 }

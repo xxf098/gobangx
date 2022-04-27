@@ -69,12 +69,14 @@ pub fn tokenize(sql: &str) -> Vec<Token> {
     while index < sql_len {
         let mut forawrd = 0;
         for rt in &regs {
-            let t = &sql[index..];
+            let i = index.saturating_sub(rt.backward);
+            let t = &sql[i..];
+         
             let opt = match rt.capture {
                 Some(i) =>  rt.reg.captures(t).map(|c| c.get(i)).flatten(),
                 None =>  rt.reg.find(t)
             };
-            if opt.is_none() || opt.unwrap().start() != 0 {
+            if opt.is_none() || opt.unwrap().start() != rt.backward {
                 continue
             }
             let v = opt.unwrap().as_str();
