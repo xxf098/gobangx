@@ -53,4 +53,5 @@ pub enum TokenType {
     Operation,
     TypedLiteral,
     Parenthesis,
+    SquareBrackets,
 }

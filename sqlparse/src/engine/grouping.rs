@@ -98,10 +98,6 @@ impl TokenList {
         }
 
         fn valid(token: Option<&Token>) -> bool {
-            if token.is_none() {
-                return false
-            }
-            let token = token.unwrap();
             let types = T_NUMERICAL.iter()
                 .chain(&T_STRING)
                 .chain(&T_NAME)
@@ -142,10 +138,6 @@ impl TokenList {
         }
 
         fn valid(token: Option<&Token>) -> bool {
-            if token.is_none() {
-                return false
-            }
-            let token = token.unwrap();
             let types = vec![TokenType::Number, TokenType::NumberInteger, TokenType::NumberFloat, 
                 TokenType::String, TokenType::StringSingle, TokenType::StringSymbol,
                 TokenType::Name, TokenType::NamePlaceholder,
@@ -153,7 +145,7 @@ impl TokenList {
             let patterns = (TokenType::Parenthesis, vec!["(", ")"]);
             if Token::imt(token, &types, Some(&patterns)) {
                 true
-            } else if token.typ == TokenType::Keyword && token.normalized == "NULL" {
+            } else if token.map(|t| t.typ == TokenType::Keyword && t.normalized == "NULL").unwrap_or(false) {
                 true
             } else {
                 false
@@ -168,8 +160,34 @@ impl TokenList {
             valid, valid, post, false, true);
      }
 
+     fn group_period(&mut self) {
+        fn matcher(token: &Token) -> bool {
+            token.typ == TokenType::Punctuation && token.value == "."
+        }
+
+        fn valid_prev(token: Option<&Token>) -> bool {
+            let ttypes = vec![TokenType::Name, TokenType::StringSymbol, TokenType::SquareBrackets, TokenType::Identifier];
+            Token::imt(token, &ttypes, None)
+        }
+
+        fn valid_next(token: Option<&Token>) -> bool {
+            true
+        }
+
+        fn post(tlist: &TokenList, pidx: usize, tidx: usize, nidx: usize) -> (usize, usize) {
+            let ttypes = vec![TokenType::Name, TokenType::StringSymbol, TokenType::Wildcard, TokenType::SquareBrackets, TokenType::Function];
+            let next = tlist.token_idx(Some(nidx));
+            let valid_next = Token::imt(next, &ttypes, None);
+            if valid_next { (pidx, nidx) } else { (pidx, tidx) }
+        }
+
+        group_internal(self, TokenType::Identifier, matcher, 
+            valid_prev, valid_next, post, true, true);
+     }
+
      fn group(&mut self) {
         self.group_where();
+        self.group_period();
         self.group_identifier();
         self.group_comparison();
         self.group_identifier_list();
@@ -302,5 +320,16 @@ mod tests {
         let t = token_list.token_prev(token_list.len());
         let t = token_list.token_idx(t).unwrap();
         assert_eq!(t.value, "where");
+    }
+
+    #[test]
+    fn test_group_period() {
+        // TODO: select * from sch.user
+        let sql = "select * from sch.account";
+        let mut token_list = TokenList::from(sql);
+        token_list.group_period();
+       assert_eq!(token_list.tokens[6].typ, TokenType::Identifier);
+       assert_eq!(token_list.tokens[6].value, "sch.account");
+
     }
 }

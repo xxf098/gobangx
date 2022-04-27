@@ -1,7 +1,7 @@
-pub mod engine;
-pub mod lexer;
-pub mod keywords;
-pub mod tokens;
+mod engine;
+mod lexer;
+mod keywords;
+mod tokens;
 
 
 pub use tokens::TokenType;
@@ -27,6 +27,16 @@ mod tests {
         let tokens = parse(sql);
         for token in tokens {
             println!("{:?}", token);
+        }
+    }
+
+    #[test]
+    fn test_parse_identifier() {
+        let sql = "select * from sch.users;";
+        let tokens = parse(sql);
+        // let tokens = parse_no_grouping(sql);
+        for token in tokens {
+            println!("{:?} {}", token.typ, token.value);
         }
     }
 }
