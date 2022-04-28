@@ -1,4 +1,5 @@
 use std::convert::From;
+use std::fmt;
 use crate::lexer::{Token, TokenList, tokenize};
 use crate::tokens::TokenType;
 
@@ -17,6 +18,16 @@ impl From<&str> for TokenList {
     fn from(sql: &str) -> Self {
         let tokens = tokenize(sql);
         TokenList::new(tokens)
+    }
+}
+
+impl std::fmt::Display for TokenList {
+
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for token in &self.tokens {
+            writeln!(f, "{:?}", token)?;
+        };
+        Ok(())
     }
 }
 
