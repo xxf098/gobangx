@@ -171,7 +171,7 @@ impl TokenList {
             Token::imt(token, &ttypes, None)
         }
 
-        fn valid_next(token: Option<&Token>) -> bool {
+        fn valid_next(_token: Option<&Token>) -> bool {
             true
         }
 
@@ -201,7 +201,7 @@ impl TokenList {
         !Token::imt(token, &ttypes, None)
     }
 
-    fn post(tlist: &TokenList, pidx: usize, tidx: usize, nidx: usize) -> (usize, usize) {
+    fn post(_tlist: &TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
         (pidx, nidx)
     }
 
@@ -229,6 +229,7 @@ impl TokenList {
     self.group_where();
     self.group_period();
     self.group_identifier();
+    self.group_order();
     self.group_comparison();
     self.group_as();
     self.group_identifier_list();
@@ -389,8 +390,7 @@ mod tests {
     fn test_group_order() {
         let sql = "select * from users order by id desc";
         let mut token_list = TokenList::from(sql);
-        token_list.group_identifier();
-        token_list.group_order();
+        token_list.group();
         assert_eq!(token_list.tokens[10].typ, TokenType::Identifier);
         assert_eq!(token_list.tokens[10].value, "id desc");
     }
