@@ -186,36 +186,53 @@ impl TokenList {
             valid_prev, valid_next, post, true, true);
      }
 
-     fn group_as(&mut self) {
+    fn group_as(&mut self) {
 
-        fn matcher(token: &Token) -> bool {
-            token.is_keyword() && token.normalized == "AS"
+    fn matcher(token: &Token) -> bool {
+        token.is_keyword() && token.normalized == "AS"
+    }
+
+    fn valid_prev(token: Option<&Token>) -> bool {
+        token.map(|t| t.normalized == "NULL" || !t.is_keyword()).unwrap_or(false)
+    }
+
+    fn valid_next(token: Option<&Token>) -> bool {
+        let ttypes = vec![TokenType::DML, TokenType::DDL, TokenType::CTE];
+        !Token::imt(token, &ttypes, None)
+    }
+
+    fn post(tlist: &TokenList, pidx: usize, tidx: usize, nidx: usize) -> (usize, usize) {
+        (pidx, nidx)
+    }
+
+    group_internal(self, TokenType::Identifier, matcher, valid_prev, valid_next, post, true, true);
+    }
+
+    //  Group together Identifier and Asc/Desc token
+    fn group_order(&mut self) {
+        let ttypes = vec![TokenType::KeywordOrder];
+        let mut tidx = self.token_next_by(&ttypes, None, 0);
+        while let Some(idx) = tidx {
+            let pidx = self.token_prev(idx);
+            let prev = self.token_idx(pidx);
+            let ttypes = vec![TokenType::Identifier, TokenType::Number];
+            if Token::imt(prev, &ttypes, None) {
+                self.group_tokens(TokenType::Identifier, pidx.unwrap(), idx+1);
+                tidx = pidx;
+            }
+            tidx = self.token_next_by(&ttypes, None, tidx.unwrap()+1);
         }
 
-        fn valid_prev(token: Option<&Token>) -> bool {
-            token.map(|t| t.normalized == "NULL" || !t.is_keyword()).unwrap_or(false)
-        }
+    }
 
-        fn valid_next(token: Option<&Token>) -> bool {
-            let ttypes = vec![TokenType::DML, TokenType::DDL, TokenType::CTE];
-            !Token::imt(token, &ttypes, None)
-        }
-
-        fn post(tlist: &TokenList, pidx: usize, tidx: usize, nidx: usize) -> (usize, usize) {
-            (pidx, nidx)
-        }
-
-        group_internal(self, TokenType::Identifier, matcher, valid_prev, valid_next, post, true, true);
-     }
-
-     fn group(&mut self) {
-        self.group_where();
-        self.group_period();
-        self.group_identifier();
-        self.group_comparison();
-        self.group_as();
-        self.group_identifier_list();
-     }
+    fn group(&mut self) {
+    self.group_where();
+    self.group_period();
+    self.group_identifier();
+    self.group_comparison();
+    self.group_as();
+    self.group_identifier_list();
+    }
 
 }
 
@@ -364,9 +381,17 @@ mod tests {
         let mut token_list = TokenList::from(sql);
         token_list.group_period();
         token_list.group_as();
-        for token in token_list.tokens {
-            println!("{:?}", token);
-        }
+        assert_eq!(token_list.tokens[6].typ, TokenType::Identifier);
+        assert_eq!(token_list.tokens[6].value, "sch.user as u");
+    }
 
+    #[test]
+    fn test_group_order() {
+        let sql = "select * from users order by id desc";
+        let mut token_list = TokenList::from(sql);
+        token_list.group_identifier();
+        token_list.group_order();
+        assert_eq!(token_list.tokens[10].typ, TokenType::Identifier);
+        assert_eq!(token_list.tokens[10].value, "id desc");
     }
 }

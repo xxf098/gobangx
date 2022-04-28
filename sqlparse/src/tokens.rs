@@ -12,7 +12,8 @@ pub enum TokenType {
     KeywordDDL,
     KeywordDML,   
     KeywordCTE,
-    KeywordTZCast, 
+    KeywordTZCast,
+    KeywordOrder, // asc desc
     Name,
     NamePlaceholder,
     NameBuiltin,
