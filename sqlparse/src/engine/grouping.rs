@@ -160,6 +160,7 @@ impl TokenList {
             valid, valid, post, false, true);
      }
 
+     // schema.table
      fn group_period(&mut self) {
         fn matcher(token: &Token) -> bool {
             token.typ == TokenType::Punctuation && token.value == "."
@@ -185,11 +186,34 @@ impl TokenList {
             valid_prev, valid_next, post, true, true);
      }
 
+     fn group_as(&mut self) {
+
+        fn matcher(token: &Token) -> bool {
+            token.is_keyword() && token.normalized == "AS"
+        }
+
+        fn valid_prev(token: Option<&Token>) -> bool {
+            token.map(|t| t.normalized == "NULL" || !t.is_keyword()).unwrap_or(false)
+        }
+
+        fn valid_next(token: Option<&Token>) -> bool {
+            let ttypes = vec![TokenType::DML, TokenType::DDL, TokenType::CTE];
+            !Token::imt(token, &ttypes, None)
+        }
+
+        fn post(tlist: &TokenList, pidx: usize, tidx: usize, nidx: usize) -> (usize, usize) {
+            (pidx, nidx)
+        }
+
+        group_internal(self, TokenType::Identifier, matcher, valid_prev, valid_next, post, true, true);
+     }
+
      fn group(&mut self) {
         self.group_where();
         self.group_period();
         self.group_identifier();
         self.group_comparison();
+        self.group_as();
         self.group_identifier_list();
      }
 
@@ -335,6 +359,14 @@ mod tests {
         token_list.group_period();
         assert_eq!(token_list.tokens[6].typ, TokenType::Identifier);
         assert_eq!(token_list.tokens[6].value, "sch.user");
+
+        let sql = "select * from sch.user as u";
+        let mut token_list = TokenList::from(sql);
+        token_list.group_period();
+        token_list.group_as();
+        for token in token_list.tokens {
+            println!("{:?}", token);
+        }
 
     }
 }
