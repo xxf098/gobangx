@@ -81,6 +81,7 @@ impl TokenList {
         idx.map(|i| self.tokens.get(i)).flatten()
     }
 
+    // extend
     fn group_tokens(&mut self, group_type: TokenType, start: usize, end: usize) {
         let sub_tokens = self.tokens[start..end].to_vec();
         let group_token = vec![Token::new_parent(group_type, sub_tokens)];
@@ -199,24 +200,24 @@ impl TokenList {
 
     fn group_as(&mut self) {
 
-    fn matcher(token: &Token) -> bool {
-        token.is_keyword() && token.normalized == "AS"
-    }
+        fn matcher(token: &Token) -> bool {
+            token.is_keyword() && token.normalized == "AS"
+        }
 
-    fn valid_prev(token: Option<&Token>) -> bool {
-        token.map(|t| t.normalized == "NULL" || !t.is_keyword()).unwrap_or(false)
-    }
+        fn valid_prev(token: Option<&Token>) -> bool {
+            token.map(|t| t.normalized == "NULL" || !t.is_keyword()).unwrap_or(false)
+        }
 
-    fn valid_next(token: Option<&Token>) -> bool {
-        let ttypes = vec![TokenType::DML, TokenType::DDL, TokenType::CTE];
-        !Token::imt(token, &ttypes, None)
-    }
+        fn valid_next(token: Option<&Token>) -> bool {
+            let ttypes = vec![TokenType::DML, TokenType::DDL, TokenType::CTE];
+            !Token::imt(token, &ttypes, None)
+        }
 
-    fn post(_tlist: &TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
-        (pidx, nidx)
-    }
+        fn post(_tlist: &TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
+            (pidx, nidx)
+        }
 
-    group_internal(self, TokenType::Identifier, matcher, valid_prev, valid_next, post, true, true);
+        group_internal(self, TokenType::Identifier, matcher, valid_prev, valid_next, post, true, true);
     }
 
     //  Group together Identifier and Asc/Desc token
@@ -440,7 +441,7 @@ mod tests {
         let mut token_list = TokenList::from(sql);
         token_list.group();
         let id = token_list.token_idx(Some(6)).unwrap();
-        // println!("{}", id.children);
+        println!("{}", id.children);
         let real_name = id.get_real_name();
         let parent_name = id.get_parent_name();
         let alias = id.get_alias();
