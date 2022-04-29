@@ -64,7 +64,7 @@ impl TokenList {
         }
     }
 
-    fn token_next_by(&self, types: &[TokenType], pattern: Option<&(TokenType, Vec<&str>)>,start: usize) -> Option<usize> {
+    pub fn token_next_by(&self, types: &[TokenType], pattern: Option<&(TokenType, Vec<&str>)>,start: usize) -> Option<usize> {
         self.token_matching(types, pattern, start, self.tokens.len())
     }
 
@@ -237,15 +237,54 @@ impl TokenList {
     }
 
     fn group(&mut self) {
-    self.group_where();
-    self.group_period();
-    self.group_identifier();
-    self.group_order();
-    self.group_comparison();
-    self.group_as();
-    self.group_identifier_list();
+        self.group_where();
+        self.group_period();
+        self.group_identifier();
+        self.group_order();
+        self.group_comparison();
+        self.group_as();
+        self.group_identifier_list();
     }
 
+
+    pub fn get_first_name(&self, idx: Option<usize>, reverse: bool, keywords: bool, real_name: bool) -> Option<&str> {
+        let idx = idx.unwrap_or(0);
+        let tokens = &self.tokens[idx..];
+        let mut ttypes = vec![TokenType::Name, TokenType::Wildcard, TokenType::StringSymbol];
+        if keywords {
+            ttypes.push(TokenType::Keyword)
+        }
+        if reverse {
+            for token in tokens.iter().rev() {
+                if ttypes.iter().find(|typ| **typ == token.typ).is_some() {
+                    return Some(remove_quotes(&token.value))
+                } else if token.typ == TokenType::Identifier || token.typ == TokenType::Function {
+                    return if real_name { token.get_real_name() } else { token.get_real_name() }
+                }         
+            }
+        }
+        for token in tokens {
+            if ttypes.iter().find(|typ| **typ == token.typ).is_some() {
+                return Some(remove_quotes(&token.value))
+            } else if token.typ == TokenType::Identifier || token.typ == TokenType::Function {
+                return if real_name { token.get_real_name() } else { token.get_real_name() }
+            }         
+        }
+        None
+    }
+
+}
+
+fn remove_quotes(mut s: &str) -> &str {
+    if s.starts_with("\"") {
+        s = s.trim_start_matches("\"");
+        s.trim_end_matches("\"")
+    } else if s.starts_with("'") {
+        s = s.trim_start_matches("'");
+        s.trim_end_matches("'")
+    } else {
+        s
+    }
 }
 
 fn group_internal(

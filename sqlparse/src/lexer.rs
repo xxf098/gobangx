@@ -59,6 +59,35 @@ impl Token {
         }
     }
 
+    // Returns the real name (object name) of this identifier.
+    pub fn get_real_name(&self) -> Option<&str> {
+        if self.typ != TokenType::Identifier {
+            return None
+        }
+        let patterns = (TokenType::Punctuation, vec!["."]);
+        let dot_idx = self.children.token_next_by(&vec![], Some(&patterns), 0);
+        self.children.get_first_name(dot_idx, false, false, true)
+    }
+
+    pub fn get_alias(&self) -> Option<&str> {
+        if self.typ != TokenType::Identifier {
+            return None
+        }
+        //  "name AS alias"
+        let patterns = (TokenType::Keyword, vec!["AS"]);
+        let kw_idx = self.children.token_next_by(&vec![], Some(&patterns), 0);
+        if let Some(idx) = kw_idx {
+            return self.children.get_first_name(Some(idx+1), false, true, false)
+        }
+        // "name alias" or "complicated column expression alias"
+        let ttypes = vec![TokenType::Whitespace];
+        let ws_idx = self.children.token_next_by(&ttypes, None, 0);
+        if self.children.len() > 2 && ws_idx.is_some() {
+            return self.children.get_first_name(Some(0), true, false, false)
+        }
+        None
+    }
+
 }
 
 pub fn tokenize(sql: &str) -> Vec<Token> {
