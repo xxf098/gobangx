@@ -444,5 +444,14 @@ mod tests {
         let parent_name = id.get_parent_name();
         assert_eq!(real_name, Some("person"));
         assert_eq!(parent_name, Some("test"));
+
+        let sql = "select * from person where ";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        let id = token_list.token_idx(Some(6)).unwrap();
+        let real_name = id.get_real_name();
+        let parent_name = id.get_parent_name();
+        assert_eq!(real_name, Some("person"));
+        assert_eq!(parent_name, None);
     }
 }
