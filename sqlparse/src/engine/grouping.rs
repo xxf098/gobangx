@@ -105,7 +105,7 @@ impl TokenList {
     fn group_identifier_list(&mut self) {
 
         fn matcher(token: &Token) -> bool {
-            token.typ == TokenType::Punctuation
+            token.typ == TokenType::Punctuation && token.value == ","
         }
 
         fn valid(token: Option<&Token>) -> bool {
@@ -243,7 +243,7 @@ impl TokenList {
         self.group_order();
         self.group_comparison();
         self.group_as();
-        // self.group_identifier_list();
+        self.group_identifier_list();
     }
 
     pub fn get_first_name(&self, idx: Option<usize>, reverse: bool, keywords: bool, real_name: bool) -> Option<&str> {
