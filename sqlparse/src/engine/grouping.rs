@@ -81,8 +81,20 @@ impl TokenList {
         idx.map(|i| self.tokens.get(i)).flatten()
     }
 
-    // extend
-    fn group_tokens(&mut self, group_type: TokenType, start: usize, end: usize) {
+    pub fn extend(&mut self, tokens: Vec<Token>) {
+        self.tokens.extend(tokens)
+    }
+
+    // extend: flatten tokens
+    fn group_tokens(&mut self, group_type: TokenType, start: usize, end: usize, extend: bool) {
+        if extend && self.tokens[start].typ == group_type {
+            let start_idx = start;
+            let sub_tokens = self.tokens[start_idx+1..end].to_vec();
+            let start = &mut self.tokens[start_idx];
+            start.children.extend(sub_tokens);
+            self.tokens.splice(start_idx+1..end, []).for_each(drop);
+            return
+        }
         let sub_tokens = self.tokens[start..end].to_vec();
         let group_token = vec![Token::new_parent(group_type, sub_tokens)];
         self.tokens.splice(start..end, group_token).for_each(drop);
@@ -98,7 +110,7 @@ impl TokenList {
         let ttypes = vec![TokenType::StringSymbol, TokenType::Name];
         let mut tidx = self.token_next_by(&ttypes, None, 0);
         while let Some(idx) = tidx {
-            self.group_tokens(TokenType::Identifier, idx, idx +1);
+            self.group_tokens(TokenType::Identifier, idx, idx +1, false);
             tidx = self.token_next_by(&ttypes, None, idx+1);
         }
     }   
@@ -137,8 +149,7 @@ impl TokenList {
         while let Some(idx) = tidx {
             let edix = self.token_next_by(&vec![], Some(&where_close), idx+1);
             let edix = edix.unwrap_or(self.tokens.len());
-            // println!("idx {} eidx {}", idx, edix);
-            self.group_tokens(TokenType::Where, idx, edix);
+            self.group_tokens(TokenType::Where, idx, edix, false);
             tidx = self.token_next_by(&vec![], Some(&where_open), idx);
         }
     }
@@ -168,8 +179,7 @@ impl TokenList {
             (pidx, nidx)
         }
 
-        group_internal(self, TokenType::Comparison, matcher, 
-            valid, valid, post, false, true);
+        group_internal(self, TokenType::Comparison, matcher, valid, valid, post, false, true);
      }
 
      // schema.table
@@ -229,7 +239,7 @@ impl TokenList {
             let prev = self.token_idx(pidx);
             let ttypes = vec![TokenType::Identifier, TokenType::Number];
             if Token::imt(prev, &ttypes, None) {
-                self.group_tokens(TokenType::Identifier, pidx.unwrap(), idx+1);
+                self.group_tokens(TokenType::Identifier, pidx.unwrap(), idx+1, false);
                 tidx = pidx;
             }
             tidx = self.token_next_by(&ttypes, None, tidx.unwrap()+1);
@@ -314,7 +324,7 @@ fn group_internal(
                 let next_ = tlist.token_idx(nidx);
                 if pidx.is_some() && prev_.is_some() && valid_prev(prev_.as_ref()) && valid_next(next_) {
                     let (from_idx, to_idx) = post(&tlist, pidx.unwrap(), idx, nidx.unwrap());
-                    tlist.group_tokens(group_type.clone(), from_idx, to_idx+1);
+                    tlist.group_tokens(group_type.clone(), from_idx, to_idx+1, extend);
                     pidx = Some(from_idx);
                     prev_ = tlist.token_idx(pidx).map(|t| t.clone());
                     // idx += 1;
@@ -441,13 +451,23 @@ mod tests {
         let mut token_list = TokenList::from(sql);
         token_list.group();
         let id = token_list.token_idx(Some(6)).unwrap();
-        println!("{}", id.children);
         let real_name = id.get_real_name();
         let parent_name = id.get_parent_name();
         let alias = id.get_alias();
         assert_eq!(real_name, Some("person"));
         assert_eq!(parent_name, Some("test"));
         assert_eq!(alias, Some("p"));
+
+        let sql = "select * from test.person where ";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        let id = token_list.token_idx(Some(6)).unwrap();
+        let real_name = id.get_real_name();
+        let parent_name = id.get_parent_name();
+        let alias = id.get_alias();
+        assert_eq!(real_name, Some("person"));
+        assert_eq!(parent_name, Some("test"));
+        assert_eq!(alias, None);
 
         let sql = "select * from person where ";
         let mut token_list = TokenList::from(sql);
