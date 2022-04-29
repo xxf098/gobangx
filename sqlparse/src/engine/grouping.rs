@@ -258,7 +258,7 @@ impl TokenList {
                 if ttypes.iter().find(|typ| **typ == token.typ).is_some() {
                     return Some(remove_quotes(&token.value))
                 } else if token.typ == TokenType::Identifier || token.typ == TokenType::Function {
-                    return if real_name { token.get_real_name() } else { token.get_real_name() }
+                    return if real_name { token.get_real_name() } else { token.get_name() }
                 }         
             }
         }
@@ -266,7 +266,7 @@ impl TokenList {
             if ttypes.iter().find(|typ| **typ == token.typ).is_some() {
                 return Some(remove_quotes(&token.value))
             } else if token.typ == TokenType::Identifier || token.typ == TokenType::Function {
-                return if real_name { token.get_real_name() } else { token.get_real_name() }
+                return if real_name { token.get_real_name() } else { token.get_name() }
             }         
         }
         None
@@ -436,14 +436,17 @@ mod tests {
 
     #[test]
     fn test_get_real_name() {
-        let sql = "select * from test.person where ";
+        let sql = "select * from test.person as p where ";
         let mut token_list = TokenList::from(sql);
         token_list.group();
         let id = token_list.token_idx(Some(6)).unwrap();
+        // println!("{}", id.children);
         let real_name = id.get_real_name();
         let parent_name = id.get_parent_name();
+        let alias = id.get_alias();
         assert_eq!(real_name, Some("person"));
         assert_eq!(parent_name, Some("test"));
+        assert_eq!(alias, Some("p"));
 
         let sql = "select * from person where ";
         let mut token_list = TokenList::from(sql);

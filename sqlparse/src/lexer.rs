@@ -84,7 +84,6 @@ impl Token {
     }
 
     pub fn get_alias(&self) -> Option<&str> {
-        // FIXME:
         if self.typ != TokenType::Identifier {
             return None
         }
