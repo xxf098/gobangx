@@ -1,6 +1,6 @@
 use std::convert::From;
 use std::fmt;
-use crate::lexer::{Token, TokenList, tokenize};
+use crate::lexer::{Token, TokenList, tokenize, remove_quotes};
 use crate::tokens::TokenType;
 
 const T_NUMERICAL: [TokenType; 3] = [TokenType::Number, TokenType::NumberInteger, TokenType::NumberFloat];
@@ -243,9 +243,8 @@ impl TokenList {
         self.group_order();
         self.group_comparison();
         self.group_as();
-        self.group_identifier_list();
+        // self.group_identifier_list();
     }
-
 
     pub fn get_first_name(&self, idx: Option<usize>, reverse: bool, keywords: bool, real_name: bool) -> Option<&str> {
         let idx = idx.unwrap_or(0);
@@ -275,17 +274,7 @@ impl TokenList {
 
 }
 
-fn remove_quotes(mut s: &str) -> &str {
-    if s.starts_with("\"") {
-        s = s.trim_start_matches("\"");
-        s.trim_end_matches("\"")
-    } else if s.starts_with("'") {
-        s = s.trim_start_matches("'");
-        s.trim_end_matches("'")
-    } else {
-        s
-    }
-}
+
 
 fn group_internal(
         tlist: &mut TokenList, 
@@ -443,5 +432,17 @@ mod tests {
         token_list.group();
         assert_eq!(token_list.tokens[10].typ, TokenType::Identifier);
         assert_eq!(token_list.tokens[10].value, "id desc");
+    }
+
+    #[test]
+    fn test_get_real_name() {
+        let sql = "select * from test.person where ";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        let id = token_list.token_idx(Some(6)).unwrap();
+        let real_name = id.get_real_name();
+        let parent_name = id.get_parent_name();
+        assert_eq!(real_name, Some("person"));
+        assert_eq!(parent_name, Some("test"));
     }
 }

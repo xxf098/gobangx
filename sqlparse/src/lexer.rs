@@ -59,17 +59,32 @@ impl Token {
         }
     }
 
+    pub fn get_name(&self) -> Option<&str> {
+        self.get_alias().or(self.get_real_name())
+    }
+
     // Returns the real name (object name) of this identifier.
     pub fn get_real_name(&self) -> Option<&str> {
-        if self.typ != TokenType::Identifier {
+        if !self.is_group() {
             return None
         }
         let patterns = (TokenType::Punctuation, vec!["."]);
-        let dot_idx = self.children.token_next_by(&vec![], Some(&patterns), 0);
-        self.children.get_first_name(dot_idx, false, false, true)
+        let children = &self.children;
+        let dot_idx = children.token_next_by(&vec![], Some(&patterns), 0);
+        children.get_first_name(dot_idx, false, false, true)
+    }
+
+    pub fn get_parent_name(&self) -> Option<&str> {
+        let pattern = (TokenType::Punctuation, vec!["."]);
+        let children = &self.children;
+        let dot_idx = children.token_next_by(&vec![], Some(&pattern), 0);
+        let prev_idx = dot_idx.map(|idx| children.token_prev(idx)).flatten();
+        let prev = children.token_idx(prev_idx);
+        prev.map(|p| remove_quotes(&p.value))
     }
 
     pub fn get_alias(&self) -> Option<&str> {
+        // FIXME:
         if self.typ != TokenType::Identifier {
             return None
         }
@@ -88,6 +103,18 @@ impl Token {
         None
     }
 
+}
+
+pub(crate) fn remove_quotes(mut s: &str) -> &str {
+    if s.starts_with("\"") {
+        s = s.trim_start_matches("\"");
+        s.trim_end_matches("\"")
+    } else if s.starts_with("'") {
+        s = s.trim_start_matches("'");
+        s.trim_end_matches("'")
+    } else {
+        s
+    }
 }
 
 pub fn tokenize(sql: &str) -> Vec<Token> {
