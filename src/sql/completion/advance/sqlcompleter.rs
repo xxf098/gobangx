@@ -51,20 +51,21 @@ pub struct AdvanceSQLCompleter {
     functions: Vec<&'static str>,
 }
 
-fn find_matches(text: &str, mut collection: &Vec<&str>, start_only: bool, fuzzy: bool) -> Vec<String> {
+fn find_matches(text: &str, collection: &Vec<&str>, start_only: bool, fuzzy: bool) -> Vec<String> {
     let last = last_word(text, "most_punctuations");
-    // collection.sort();
     let mut completions = vec![];
-    let s = if fuzzy { format!(r".*?{}", escape(last)) } 
-    else { format!(r"{}", escape(last)) };
+    let s = if fuzzy { last.chars().map(|c| format!(".*?{}", escape(&c.to_string()))).collect()} 
+    else if start_only { format!(r"^{}", escape(last)) }
+    else { format!(r".*{}", escape(last)) };
     let reg = RegexBuilder::new(&s).case_insensitive(true).build().unwrap();
     for word in collection {
-        if reg.find(word).is_some() {
+        if reg.is_match(word) {
             completions.push(word);
         }
     }
     let is_upper = last.chars().last().map(|c| c.is_uppercase()).unwrap_or(false);
-    let completions = completions.iter().map(|w| if is_upper { w.to_uppercase() } else { w.to_lowercase() }).collect::<Vec<_>>();
+    let mut completions = completions.iter().map(|w| if is_upper { w.to_uppercase() } else { w.to_lowercase() }).collect::<Vec<_>>();
+    completions.sort();
     completions
 }
 
@@ -80,8 +81,6 @@ impl AdvanceSQLCompleter {
         all_completions.extend(FUNCTIONS.to_vec());
         self.all_completions = all_completions.into_iter().map(|k| k.to_string()).collect();
     }
-
-
 
     fn get_completions(&self, full_text: &str) -> Vec<String>{
         let word_before_cursor = full_text;
@@ -125,5 +124,17 @@ impl Completion for AdvanceSQLCompleter {
 
     fn update_candidates(&mut self, candidates: &[String]) {
 
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_keyword() {
+        let completer = AdvanceSQLCompleter::new(DatabaseType::MySql, vec![]);
+        let completions = completer.get_completions("s");
+        println!("{:?}", completions);
     }
 }
