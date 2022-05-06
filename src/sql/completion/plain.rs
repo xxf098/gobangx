@@ -1,4 +1,4 @@
-use super::Completion;
+use super::{Completion, DbMetadata};
 use super::advance::last_word;
 use crate::config::{DatabaseType};
 
@@ -28,10 +28,18 @@ impl Completion for Plain {
         }).map(|c| c.clone()).collect::<Vec<_>>()
     }
 
-    fn update_candidates(&mut self, candidates: &[String]) {
+    fn update(&mut self, candidates: &[String], db_metadata: DbMetadata) {
         for candidate in candidates {
             if self.candidates.iter().find(|x| *x == candidate).is_none() {
                 self.candidates.push(candidate.clone())
+            }
+        }
+
+        for (k, cols) in db_metadata.tables {
+            for col in cols {
+                if self.candidates.iter().find(|x| **x == col).is_none() {
+                    self.candidates.push(col.clone())
+                }
             }
         }
     }

@@ -2,7 +2,7 @@ use super::{Component, EventState, MovableComponent};
 use crate::components::help_info::HelpInfo;
 use crate::config::{KeyConfig, Settings, DatabaseType};
 use crate::event::Key;
-use crate::sql::{Completion, Plain};
+use crate::sql::{Completion, Plain, DbMetadata};
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -77,7 +77,7 @@ impl<T: Completion> CompletionComponent<T> {
         //         self.candidates.push(candidate.clone())
         //     }
         // }
-        self.completion.update_candidates(candidates)
+        self.completion.update(candidates, DbMetadata::default())
     }
 
     fn next(&mut self) {
