@@ -6,12 +6,13 @@ use crate::config::{DatabaseType};
 pub use advance::Updater;
 
 pub struct DbMetadata {
-    tables: HashMap<String, Vec<String>>, // {"database.schema.table": vec!["col1", "col2", "col3"]}
+    tables: HashMap<String, Vec<String>>, // {"schema.table": vec!["col1", "col2", "col3"]}
+    dbname: String
 }
 
 impl Default for DbMetadata {
     fn default() -> Self {
-        Self { tables: HashMap::new() }
+        Self { tables: HashMap::new(), dbname: "".to_string() }
     }
 }
 

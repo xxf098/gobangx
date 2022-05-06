@@ -28,6 +28,7 @@ impl Updater {
         }
         let cols = headers.iter().map(|h| h.name.clone()).collect::<Vec<_>>();
         self.db_metadata.tables.insert(fullname, cols);
+        self.db_metadata.dbname = database.name.clone();
         return true
     }
 
