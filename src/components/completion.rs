@@ -22,6 +22,7 @@ pub struct CompletionComponent<T: Completion> {
     settings: Settings,
     state: ListState,
     word: String,
+    full_text: String,
     completion: T,
     visible: bool,
 }
@@ -41,6 +42,7 @@ impl<T: Completion> CompletionComponent<T> {
             settings,
             state: ListState::default(),
             word: word.into(),
+            full_text: "".to_string(),
             completion: T::new(DatabaseType::MySql, candidates),
             visible: false, 
         }
@@ -55,13 +57,15 @@ impl<T: Completion> CompletionComponent<T> {
             settings,
             state: ListState::default(),
             word: "".to_string(),
+            full_text: "".to_string(),
             completion: T::new(DatabaseType::MySql, candidates),
             visible: false,
         }
     }
 
-    pub fn update(&mut self, word: impl Into<String>) {
+    pub fn update(&mut self, word: impl Into<String>, full_text: impl Into<String>) {
         self.word = word.into();
+        self.full_text = full_text.into();
         self.visible = false;
         self.state.select(None);
         self.state.select(Some(0))
@@ -104,13 +108,13 @@ impl<T: Completion> CompletionComponent<T> {
         self.state.select(Some(i));
     }
 
-    fn filterd_candidates(&self) -> Vec<&String> {
+    fn filterd_candidates(&self) -> Vec<String> {
         // self.candidates.iter().filter(move |c| {
         //     (c.starts_with(self.word.to_lowercase().as_str())
         //         || c.starts_with(self.word.to_uppercase().as_str()))
         //         && !self.word.is_empty()
         // })
-        self.completion.complete("".to_string(), &self.word)
+        self.completion.complete(&self.full_text)
     }
 
     pub fn selected_candidate(&self) -> Option<String> {

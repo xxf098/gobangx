@@ -81,8 +81,9 @@ impl<'a> SqlEditorComponent<'a> {
             .split(' ')
             .map(|i| i.to_string())
             .collect::<Vec<String>>();
+        let full_text: String = self.input.iter().collect();
         self.completion
-            .update(input.last().unwrap_or(&String::new()));
+            .update(input.last().unwrap_or(&String::new()), full_text);
     }
 
     fn complete(&mut self) -> anyhow::Result<EventState> {
@@ -262,7 +263,7 @@ impl<'a> Component for SqlEditorComponent<'a> {
                     self.input_cursor_position_x = self
                         .input_cursor_position_x
                         .saturating_sub(compute_character_width(self.input[self.input_idx]));
-                    self.completion.update("");
+                    self.completion.update("", "");
                 }
                 return Ok(EventState::Consumed);
             }
@@ -271,7 +272,7 @@ impl<'a> Component for SqlEditorComponent<'a> {
                     let next_c = self.input[self.input_idx];
                     self.input_idx += 1;
                     self.input_cursor_position_x += compute_character_width(next_c);
-                    self.completion.update("");
+                    self.completion.update("", "");
                 }
                 return Ok(EventState::Consumed);
             }

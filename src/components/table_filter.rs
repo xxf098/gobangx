@@ -66,8 +66,9 @@ impl TableFilterComponent {
             .split(' ')
             .map(|i| i.to_string())
             .collect::<Vec<String>>();
+        let full_text: String = self.input.iter().collect();
         self.completion
-            .update(input.last().unwrap_or(&String::new()));
+            .update(input.last().unwrap_or(&String::new()), full_text);
     }
 
     fn complete(&mut self) -> anyhow::Result<EventState> {
@@ -223,7 +224,7 @@ impl Component for TableFilterComponent {
                     let last_c = self.input.remove(self.input_idx - 1);
                     self.input_idx -= 1;
                     self.input_cursor_position -= compute_character_width(last_c);
-                    self.completion.update("");
+                    self.completion.update("", "");
                 }
                 Ok(EventState::Consumed)
             }
@@ -233,7 +234,7 @@ impl Component for TableFilterComponent {
                     self.input_cursor_position = self
                         .input_cursor_position
                         .saturating_sub(compute_character_width(self.input[self.input_idx]));
-                    self.completion.update("");
+                    self.completion.update("", "");
                 }
                 Ok(EventState::Consumed)
             }
@@ -249,7 +250,7 @@ impl Component for TableFilterComponent {
                     let next_c = self.input[self.input_idx];
                     self.input_idx += 1;
                     self.input_cursor_position += compute_character_width(next_c);
-                    self.completion.update("");
+                    self.completion.update("", "");
                 }
                 Ok(EventState::Consumed)
             }
@@ -274,7 +275,7 @@ mod test {
         let mut filter = TableFilterComponent::new(KeyConfig::default(), Settings::default());
         filter.input_idx = 2;
         filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
-        filter.completion.update("an");
+        filter.completion.update("an", "");
         assert!(filter.complete().is_ok());
         assert_eq!(
             filter.input,
@@ -287,7 +288,7 @@ mod test {
         let mut filter = TableFilterComponent::new(KeyConfig::default(), Settings::default());
         filter.input_idx = 9;
         filter.input = vec!['a', 'b', ' ', 'c', 'd', 'e', 'f', ' ', 'i'];
-        filter.completion.update('i');
+        filter.completion.update('i', "");
         assert!(filter.complete().is_ok());
         assert_eq!(
             filter.input,
@@ -300,7 +301,7 @@ mod test {
         let mut filter = TableFilterComponent::new(KeyConfig::default(), Settings::default());
         filter.input_idx = 2;
         filter.input = vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g'];
-        filter.completion.update("foo");
+        filter.completion.update("foo", "");
         assert!(filter.complete().is_ok());
         assert_eq!(filter.input, vec!['a', 'n', ' ', 'c', 'd', 'e', 'f', 'g']);
     }
