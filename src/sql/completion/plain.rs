@@ -36,7 +36,10 @@ impl Completion for Plain {
         }
 
         if let Some(db_metadata) = db_metadata {
-            for (_, cols) in &db_metadata.tables {
+            for (key, cols) in &db_metadata.tables {
+                if self.candidates.iter().find(|x| **x == key.1).is_none() {
+                    self.candidates.push(key.1.clone())
+                }
                 for col in cols {
                     if self.candidates.iter().find(|x| *x == col).is_none() {
                         self.candidates.push(col.clone())

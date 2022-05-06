@@ -17,17 +17,13 @@ impl Updater {
 
     // if already exist,then return false 
     pub fn update(&mut self, database: &Database, table: &Table, headers: &Vec<Header>) -> bool {
-        let mut fullname = table.name.clone();
-        if let Some(schema) = &table.schema {
-            fullname = format!("{}.{}", schema, fullname);
-        }
-        fullname = format!{"{}.{}", database.name, fullname};
-        let cols = self.db_metadata.tables.get(&fullname);
+        let key = (table.schema.clone().unwrap_or("".to_string()),table.name.clone());
+        let cols = self.db_metadata.tables.get(&key);
         if cols.is_some() {
             return false
         }
         let cols = headers.iter().map(|h| h.name.clone()).collect::<Vec<_>>();
-        self.db_metadata.tables.insert(fullname, cols);
+        self.db_metadata.tables.insert(key, cols);
         self.db_metadata.dbname = database.name.clone();
         return true
     }

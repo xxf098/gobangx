@@ -6,7 +6,7 @@ use crate::config::{DatabaseType};
 pub use advance::Updater;
 
 pub struct DbMetadata {
-    tables: HashMap<String, Vec<String>>, // {"schema.table": vec!["col1", "col2", "col3"]}
+    tables: HashMap<(String, String), Vec<String>>, // {"(schema, table)": vec!["col1", "col2", "col3"]}
     dbname: String
 }
 
