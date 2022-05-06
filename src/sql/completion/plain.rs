@@ -28,17 +28,19 @@ impl Completion for Plain {
         }).map(|c| c.clone()).collect::<Vec<_>>()
     }
 
-    fn update(&mut self, candidates: &[String], db_metadata: DbMetadata) {
+    fn update(&mut self, candidates: &[String], db_metadata: Option<&DbMetadata>) {
         for candidate in candidates {
             if self.candidates.iter().find(|x| *x == candidate).is_none() {
                 self.candidates.push(candidate.clone())
             }
         }
 
-        for (k, cols) in db_metadata.tables {
-            for col in cols {
-                if self.candidates.iter().find(|x| **x == col).is_none() {
-                    self.candidates.push(col.clone())
+        if let Some(db_metadata) = db_metadata {
+            for (_, cols) in &db_metadata.tables {
+                for col in cols {
+                    if self.candidates.iter().find(|x| *x == col).is_none() {
+                        self.candidates.push(col.clone())
+                    }
                 }
             }
         }

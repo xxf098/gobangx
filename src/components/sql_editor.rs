@@ -6,6 +6,7 @@ use super::{
 use crate::components::help_info::HelpInfo;
 use crate::config::{KeyConfig, Settings, DatabaseType};
 use crate::database::{ExecuteResult, Pool};
+use crate::sql::DbMetadata;
 use crate::event::{Key, Store};
 use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
 use anyhow::Result;
@@ -51,12 +52,13 @@ pub struct SqlEditorComponent<'a> {
 impl<'a> SqlEditorComponent<'a> {
     pub fn new(key_config: &'a KeyConfig, settings: Settings, database_type: DatabaseType) -> Self {
         let db_type = database_type.clone();
+        let completion = PlainCompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into());
         Self {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position_x: 0,
             table: TableComponent::new(key_config.clone(), settings.clone()),
-            completion: PlainCompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into()),
+            completion: completion,
             focus: Focus::Editor,
             paragraph_state: ParagraphState::default(),
             query_result: None,
@@ -68,6 +70,10 @@ impl<'a> SqlEditorComponent<'a> {
 
     pub fn set_database_type(&mut self, database_type: DatabaseType) {
         self.database_type = database_type;
+    }
+
+    pub fn update_db_metadata(&mut self, db_metadata: &DbMetadata) {
+        self.completion.update_candidates(&vec![], Some(db_metadata));
     }
 
     fn update_completion(&mut self) {

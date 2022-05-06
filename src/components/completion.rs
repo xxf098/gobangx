@@ -71,13 +71,13 @@ impl<T: Completion> CompletionComponent<T> {
         self.state.select(Some(0))
     }
 
-    pub fn update_candidates(&mut self, candidates: &[String]) {
+    pub fn update_candidates(&mut self, candidates: &[String], db_metadata: Option<&DbMetadata>) {
         // for candidate in candidates {
         //     if self.candidates.iter().find(|x| *x == candidate).is_none() {
         //         self.candidates.push(candidate.clone())
         //     }
         // }
-        self.completion.update(candidates, DbMetadata::default())
+        self.completion.update(candidates, db_metadata)
     }
 
     fn next(&mut self) {

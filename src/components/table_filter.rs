@@ -52,7 +52,7 @@ impl TableFilterComponent {
     }
 
     pub fn update_candidates(&mut self, candidates: &[String]) {
-        self.completion.update_candidates(candidates)
+        self.completion.update_candidates(candidates, None)
     }
 
     fn update_completion(&mut self) {
