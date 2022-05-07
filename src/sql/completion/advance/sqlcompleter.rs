@@ -68,7 +68,7 @@ fn find_matches<T: AsRef<str>>(text: &str, collection: &[T], start_only: bool, f
 
 impl AdvanceSQLCompleter {
 
-    fn reset_completions(&mut self) {
+    pub fn reset_completions(&mut self) {
         // self.databases = vec![];
         self.users = vec![];
         self.show_items = vec![];
@@ -100,6 +100,19 @@ impl AdvanceSQLCompleter {
         return columns
     }
 
+    // get table names
+    // schema: schema name
+    // obj_type: tables, views
+    fn populate_schema_objects(&self, schema: &str, obj_type: &str) -> Vec<String> {
+        match obj_type {
+            "tables" => {
+                let tables = &self.dbmetadata.borrow().tables;
+                tables.iter().filter_map(|(k, _)| if k.0 == schema { Some(k.1.clone()) } else { None } ).collect()
+            },
+            _ => vec![],
+        }
+    }
+
     fn get_completions(&self, full_text: &str) -> Vec<String>{
         let word_before_cursor = full_text;
         let suggestions = suggest_type(full_text, full_text);
@@ -114,6 +127,11 @@ impl AdvanceSQLCompleter {
                     let scoped_cols = self.populate_scoped_cols(&tables);
                     let cols = find_matches(word_before_cursor, &scoped_cols, false, true);
                     completions.extend(cols)
+                },
+                SuggestType::Table(schema) => {
+                    let tables = self.populate_schema_objects(&schema, "tables");
+                    let tables = find_matches(word_before_cursor, &tables, false, true);
+                    completions.extend(tables)
                 },
                 _ => {}
            }

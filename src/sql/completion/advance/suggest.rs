@@ -4,7 +4,7 @@ use sqlparse::{ parse, Token, TokenType, TokenList };
 pub enum SuggestType {
     Keyword,
     Special,
-    Table,
+    Table(String), // Option<String>
     Schema(Vec<String>),
     Column(Vec<SuggestTable>),
     View(Vec<String>),
