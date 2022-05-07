@@ -5,6 +5,7 @@ use crate::sql::{Completion, DbMetadata};
 use crate::config::{DatabaseType};
 use super::{suggest_type, last_word, SuggestType, SuggestTable};
 
+/*
 const KEYWORDS: [&str; 134] = ["ACCESS","ADD","ALL","ALTER TABLE","AND","ANY","AS",
         "ASC","AUTO_INCREMENT","BEFORE","BEGIN","BETWEEN",
         "BIGINT","BINARY","BY","CASE","CHANGE MASTER TO","CHAR",
@@ -32,17 +33,19 @@ const KEYWORDS: [&str; 134] = ["ACCESS","ADD","ALL","ALTER TABLE","AND","ANY","A
 const FUNCTIONS: [&str; 19] = ["AVG","CONCAT","COUNT","DISTINCT","FIRST","FORMAT",
         "FROM_UNIXTIME","LAST","LCASE","LEN","MAX","MID",
         "MIN","NOW","ROUND","SUM","TOP","UCASE","UNIX_TIMESTAMP"];
+*/
 
 // TODO: &str
 pub struct AdvanceSQLCompleter {
     // databases: Vec<String>,
+    // db_type: DatabaseType,
     users: Vec<String>,
     show_items: Vec<String>,
     dbname: String,
     dbmetadata: Rc<RefCell<DbMetadata>>,
     all_completions: Vec<String>,
     keywords: Vec<&'static str>,
-    functions: Vec<&'static str>,
+    // functions: Vec<&'static str>,
 }
 
 fn find_matches<T: AsRef<str>>(text: &str, collection: &[T], start_only: bool, fuzzy: bool) -> Vec<String> {
@@ -71,9 +74,7 @@ impl AdvanceSQLCompleter {
         self.show_items = vec![];
         self.dbname = "".to_string();
         self.dbmetadata = Rc::new(RefCell::new(DbMetadata::default()));
-        let mut all_completions = KEYWORDS.to_vec();
-        all_completions.extend(FUNCTIONS.to_vec());
-        self.all_completions = all_completions.into_iter().map(|k| k.to_string()).collect();
+        self.all_completions = self.keywords.iter().map(|k| k.to_string()).collect::<Vec<_>>();
     }
 
     fn populate_scoped_cols(&self, scoped_tbls: &Vec<SuggestTable>) -> Vec<String> {
@@ -124,17 +125,17 @@ impl AdvanceSQLCompleter {
 impl Completion for AdvanceSQLCompleter {
     fn new(db_type: DatabaseType, _candidates: Vec<String>) -> Self {
         let dbmetadata = Rc::new(RefCell::new(DbMetadata::default()));
-        let mut all_completions = KEYWORDS.to_vec();
-        all_completions.extend(FUNCTIONS.to_vec());
+        let keywords: Vec<_> = db_type.clone().into();
+        let all_completions = keywords.iter().map(|k| k.to_string()).collect::<Vec<_>>();
         AdvanceSQLCompleter{
             // databases: vec![],
             users: vec![],
             show_items: vec![],
             dbname: "".to_string(),
             dbmetadata: dbmetadata,
-            all_completions: all_completions.into_iter().map(|k| k.to_string()).collect(),
-            keywords: KEYWORDS.to_vec(),
-            functions: FUNCTIONS.to_vec(),
+            all_completions: all_completions,
+            keywords: keywords,
+            // functions: FUNCTIONS.to_vec(),
         }
     }
 
