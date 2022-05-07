@@ -1,5 +1,4 @@
-use std::rc::Rc;
-use std::cell::RefCell;
+use std::sync::{Arc, RwLock};
 use regex::{escape, RegexBuilder};
 use crate::sql::{Completion, DbMetadata};
 use crate::config::{DatabaseType};
@@ -42,7 +41,7 @@ pub struct AdvanceSQLCompleter {
     users: Vec<String>,
     show_items: Vec<String>,
     dbname: String,
-    dbmetadata: Rc<RefCell<DbMetadata>>,
+    dbmetadata: Arc<RwLock<DbMetadata>>,
     all_completions: Vec<String>,
     keywords: Vec<&'static str>,
     // functions: Vec<&'static str>,
@@ -73,12 +72,12 @@ impl AdvanceSQLCompleter {
         self.users = vec![];
         self.show_items = vec![];
         self.dbname = "".to_string();
-        self.dbmetadata = Rc::new(RefCell::new(DbMetadata::default()));
+        self.dbmetadata = Arc::new(RwLock::new(DbMetadata::default()));
         self.all_completions = self.keywords.iter().map(|k| k.to_string()).collect::<Vec<_>>();
     }
 
     fn populate_scoped_cols(&self, scoped_tbls: &Vec<SuggestTable>) -> Vec<String> {
-        let meta = self.dbmetadata.borrow();
+        let meta = self.dbmetadata.read().unwrap();
         let mut columns = vec![];
         for tbl in scoped_tbls {
             let schema = tbl.schema.clone().unwrap_or(self.dbname.clone());
@@ -106,7 +105,7 @@ impl AdvanceSQLCompleter {
     fn populate_schema_objects(&self, schema: &str, obj_type: &str) -> Vec<String> {
         match obj_type {
             "tables" => {
-                let tables = &self.dbmetadata.borrow().tables;
+                let tables = &self.dbmetadata.read().unwrap().tables;
                 tables.iter().filter_map(|(k, _)| if k.0 == schema { Some(k.1.clone()) } else { None } ).collect()
             },
             _ => vec![],
@@ -142,7 +141,7 @@ impl AdvanceSQLCompleter {
 
 impl Completion for AdvanceSQLCompleter {
     fn new(db_type: DatabaseType, _candidates: Vec<String>) -> Self {
-        let dbmetadata = Rc::new(RefCell::new(DbMetadata::default()));
+        let dbmetadata = Arc::new(RwLock::new(DbMetadata::default()));
         let keywords: Vec<_> = db_type.clone().into();
         let all_completions = keywords.iter().map(|k| k.to_string()).collect::<Vec<_>>();
         AdvanceSQLCompleter{
@@ -161,9 +160,9 @@ impl Completion for AdvanceSQLCompleter {
         self.get_completions(full_text)
     }
 
-    fn update(&mut self, _candidates: &[String], db_metadata: Option<Rc<RefCell<DbMetadata>>>) {
+    fn update(&mut self, _candidates: &[String], db_metadata: Option<Arc<RwLock<DbMetadata>>>) {
         if let Some(db_metadata) = db_metadata {
-            self.dbname = db_metadata.borrow().dbname.clone();
+            self.dbname = db_metadata.read().unwrap().dbname.clone();
             self.dbmetadata = db_metadata;
         }
     }

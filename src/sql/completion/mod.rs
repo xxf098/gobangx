@@ -1,8 +1,7 @@
 pub mod plain;
 pub mod advance;
 
-use std::rc::Rc;
-use std::cell::RefCell;
+use std::sync::{Arc, RwLock};
 use std::collections::HashMap;
 use crate::config::{DatabaseType};
 pub use advance::Updater;
@@ -22,6 +21,6 @@ impl Default for DbMetadata {
 pub trait Completion {
     fn new(db_type: DatabaseType, candidates: Vec<String>) ->Self;
     fn complete(&self, full_text: &str) -> Vec<String>;
-    fn update(&mut self, candidates: &[String], db_metadata: Option<Rc<RefCell<DbMetadata>>>);
+    fn update(&mut self, candidates: &[String], db_metadata: Option<Arc<RwLock<DbMetadata>>>);
 }
 

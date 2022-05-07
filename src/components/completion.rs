@@ -1,5 +1,4 @@
-use std::rc::Rc;
-use std::cell::RefCell;
+use std::sync::{Arc, RwLock};
 use super::{Component, EventState, MovableComponent};
 use crate::components::help_info::HelpInfo;
 use crate::config::{KeyConfig, Settings, DatabaseType};
@@ -73,7 +72,7 @@ impl<T: Completion> CompletionComponent<T> {
         self.state.select(Some(0))
     }
 
-    pub fn update_candidates(&mut self, candidates: &[String], db_metadata: Option<Rc<RefCell<DbMetadata>>>) {
+    pub fn update_candidates(&mut self, candidates: &[String], db_metadata: Option<Arc<RwLock<DbMetadata>>>) {
         // for candidate in candidates {
         //     if self.candidates.iter().find(|x| *x == candidate).is_none() {
         //         self.candidates.push(candidate.clone())

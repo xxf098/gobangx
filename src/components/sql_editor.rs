@@ -1,5 +1,4 @@
-use std::rc::Rc;
-use std::cell::RefCell;
+use std::sync::{Arc, RwLock};
 use super::{
     compute_character_width, PlainCompletionComponent, Component, EventState, MovableComponent,
     StatefulDrawableComponent, TableComponent,
@@ -74,7 +73,7 @@ impl<'a> SqlEditorComponent<'a> {
         self.database_type = database_type;
     }
 
-    pub fn update_db_metadata(&mut self, db_metadata: Rc<RefCell<DbMetadata>>) {
+    pub fn update_db_metadata(&mut self, db_metadata: Arc<RwLock<DbMetadata>>) {
         self.completion.update_candidates(&vec![], Some(db_metadata));
     }
 
