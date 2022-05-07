@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 use super::{
-    compute_character_width, PlainCompletionComponent, Component, EventState, MovableComponent,
+    compute_character_width, AdvanceCompletionComponent, Component, EventState, MovableComponent,
     StatefulDrawableComponent, TableComponent,
     utils::highlight_sql,
 };
@@ -42,7 +42,7 @@ pub struct SqlEditorComponent<'a> {
     input_idx: usize,
     table: TableComponent,
     query_result: Option<QueryResult>,
-    completion: PlainCompletionComponent,
+    completion: AdvanceCompletionComponent,
     key_config: &'a KeyConfig,
     settings: Settings,
     paragraph_state: ParagraphState,
@@ -53,7 +53,7 @@ pub struct SqlEditorComponent<'a> {
 impl<'a> SqlEditorComponent<'a> {
     pub fn new(key_config: &'a KeyConfig, settings: Settings, database_type: DatabaseType) -> Self {
         let db_type = database_type.clone();
-        let completion = PlainCompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into());
+        let completion = AdvanceCompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into());
         Self {
             input: Vec::new(),
             input_idx: 0,

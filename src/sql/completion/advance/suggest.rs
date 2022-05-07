@@ -83,7 +83,7 @@ pub fn suggest_based_on_last_token(token: Option<&Token>, text_before_cursor: &s
             let parent = identifier.map(|id| id.get_parent_name()).flatten();
             let tables = extract_tables(full_text);
             let mut suggestions = vec![];
-            if let Some(p) = parent {
+            if let Some(_p) = parent {
                 unimplemented!()
             } else {
                 let alias = tables.iter().map(|t| t.alias.clone().unwrap_or(t.table.clone())).collect::<Vec<_>>();

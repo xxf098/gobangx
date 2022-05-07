@@ -1,4 +1,5 @@
 use std::sync::{Arc, RwLock};
+use itertools::Itertools;
 use regex::{escape, RegexBuilder};
 use crate::sql::{Completion, DbMetadata};
 use crate::config::{DatabaseType};
@@ -115,6 +116,7 @@ impl AdvanceSQLCompleter {
     fn get_completions(&self, full_text: &str) -> Vec<String>{
         let word_before_cursor = full_text;
         let suggestions = suggest_type(full_text, full_text);
+        // let suggestions = vec![SuggestType::Keyword, SuggestType::Column(vec![SuggestTable::new(Some("ldpipe"), "g_etl", None)])];
         let mut completions= vec![];
         for suggestion in suggestions {
            match suggestion {
@@ -135,7 +137,7 @@ impl AdvanceSQLCompleter {
                 _ => {}
            }
         }
-        completions
+        completions.into_iter().unique().collect()
     }
 }
 
