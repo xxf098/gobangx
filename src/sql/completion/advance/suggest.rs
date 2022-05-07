@@ -31,11 +31,6 @@ impl SuggestTable {
     }
 }
 
-struct Suggest {
-    typ: SuggestType,
-}
-
-
 // TODO: support multiple statement
 pub fn suggest_type(full_text: &str, text_before_cursor: &str) -> Vec<SuggestType> {
 

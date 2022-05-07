@@ -1,8 +1,9 @@
-use std::collections::HashMap;
+use std::rc::Rc;
+use std::cell::RefCell;
 use regex::{escape, RegexBuilder};
-use crate::sql::Completion;
+use crate::sql::{Completion, DbMetadata};
 use crate::config::{DatabaseType};
-use super::{suggest_type, SuggestType, last_word};
+use super::{suggest_type, last_word, SuggestType, SuggestTable};
 
 const KEYWORDS: [&str; 134] = ["ACCESS","ADD","ALL","ALTER TABLE","AND","ANY","AS",
         "ASC","AUTO_INCREMENT","BEFORE","BEGIN","BETWEEN",
@@ -33,11 +34,9 @@ const FUNCTIONS: [&str; 19] = ["AVG","CONCAT","COUNT","DISTINCT","FIRST","FORMAT
         "MIN","NOW","ROUND","SUM","TOP","UCASE","UNIX_TIMESTAMP"];
 
 pub fn get_completions() {
+
 }
 
-struct DbMetadata {
-    tables: HashMap<String, Vec<String>>,
-}
 
 // TODO: &str
 pub struct AdvanceSQLCompleter {
@@ -45,7 +44,7 @@ pub struct AdvanceSQLCompleter {
     users: Vec<String>,
     show_items: Vec<String>,
     dbname: String,
-    dbmetadata: DbMetadata,
+    dbmetadata: Rc<RefCell<DbMetadata>>,
     all_completions: Vec<String>,
     keywords: Vec<&'static str>,
     functions: Vec<&'static str>,
@@ -76,10 +75,18 @@ impl AdvanceSQLCompleter {
         self.users = vec![];
         self.show_items = vec![];
         self.dbname = "".to_string();
-        self.dbmetadata = DbMetadata{ tables: HashMap::new() };
+        self.dbmetadata = Rc::new(RefCell::new(DbMetadata::default()));
         let mut all_completions = KEYWORDS.to_vec();
         all_completions.extend(FUNCTIONS.to_vec());
         self.all_completions = all_completions.into_iter().map(|k| k.to_string()).collect();
+    }
+
+    fn populate_scoped_cols(&self, scoped_tbls: Vec<SuggestTable>) {
+        let meta = &self.dbmetadata;
+
+        for tbl in scoped_tbls {
+            
+        }
     }
 
     fn get_completions(&self, full_text: &str) -> Vec<String>{
@@ -92,6 +99,9 @@ impl AdvanceSQLCompleter {
                     let keywords = find_matches(word_before_cursor, &self.keywords, true, false);
                     completions.extend(keywords);
                 },
+                SuggestType::Column(tables) => {
+
+                },
                 _ => {}
            }
         }
@@ -100,10 +110,8 @@ impl AdvanceSQLCompleter {
 }
 
 impl Completion for AdvanceSQLCompleter {
-    fn new(db_type: DatabaseType, candidates: Vec<String>) -> Self {
-        let dbmetadata = DbMetadata{
-            tables: HashMap::new(),
-        };
+    fn new(db_type: DatabaseType, _candidates: Vec<String>) -> Self {
+        let dbmetadata = Rc::new(RefCell::new(DbMetadata::default()));
         let mut all_completions = KEYWORDS.to_vec();
         all_completions.extend(FUNCTIONS.to_vec());
         AdvanceSQLCompleter{
@@ -118,12 +126,15 @@ impl Completion for AdvanceSQLCompleter {
         }
     }
 
-    fn complete(&self, full_text: String, word: &String) -> Vec<&String> {
-        vec![]
+    fn complete(&self, full_text: &str) -> Vec<String> {
+        self.get_completions(full_text)
     }
 
-    fn update_candidates(&mut self, candidates: &[String]) {
-
+    fn update(&mut self, _candidates: &[String], db_metadata: Option<Rc<RefCell<DbMetadata>>>) {
+        if let Some(db_metadata) = db_metadata {
+            self.dbname = db_metadata.borrow().dbname.clone();
+            self.dbmetadata = db_metadata;
+        }
     }
 }
 

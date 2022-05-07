@@ -1,4 +1,3 @@
-use itertools::Itertools;
 use regex::Regex;
 use sqlparse::{Token, TokenType, parse, parse_no_grouping};
 use super::SuggestTable;

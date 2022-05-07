@@ -1,8 +1,10 @@
+use std::rc::Rc;
+use std::cell::RefCell;
 use super::{Component, EventState, MovableComponent};
 use crate::components::help_info::HelpInfo;
 use crate::config::{KeyConfig, Settings, DatabaseType};
 use crate::event::Key;
-use crate::sql::{Completion, Plain, DbMetadata};
+use crate::sql::{Completion, Plain, DbMetadata, AdvanceSQLCompleter};
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -71,7 +73,7 @@ impl<T: Completion> CompletionComponent<T> {
         self.state.select(Some(0))
     }
 
-    pub fn update_candidates(&mut self, candidates: &[String], db_metadata: Option<&DbMetadata>) {
+    pub fn update_candidates(&mut self, candidates: &[String], db_metadata: Option<Rc<RefCell<DbMetadata>>>) {
         // for candidate in candidates {
         //     if self.candidates.iter().find(|x| *x == candidate).is_none() {
         //         self.candidates.push(candidate.clone())
@@ -193,6 +195,8 @@ impl<T: Completion> Component for CompletionComponent<T> {
 }
 
 pub type PlainCompletionComponent  = CompletionComponent<Plain>;
+pub type AdvanceCompletionComponent  = CompletionComponent<AdvanceSQLCompleter>;
+
 
 #[cfg(test)]
 mod test {

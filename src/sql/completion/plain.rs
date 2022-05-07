@@ -1,3 +1,5 @@
+use std::rc::Rc;
+use std::cell::RefCell;
 use super::{Completion, DbMetadata};
 use super::advance::last_word;
 use crate::config::{DatabaseType};
@@ -28,7 +30,7 @@ impl Completion for Plain {
         }).map(|c| c.clone()).collect::<Vec<_>>()
     }
 
-    fn update(&mut self, candidates: &[String], db_metadata: Option<&DbMetadata>) {
+    fn update(&mut self, candidates: &[String], db_metadata: Option<Rc<RefCell<DbMetadata>>>) {
         for candidate in candidates {
             if self.candidates.iter().find(|x| *x == candidate).is_none() {
                 self.candidates.push(candidate.clone())
@@ -36,7 +38,7 @@ impl Completion for Plain {
         }
 
         if let Some(db_metadata) = db_metadata {
-            for (key, cols) in &db_metadata.tables {
+            for (key, cols) in &db_metadata.borrow().tables {
                 if self.candidates.iter().find(|x| **x == key.1).is_none() {
                     self.candidates.push(key.1.clone())
                 }
