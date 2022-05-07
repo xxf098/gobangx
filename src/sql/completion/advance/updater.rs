@@ -19,7 +19,7 @@ impl Updater {
 
     // if already exist,then return false 
     pub fn update(&mut self, database: &Database, table: &Table, headers: &Vec<Header>) -> bool {
-        let key = (table.schema.clone().unwrap_or("".to_string()),table.name.clone());
+        let key = (table.schema.clone().unwrap_or(database.name.clone()),table.name.clone());
         let db_metadata = self.db_metadata.borrow();
         let cols = db_metadata.tables.get(&key);
         if cols.is_some() {

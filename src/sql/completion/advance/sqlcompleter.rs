@@ -33,14 +33,9 @@ const FUNCTIONS: [&str; 19] = ["AVG","CONCAT","COUNT","DISTINCT","FIRST","FORMAT
         "FROM_UNIXTIME","LAST","LCASE","LEN","MAX","MID",
         "MIN","NOW","ROUND","SUM","TOP","UCASE","UNIX_TIMESTAMP"];
 
-pub fn get_completions() {
-
-}
-
-
 // TODO: &str
 pub struct AdvanceSQLCompleter {
-    databases: Vec<String>,
+    // databases: Vec<String>,
     users: Vec<String>,
     show_items: Vec<String>,
     dbname: String,
@@ -50,7 +45,7 @@ pub struct AdvanceSQLCompleter {
     functions: Vec<&'static str>,
 }
 
-fn find_matches(text: &str, collection: &Vec<&str>, start_only: bool, fuzzy: bool) -> Vec<String> {
+fn find_matches<T: AsRef<str>>(text: &str, collection: &[T], start_only: bool, fuzzy: bool) -> Vec<String> {
     let last = last_word(text, "most_punctuations");
     let mut completions = vec![];
     let s = if fuzzy { last.chars().map(|c| format!(".*?{}", escape(&c.to_string()))).collect()} 
@@ -58,12 +53,12 @@ fn find_matches(text: &str, collection: &Vec<&str>, start_only: bool, fuzzy: boo
     else { format!(r".*{}", escape(last)) };
     let reg = RegexBuilder::new(&s).case_insensitive(true).build().unwrap();
     for word in collection {
-        if reg.is_match(word) {
+        if reg.is_match(word.as_ref()) {
             completions.push(word);
         }
     }
     let is_upper = last.chars().last().map(|c| c.is_uppercase()).unwrap_or(false);
-    let mut completions = completions.iter().map(|w| if is_upper { w.to_uppercase() } else { w.to_lowercase() }).collect::<Vec<_>>();
+    let mut completions = completions.iter().map(|w| if is_upper { w.as_ref().to_uppercase() } else { w.as_ref().to_lowercase() }).collect::<Vec<_>>();
     completions.sort();
     completions
 }
@@ -71,7 +66,7 @@ fn find_matches(text: &str, collection: &Vec<&str>, start_only: bool, fuzzy: boo
 impl AdvanceSQLCompleter {
 
     fn reset_completions(&mut self) {
-        self.databases = vec![];
+        // self.databases = vec![];
         self.users = vec![];
         self.show_items = vec![];
         self.dbname = "".to_string();
@@ -81,12 +76,27 @@ impl AdvanceSQLCompleter {
         self.all_completions = all_completions.into_iter().map(|k| k.to_string()).collect();
     }
 
-    fn populate_scoped_cols(&self, scoped_tbls: Vec<SuggestTable>) {
-        let meta = &self.dbmetadata;
-
+    fn populate_scoped_cols(&self, scoped_tbls: &Vec<SuggestTable>) -> Vec<String> {
+        let meta = self.dbmetadata.borrow();
+        let mut columns = vec![];
         for tbl in scoped_tbls {
-            
+            let schema = tbl.schema.clone().unwrap_or(self.dbname.clone());
+            let relname = tbl.table.clone();
+            // let escaped_relname = "";
+            let key = (schema, relname);
+            if let Some(cols) = meta.tables.get(&key) {
+                // FIXME: use ref
+                columns.extend(cols.clone());
+                continue;
+            }
+            if let Some(cols) = meta.views.get(&key) {
+                // FIXME: use ref
+                columns.extend(cols.clone());
+                continue;
+            }
+
         }
+        return columns
     }
 
     fn get_completions(&self, full_text: &str) -> Vec<String>{
@@ -100,7 +110,9 @@ impl AdvanceSQLCompleter {
                     completions.extend(keywords);
                 },
                 SuggestType::Column(tables) => {
-
+                    let scoped_cols = self.populate_scoped_cols(&tables);
+                    let cols = find_matches(word_before_cursor, &scoped_cols, false, true);
+                    completions.extend(cols)
                 },
                 _ => {}
            }
@@ -115,7 +127,7 @@ impl Completion for AdvanceSQLCompleter {
         let mut all_completions = KEYWORDS.to_vec();
         all_completions.extend(FUNCTIONS.to_vec());
         AdvanceSQLCompleter{
-            databases: vec![],
+            // databases: vec![],
             users: vec![],
             show_items: vec![],
             dbname: "".to_string(),
