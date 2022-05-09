@@ -33,79 +33,79 @@ impl RegexToken {
 }
 
 #[inline]
-fn new_rt(s: &str, typ: TokenType) -> RegexToken{
-    RegexToken::new(s, typ, None, 0, true)
+fn new_rt(s: &str, typ: TokenType, ignore_case: bool) -> RegexToken{
+    RegexToken::new(s, typ, None, 0, ignore_case)
 }
 
 #[inline]
-fn new_cap(s: &str, typ: TokenType, i: usize) -> RegexToken{
-    RegexToken::new(s, typ, Some(i), 0, true)
+fn new_cap(s: &str, typ: TokenType, i: usize, ignore_case: bool) -> RegexToken{
+    RegexToken::new(s, typ, Some(i), 0, ignore_case)
 }
 
-
-pub fn sql_regex() -> Vec<RegexToken> {
+// R
+pub fn sql_regex(ignore_case: bool) -> Vec<RegexToken> {
     // let literal = create_string_regex(vec!["''", r#""""#, "``"]).unwrap();
     vec![
-        new_rt(r"(--|# )\+.*?(\r\n|\r|\n|$)", TokenType::CommentSingleHint),
-        new_rt(r"/\*\+[\s\S]*?\*/", TokenType::CommentMultilineHint),
+        new_rt(r"(--|# )\+.*?(\r\n|\r|\n|$)", TokenType::CommentSingleHint, ignore_case),
+        new_rt(r"/\*\+[\s\S]*?\*/", TokenType::CommentMultilineHint, ignore_case),
 
-        new_rt(r"(--|# ).*?(\r\n|\r|\n|$)", TokenType::CommentSingle),
-        new_rt(r"/\*[\s\S]*?\*/", TokenType::CommentMultiline),
+        new_rt(r"(--|# ).*?(\r\n|\r|\n|$)", TokenType::CommentSingle, ignore_case),
+        new_rt(r"/\*[\s\S]*?\*/", TokenType::CommentMultiline, ignore_case),
 
-        new_rt(r"(\r\n|\r|\n)", TokenType::Newline),
-        new_rt(r"\s+?", TokenType::Whitespace),
+        new_rt(r"(\r\n|\r|\n)", TokenType::Newline, ignore_case),
+        new_rt(r"\s+?", TokenType::Whitespace, ignore_case),
 
-        new_rt(r":=", TokenType::Assignment),
-        new_rt(r"::", TokenType::Punctuation),
+        new_rt(r":=", TokenType::Assignment, ignore_case),
+        new_rt(r"::", TokenType::Punctuation, ignore_case),
 
-        new_rt(r"\*", TokenType::Wildcard),
+        new_rt(r"\*", TokenType::Wildcard, ignore_case),
 
-        new_rt(r"`(``|[^`])*`", TokenType::Name),
-        new_rt(r"´(´´|[^´])*´", TokenType::Name),
+        new_rt(r"`(``|[^`])*`", TokenType::Name, ignore_case),
+        new_rt(r"´(´´|[^´])*´", TokenType::Name, ignore_case),
         // RegexToken::new_reg(literal, TokenType::Literal),
 
-        new_rt(r"\?", TokenType::NamePlaceholder),
-        new_rt(r"%(\(\w+\))?s", TokenType::NamePlaceholder),
+        new_rt(r"\?", TokenType::NamePlaceholder, ignore_case),
+        new_rt(r"%(\(\w+\))?s", TokenType::NamePlaceholder, ignore_case),
         // (r'(?<!\w)[$:?]\w+', tokens.Name.Placeholder),
 
-        new_rt(r"\\\w+", TokenType::Command),
-        new_rt(r"(NOT\s+)?(IN)\b", TokenType::OperatorComparison),
+        new_rt(r"\\\w+", TokenType::Command, ignore_case),
+        new_rt(r"(NOT\s+)?(IN)\b", TokenType::OperatorComparison, ignore_case),
 
-        new_rt(r"(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword),
+        new_rt(r"(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword, ignore_case),
 
-        new_rt(r"(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name),
-        new_cap(r"([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
+        new_rt(r"(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name, ignore_case),
+        new_cap(r"([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1, ignore_case),
         // FIXME: backword match
-        RegexToken::new(r"(?:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1, true),
-        new_cap(r"([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
+        RegexToken::new(r"(?:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1, ignore_case),
+        new_cap(r"([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1, ignore_case),
 
-        new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal),
-        new_rt(r"-?\d+(\.\d+)?E-?\d+", TokenType::NumberFloat),
-        new_rt(r"-?(\d+(\.\d*)|\.\d+)", TokenType::NumberFloat),
-        new_rt(r"(-\s*)?[0-9]+", TokenType::NumberInteger),
+        new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal, ignore_case),
+        new_rt(r"-?\d+(\.\d+)?E-?\d+", TokenType::NumberFloat, ignore_case),
+        new_rt(r"-?(\d+(\.\d*)|\.\d+)", TokenType::NumberFloat, ignore_case),
+        new_rt(r"(-\s*)?[0-9]+", TokenType::NumberInteger, ignore_case),
 
-        new_rt(r"'(''|\\\\|\\'|[^'])*'", TokenType::StringSingle),
-        new_rt(r#""(""|\\\\|\\"|[^"])*""#, TokenType::StringSymbol),
-        new_rt(r#"(""|".*?[^\\]")"#, TokenType::StringSymbol),
-        new_rt(r#"(?:[^\w\])])(\[[^\]\[]+\])"#, TokenType::Name),
+        new_rt(r"'(''|\\\\|\\'|[^'])*'", TokenType::StringSingle, ignore_case),
+        new_rt(r#""(""|\\\\|\\"|[^"])*""#, TokenType::StringSymbol, ignore_case),
+        new_rt(r#"(""|".*?[^\\]")"#, TokenType::StringSymbol, ignore_case),
+        new_rt(r#"(?:[^\w\])])(\[[^\]\[]+\])"#, TokenType::Name, ignore_case),
 
-        new_rt(r"((LEFT\s+|RIGHT\s+|FULL\s+)?(INNER\s+|OUTER\s+|STRAIGHT\s+)?|(CROSS\s+|NATURAL\s+)?)?JOIN\b", TokenType::Keyword),
-        new_rt(r"END(\s+IF|\s+LOOP|\s+WHILE)?\b", TokenType::Keyword),
-        new_rt(r"NOT\s+NULL\b", TokenType::Keyword),
-        new_rt(r"NULLS\s+(FIRST|LAST)\b", TokenType::Keyword),
-        new_rt(r"UNION\s+ALL\b", TokenType::Keyword),
-        new_rt(r"CREATE(\s+OR\s+REPLACE)?\b", TokenType::KeywordDDL),
-        new_rt(r"DOUBLE\s+PRECISION\b", TokenType::NameBuiltin),
-        new_rt(r"GROUP\s+BY\b", TokenType::Keyword),
-        new_rt(r"ORDER\s+BY\b", TokenType::Keyword),
-        new_rt(r"HANDLER\s+FOR\b", TokenType::Keyword),
-        new_rt(r"(LATERAL\s+VIEW\s+)(EXPLODE|INLINE|PARSE_URL_TUPLE|POSEXPLODE|STACK)\b", TokenType::Keyword),
-        new_rt(r"(AT|WITH')\s+TIME\s+ZONE\s+'[^']+'", TokenType::KeywordTZCast),
-        new_rt(r"(NOT\s+)?(LIKE|ILIKE|RLIKE)\b", TokenType::OperatorComparison),
-        new_rt(r"[0-9_A-ZÀ-Ü][_$#\w]*", TokenType::KeywordRaw),
-        new_rt(r"[;:()\[\],\.]", TokenType::Punctuation),
-        new_rt(r"[<>=~!]+", TokenType::OperatorComparison),
-        new_rt(r"[+/@#%^&|^-]+", TokenType::Operator)
+        new_rt(r"((LEFT\s+|RIGHT\s+|FULL\s+)?(INNER\s+|OUTER\s+|STRAIGHT\s+)?|(CROSS\s+|NATURAL\s+)?)?JOIN\b", TokenType::Keyword, ignore_case),
+        new_rt(r"END(\s+IF|\s+LOOP|\s+WHILE)?\b", TokenType::Keyword, ignore_case),
+        new_rt(r"NOT\s+NULL\b", TokenType::Keyword, ignore_case),
+        new_rt(r"NULLS\s+(FIRST|LAST)\b", TokenType::Keyword, ignore_case),
+        new_rt(r"UNION\s+ALL\b", TokenType::Keyword, ignore_case),
+        new_rt(r"CREATE(\s+OR\s+REPLACE)?\b", TokenType::KeywordDDL, ignore_case),
+        new_rt(r"DOUBLE\s+PRECISION\b", TokenType::NameBuiltin, ignore_case),
+        new_rt(r"GROUP\s+BY\b", TokenType::Keyword, ignore_case),
+        new_rt(r"ORDER\s+BY\b", TokenType::Keyword, ignore_case),
+        new_rt(r"HANDLER\s+FOR\b", TokenType::Keyword, ignore_case),
+        new_rt(r"(LATERAL\s+VIEW\s+)(EXPLODE|INLINE|PARSE_URL_TUPLE|POSEXPLODE|STACK)\b", TokenType::Keyword, ignore_case),
+        new_rt(r"(AT|WITH')\s+TIME\s+ZONE\s+'[^']+'", TokenType::KeywordTZCast, ignore_case),
+        new_rt(r"(NOT\s+)?(LIKE|ILIKE|RLIKE)\b", TokenType::OperatorComparison, ignore_case),
+        new_rt(r"[0-9_A-ZÀ-Ü][_$#\w]*", TokenType::KeywordRaw, ignore_case),
+        new_rt(r"[;:()\[\],\.]", TokenType::Punctuation, ignore_case),
+        new_rt(r"[<>=~!]+", TokenType::OperatorComparison, ignore_case),
+        new_rt(r"[+/@#%^&|^-]+", TokenType::Operator, ignore_case)
     ]
 }
 
@@ -177,7 +177,7 @@ mod tests {
 
     #[test]
     fn test_sql_regex() {
-        let regs = sql_regex();
+        let regs = sql_regex(true);
         assert!(regs.len() > 0)
     }
 

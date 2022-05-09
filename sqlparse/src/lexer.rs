@@ -117,7 +117,7 @@ pub(crate) fn remove_quotes(mut s: &str) -> &str {
 }
 
 pub fn tokenize(sql: &str) -> Vec<Token> {
-    let regs = sql_regex();
+    let regs = sql_regex(false);
     tokenize_internal(sql, &regs)
 }
 
@@ -160,11 +160,15 @@ pub fn tokenize_internal(sql: &str, regs: &[RegexToken]) -> Vec<Token> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Instant;
 
     #[test]
     fn test_get_tokens2() {
         let sql = "SELECT article, MAX(price) AS price FROM   shop GROUP BY article ORDER BY article;";
+        let now = Instant::now();
         let tokens = tokenize(sql);
+        let elapsed = now.elapsed().as_millis();
+        println!("elapsed: {}ms", elapsed);
         println!("{}", tokens.len());
         println!("{:?}", tokens);
     }

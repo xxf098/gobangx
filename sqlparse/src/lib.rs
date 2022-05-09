@@ -13,11 +13,16 @@ pub struct Parser {
 
 impl Default for Parser {
     fn default() -> Self {
-        Self { stack: engine::FilterStack::new() }
+        Self { stack: engine::FilterStack::new(false) }
     }
 }
 
+
 impl Parser {
+
+    pub fn new(ignore_case: bool) -> Self {
+        Self { stack: engine::FilterStack::new(ignore_case) }
+    }
 
     pub fn parse(&self, sql: &str) -> Vec<Token> {
         self.stack.run(sql, true)
@@ -30,13 +35,13 @@ impl Parser {
 
 // only for test
 pub fn parse(sql: &str) -> Vec<Token> {
-    let stack = engine::FilterStack::new();
+    let stack = engine::FilterStack::new(false);
     stack.run(sql, true)
 }
 
 // only for test
 pub fn parse_no_grouping(sql: &str) -> Vec<Token> {
-    let stack = engine::FilterStack::new();
+    let stack = engine::FilterStack::new(false);
     stack.run(sql, false)
 }
 
