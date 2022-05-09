@@ -7,14 +7,35 @@ mod tokens;
 pub use tokens::TokenType;
 pub use lexer::{Token, TokenList};
 
+pub struct Parser {
+    stack: engine::FilterStack,
+}
+
+impl Default for Parser {
+    fn default() -> Self {
+        Self { stack: engine::FilterStack::new() }
+    }
+}
+
+impl Parser {
+
+    pub fn parse(&self, sql: &str) -> Vec<Token> {
+        self.stack.run(sql, true)
+    }
+
+    pub fn parse_no_grouping(&self, sql: &str) -> Vec<Token> {
+        self.stack.run(sql, false)
+    }
+}
+
 pub fn parse(sql: &str) -> Vec<Token> {
-    let stack = engine::FilterStack::new(true);
-    stack.run(sql)
+    let stack = engine::FilterStack::new();
+    stack.run(sql, true)
 }
 
 pub fn parse_no_grouping(sql: &str) -> Vec<Token> {
-    let stack = engine::FilterStack::new(false);
-    stack.run(sql)
+    let stack = engine::FilterStack::new();
+    stack.run(sql, false)
 }
 
 #[cfg(test)]

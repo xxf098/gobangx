@@ -1,4 +1,4 @@
-use super::keywords::{sql_regex, is_keyword};
+use super::keywords::{sql_regex, is_keyword, RegexToken};
 use super::tokens::TokenType;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -117,13 +117,17 @@ pub(crate) fn remove_quotes(mut s: &str) -> &str {
 }
 
 pub fn tokenize(sql: &str) -> Vec<Token> {
+    let regs = sql_regex();
+    tokenize_internal(sql, &regs)
+}
+
+pub fn tokenize_internal(sql: &str, regs: &[RegexToken]) -> Vec<Token> {
     let mut tokens = vec![];
     let mut index = 0;
     let sql_len = sql.len();
-    let regs = sql_regex();
     while index < sql_len {
         let mut forawrd = 0;
-        for rt in &regs {
+        for rt in regs {
             let i = index.saturating_sub(rt.backward);
             let t = &sql[i..];
          

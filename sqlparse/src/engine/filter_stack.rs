@@ -1,24 +1,21 @@
-use crate::lexer::{Token, tokenize};
+use crate::lexer::{Token, tokenize_internal};
+use crate::keywords::{RegexToken, sql_regex};
 
 pub struct FilterStack {
-    grouping: bool
+    regs: Vec<RegexToken>,
 }
 
 
 impl FilterStack {
 
-    pub fn new(grouping: bool) -> Self {
-        Self { grouping }
-    }
-
-    fn _enable_grouping(&mut self) {
-        self.grouping = true
+    pub fn new() -> Self {
+        Self { regs: sql_regex() }
     }
 
     // TODO: support more than one sql
-    pub fn run(&self, sql: &str) -> Vec<Token> {
-        let mut tokens = tokenize(sql);
-        if self.grouping {
+    pub fn run(&self, sql: &str, grouping: bool) -> Vec<Token> {
+        let mut tokens = tokenize_internal(sql, &self.regs);
+        if grouping {
             tokens = super::grouping::group(tokens);
         }
         tokens
