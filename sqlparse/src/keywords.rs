@@ -42,7 +42,7 @@ fn new_cap(s: &str, typ: TokenType, i: usize, ignore_case: bool) -> RegexToken{
     RegexToken::new(s, typ, Some(i), 0, ignore_case)
 }
 
-// R
+// TODO: R
 pub fn sql_regex(ignore_case: bool) -> Vec<RegexToken> {
     // let literal = create_string_regex(vec!["''", r#""""#, "``"]).unwrap();
     vec![
