@@ -1,4 +1,3 @@
-pub mod completion_engine;
 pub mod sqlcompleter;
 pub mod utils;
 pub mod suggest;

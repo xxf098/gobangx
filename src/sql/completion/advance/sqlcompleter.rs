@@ -96,7 +96,6 @@ impl AdvanceSQLCompleter {
                 columns.extend(cols.clone());
                 continue;
             }
-
         }
         return columns
     }
@@ -126,8 +125,15 @@ impl AdvanceSQLCompleter {
                     completions.extend(keywords);
                 },
                 SuggestType::Column(tables) => {
-                    let scoped_cols = self.populate_scoped_cols(&tables);
-                    let cols = find_matches(word_before_cursor, &scoped_cols, false, true);
+                    let cols = if tables.is_empty() {
+                        let meta = self.dbmetadata.read().unwrap();
+                        let mut scoped_cols = vec![];
+                        meta.tables.iter().for_each(|(_, v)| scoped_cols.extend(v));
+                        find_matches(word_before_cursor, &scoped_cols, false, true)
+                    } else {
+                        let scoped_cols = self.populate_scoped_cols(&tables);
+                        find_matches(word_before_cursor, &scoped_cols, false, true)
+                    };
                     completions.extend(cols)
                 },
                 SuggestType::Table(schema) => {
