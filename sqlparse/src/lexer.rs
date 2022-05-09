@@ -181,6 +181,9 @@ mod tests {
         println!("{}", tokens.len());
         println!("{:?}", tokens);
         assert_eq!(tokens.len(), 31);
+        let sql_lower = "SELECT Orders.OrderID, Customers.CustomerName FROM Orders inner join Customers ON Orders.CustomerID = Customers.CustomerID;";
+        let tokens_lower = tokenize(sql_lower);
+        assert_eq!(tokens_lower.len(), 31);
     }
 
     #[test]
