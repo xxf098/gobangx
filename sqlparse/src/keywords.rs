@@ -12,9 +12,10 @@ pub struct RegexToken {
 
 impl RegexToken {
     
-    fn new(s: &str, typ: TokenType, capture: Option<usize>, backward: usize) -> Self {
+    fn new(s: &str, typ: TokenType, capture: Option<usize>, backward: usize, ignore_case: bool) -> Self {
+        let reg = if ignore_case { RegexBuilder::new(s).case_insensitive(true).build().unwrap() } else { Regex::new(s).unwrap() };
         Self{
-            reg: RegexBuilder::new(s).case_insensitive(true).build().unwrap(), 
+            reg, 
             typ,
             capture,
             backward,
@@ -33,12 +34,12 @@ impl RegexToken {
 
 #[inline]
 fn new_rt(s: &str, typ: TokenType) -> RegexToken{
-    RegexToken::new(s, typ, None, 0)
+    RegexToken::new(s, typ, None, 0, true)
 }
 
 #[inline]
 fn new_cap(s: &str, typ: TokenType, i: usize) -> RegexToken{
-    RegexToken::new(s, typ, Some(i), 0)
+    RegexToken::new(s, typ, Some(i), 0, true)
 }
 
 
@@ -75,7 +76,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r"(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name),
         new_cap(r"([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
         // FIXME: backword match
-        RegexToken::new(r"(?:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1),
+        RegexToken::new(r"(?:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1, true),
         new_cap(r"([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
 
         new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal),

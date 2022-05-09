@@ -132,8 +132,8 @@ pub fn tokenize_internal(sql: &str, regs: &[RegexToken]) -> Vec<Token> {
             let t = &sql[i..];
          
             let opt = match rt.capture {
-                Some(i) =>  rt.reg.captures(t).map(|c| c.get(i)).flatten(),
-                None =>  rt.reg.find(t)
+                Some(i) => rt.reg.captures(t).map(|c| c.get(i)).flatten(),
+                None => rt.reg.find(t)
             };
             if opt.is_none() || opt.unwrap().start() != rt.backward {
                 continue
