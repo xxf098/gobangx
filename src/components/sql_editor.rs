@@ -93,7 +93,7 @@ impl<'a> SqlEditorComponent<'a> {
             .update(input.last().unwrap_or(&String::new()), full_text);
     }
 
-    fn complete(&mut self) -> anyhow::Result<EventState> {
+    fn complete(&mut self, add_space: bool) -> anyhow::Result<EventState> {
         if let Some(candidate) = self.completion.selected_candidate() {
             let mut input = Vec::new();
             let first = self
@@ -123,7 +123,7 @@ impl<'a> SqlEditorComponent<'a> {
                     .chars()
                     .map(|c| c.to_string())
                     .collect::<Vec<String>>();
-                c.push(" ".to_string());
+                if add_space {  c.push(" ".to_string()); };
                 c
             };
 
@@ -151,7 +151,7 @@ impl<'a> SqlEditorComponent<'a> {
                 .chars()
                 .map(compute_character_width)
                 .sum::<u16>();
-            self.update_completion();
+            self.completion.reset();
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
@@ -231,7 +231,10 @@ impl<'a> Component for SqlEditorComponent<'a> {
         } else {
             if matches!(self.focus, Focus::Editor) {
                 if key[0] == self.key_config.enter {
-                    return self.complete();
+                    return self.complete(false);
+                }
+                if key[0] == self.key_config.space && self.completion.visible() {
+                    return self.complete(true);
                 }
                 if key[0] == self.key_config.move_up && self.completion.visible() {
                     return self.completion.event(key);

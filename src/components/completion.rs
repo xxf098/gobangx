@@ -72,6 +72,10 @@ impl<T: Completion> CompletionComponent<T> {
         self.state.select(Some(0))
     }
 
+    pub fn reset(&mut self) {
+        self.update("", "")
+    }
+
     pub fn update_candidates(&mut self, candidates: &[String], db_metadata: Option<Arc<RwLock<DbMetadata>>>) {
         // for candidate in candidates {
         //     if self.candidates.iter().find(|x| *x == candidate).is_none() {

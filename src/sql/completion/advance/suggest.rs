@@ -108,6 +108,9 @@ impl Suggest {
                     suggestions.extend(s);
                 }
                 suggestions
+            },
+            v if v.ends_with(",") => {
+                vec![SuggestType::Keyword, SuggestType::Special]
             }
             _ => vec![SuggestType::Keyword, SuggestType::Special]
         }

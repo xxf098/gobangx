@@ -28,11 +28,13 @@ impl Parser {
     }
 }
 
+// only for test
 pub fn parse(sql: &str) -> Vec<Token> {
     let stack = engine::FilterStack::new();
     stack.run(sql, true)
 }
 
+// only for test
 pub fn parse_no_grouping(sql: &str) -> Vec<Token> {
     let stack = engine::FilterStack::new();
     stack.run(sql, false)
@@ -41,6 +43,7 @@ pub fn parse_no_grouping(sql: &str) -> Vec<Token> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Instant;
 
     #[test]
     fn test_parse() {
@@ -59,5 +62,15 @@ mod tests {
         for token in tokens {
             println!("{:?} {}", token.typ, token.value);
         }
+    }
+
+    #[test]
+    fn test_parser1() {
+        let sql= "select l from test";
+        let p = Parser::default();
+        let now = Instant::now();
+        let _tokens = p.parse(sql);
+        let elapsed = now.elapsed();
+        println!("elapsed: {}ms", elapsed.as_millis());
     }
 }
