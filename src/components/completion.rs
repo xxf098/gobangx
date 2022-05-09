@@ -206,7 +206,7 @@ mod test {
         assert_eq!(
             PlainCompletionComponent::new(KeyConfig::default(), Settings::default(),"an", false)
                 .filterd_candidates(),
-            vec![&"AND".to_string()]
+            vec!["AND".to_string()]
         );
     }
 
@@ -215,7 +215,7 @@ mod test {
         assert_eq!(
             PlainCompletionComponent::new(KeyConfig::default(), Settings::default(), "AN", false)
                 .filterd_candidates(),
-            vec![&"AND".to_string()]
+            vec!["AND".to_string()]
         );
     }
 
@@ -224,13 +224,13 @@ mod test {
         assert_eq!(
             PlainCompletionComponent::new(KeyConfig::default(), Settings::default(), "n", false)
                 .filterd_candidates(),
-            vec![&"NOT".to_string(), &"NULL".to_string()]
+            vec!["NOT".to_string(), "NULL".to_string()]
         );
 
         assert_eq!(
             PlainCompletionComponent::new(KeyConfig::default(), Settings::default(), "N", false)
                 .filterd_candidates(),
-            vec![&"NOT".to_string(), &"NULL".to_string()]
+            vec!["NOT".to_string(), "NULL".to_string()]
         );
     }
 }

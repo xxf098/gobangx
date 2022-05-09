@@ -1,5 +1,5 @@
 use regex::Regex;
-use sqlparse::{Token, TokenType, parse, parse_no_grouping};
+use sqlparse::{Token, TokenType, Parser};
 use super::SuggestTable;
 
 const LOGICAL_OPERATORS: [&str; 4] = ["AND", "OR", "NOT", "BETWEEN"];
@@ -25,8 +25,8 @@ pub fn last_word<'a>(text: &'a str, include: &str) -> &'a str {
     }
 }
 
-pub fn find_prev_keyword(sql: &str) -> (Option<Token>, String) {
-    let parsed = parse_no_grouping(sql);
+pub fn find_prev_keyword(sql: &str, parser: &Parser) -> (Option<Token>, String) {
+    let parsed = parser.parse_no_grouping(sql);
     let pos = parsed.iter().rposition(|t| {
         t.value == "(" || (t.is_keyword() && LOGICAL_OPERATORS.iter().find(|l| **l == t.normalized).is_none())
     });
@@ -39,8 +39,8 @@ pub fn find_prev_keyword(sql: &str) -> (Option<Token>, String) {
     return (Some(token), sub_sql)
 }
 
-pub fn extract_tables(sql: &str) -> Vec<SuggestTable> {
-    let parsed = parse(sql);
+pub fn extract_tables(sql: &str, parser: &Parser) -> Vec<SuggestTable> {
+    let parsed = parser.parse(sql);
     if parsed.len() < 1 {
         return vec![]
     }
@@ -141,7 +141,8 @@ mod tests {
     #[test]
     fn test_find_prev_keyword() {
         let sql = "select * from users where id > 0";
-        let prev = find_prev_keyword(sql);
+        let p = Parser::default();
+        let prev = find_prev_keyword(sql, &p);
         assert!(prev.0.is_some());
         assert_eq!(prev.0.map(|p| p.value).unwrap(), "where");
         // println!("{:?}", prev)
@@ -150,7 +151,8 @@ mod tests {
     #[test]
     fn test_extract_tables() {
         let sql = "select * from test.person where ";
-        let suggestions = extract_tables(sql);
+        let p = Parser::default();
+        let suggestions = extract_tables(sql, &p);
         assert_eq!(suggestions.len(), 1);
         let suggestion = &suggestions[0];
         assert_eq!(suggestion.schema.as_deref(), Some("test"));

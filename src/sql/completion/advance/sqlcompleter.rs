@@ -3,7 +3,7 @@ use itertools::Itertools;
 use regex::{escape, RegexBuilder};
 use crate::sql::{Completion, DbMetadata};
 use crate::config::{DatabaseType};
-use super::{suggest_type, last_word, SuggestType, SuggestTable};
+use super::{last_word, SuggestType, SuggestTable, Suggest};
 
 /*
 const KEYWORDS: [&str; 134] = ["ACCESS","ADD","ALL","ALTER TABLE","AND","ANY","AS",
@@ -45,6 +45,7 @@ pub struct AdvanceSQLCompleter {
     dbmetadata: Arc<RwLock<DbMetadata>>,
     all_completions: Vec<String>,
     keywords: Vec<&'static str>,
+    suggest: Suggest,
     // functions: Vec<&'static str>,
 }
 
@@ -115,8 +116,8 @@ impl AdvanceSQLCompleter {
 
     fn get_completions(&self, full_text: &str) -> Vec<String>{
         let word_before_cursor = full_text;
-        let suggestions = suggest_type(full_text, full_text);
-        // let suggestions = vec![SuggestType::Keyword, SuggestType::Column(vec![SuggestTable::new(Some("ldpipe"), "g_etl", None)])];
+        let suggestions = self.suggest.suggest_type(full_text, full_text);
+        // let suggestions = vec![SuggestType::Keyword, SuggestType::Column(vec![SuggestTable::new(Some("main"), "logs", None)])];
         let mut completions= vec![];
         for suggestion in suggestions {
            match suggestion {
@@ -154,6 +155,7 @@ impl Completion for AdvanceSQLCompleter {
             dbmetadata: dbmetadata,
             all_completions: all_completions,
             keywords: keywords,
+            suggest: Suggest::default(), // TODO: init background
             // functions: FUNCTIONS.to_vec(),
         }
     }
@@ -173,11 +175,24 @@ impl Completion for AdvanceSQLCompleter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Instant;
+
 
     #[test]
     fn test_get_keyword() {
         let completer = AdvanceSQLCompleter::new(DatabaseType::MySql, vec![]);
         let completions = completer.get_completions("s");
         println!("{:?}", completions);
+    }
+
+    #[test]
+    fn test_suggest_type1() {
+        let suggest = Suggest::default();
+        let now = Instant::now();
+        let full_text = "select l";
+        let suggestions = suggest.suggest_type(full_text, full_text);
+        let elapsed = now.elapsed();
+        println!("elapsed: {:?}ms", elapsed.as_millis());
+        println!("{:?}", suggestions)
     }
 }
