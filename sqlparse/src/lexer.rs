@@ -138,6 +138,7 @@ pub fn tokenize_internal(sql: &str, regs: &[RegexToken]) -> Vec<Token> {
             if opt.is_none() || opt.unwrap().start() != rt.backward {
                 continue
             }
+            // println!("matched {}", rt.reg.as_str());
             let v = opt.unwrap().as_str();
             forawrd = v.len();
             let typ = match rt.typ {

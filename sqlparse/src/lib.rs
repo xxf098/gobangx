@@ -78,4 +78,14 @@ mod tests {
         let elapsed = now.elapsed();
         println!("elapsed: {}ms", elapsed.as_millis());
     }
+
+
+    #[test]
+    fn test_parser2() {
+        let sql= "s";
+        let p = Parser::default();
+        let tokens = p.parse(sql);
+        println!("{:?}", tokens);
+    }
+
 }

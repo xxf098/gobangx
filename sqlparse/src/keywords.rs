@@ -102,7 +102,7 @@ pub fn sql_regex(ignore_case: bool) -> Vec<RegexToken> {
         new_rt(r"(LATERAL\s+VIEW\s+)(EXPLODE|INLINE|PARSE_URL_TUPLE|POSEXPLODE|STACK)\b", TokenType::Keyword, ignore_case),
         new_rt(r"(AT|WITH')\s+TIME\s+ZONE\s+'[^']+'", TokenType::KeywordTZCast, ignore_case),
         new_rt(r"(NOT\s+)?(LIKE|ILIKE|RLIKE)\b", TokenType::OperatorComparison, ignore_case),
-        new_rt(r"[0-9_A-ZÀ-Ü][_$#\w]*", TokenType::KeywordRaw, ignore_case),
+        new_rt(r"(?i)[0-9_A-ZÀ-Ü][_$#\w]*", TokenType::KeywordRaw, ignore_case),
         new_rt(r"[;:()\[\],\.]", TokenType::Punctuation, ignore_case),
         new_rt(r"[<>=~!]+", TokenType::OperatorComparison, ignore_case),
         new_rt(r"[+/@#%^&|^-]+", TokenType::Operator, ignore_case)
