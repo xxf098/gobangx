@@ -116,8 +116,8 @@ pub(crate) fn remove_quotes(mut s: &str) -> &str {
     }
 }
 
-pub fn tokenize(sql: &str, ignore_case: bool) -> Vec<Token> {
-    let regs = sql_regex(ignore_case);
+pub fn tokenize(sql: &str) -> Vec<Token> {
+    let regs = sql_regex();
     tokenize_internal(sql, &regs)
 }
 
@@ -167,7 +167,7 @@ mod tests {
     fn test_get_tokens2() {
         let sql = "SELECT article, MAX(price) AS price FROM   shop GROUP BY article ORDER BY article;";
         let now = Instant::now();
-        let tokens = tokenize(sql, true);
+        let tokens = tokenize(sql);
         let elapsed = now.elapsed().as_millis();
         println!("elapsed: {}ms", elapsed);
         println!("{}", tokens.len());
@@ -177,7 +177,7 @@ mod tests {
     #[test]
     fn test_get_tokens3() {
         let sql = "SELECT Orders.OrderID, Customers.CustomerName FROM Orders INNER JOIN Customers ON Orders.CustomerID = Customers.CustomerID;";
-        let tokens = tokenize(sql, true);
+        let tokens = tokenize(sql);
         println!("{}", tokens.len());
         println!("{:?}", tokens);
         assert_eq!(tokens.len(), 31);
@@ -186,7 +186,7 @@ mod tests {
     #[test]
     fn test_get_tokens4() {
         let sql = "SELECT OrderID, Quantity, CASE WHEN Quantity > 30 THEN 'The quantity is greater than 30' WHEN Quantity = 30 THEN 'The quantity is 30' ELSE 'The quantity is under 30' END AS QuantityText FROM OrderDetails;";
-        let tokens = tokenize(sql, true);
+        let tokens = tokenize(sql);
         println!("{}", tokens.len());
         println!("{:?}", tokens);
         assert_eq!(tokens.len(), 48);

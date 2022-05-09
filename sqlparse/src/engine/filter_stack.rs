@@ -8,8 +8,8 @@ pub struct FilterStack {
 
 impl FilterStack {
 
-    pub fn new(ignore_case: bool) -> Self {
-        Self { regs: sql_regex(ignore_case) }
+    pub fn new() -> Self {
+        Self { regs: sql_regex() }
     }
 
     // TODO: support more than one sql

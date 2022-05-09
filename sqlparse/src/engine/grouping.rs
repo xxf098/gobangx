@@ -16,7 +16,7 @@ pub fn group(tokens: Vec<Token>) -> Vec<Token> {
 impl From<&str> for TokenList {
     
     fn from(sql: &str) -> Self {
-        let tokens = tokenize(sql, true);
+        let tokens = tokenize(sql);
         TokenList::new(tokens)
     }
 }
@@ -347,7 +347,7 @@ mod tests {
     #[test]
     fn test_group_identifier() {
         let sql = "select * from users;";
-        let tokens = tokenize(sql, true);
+        let tokens = tokenize(sql);
         let mut tokens = TokenList::new(tokens);
         tokens.group_identifier();
         println!("{:?}", tokens.tokens);
@@ -356,7 +356,7 @@ mod tests {
     #[test]
     fn test_group_where() {
         let sql = "select * from users where id > 10 limit 10;";
-        let tokens = tokenize(sql, true);
+        let tokens = tokenize(sql);
         let mut tokens = TokenList::new(tokens);
         tokens.group_where();
         println!("{:?}", tokens.tokens);
@@ -365,7 +365,7 @@ mod tests {
     #[test]
     fn test_group_where1() {
         let sql = "select * from users where id > 10;";
-        let tokens = tokenize(sql, true);
+        let tokens = tokenize(sql);
         let mut tokens = TokenList::new(tokens);
         tokens.group_where();
         println!("{:?}", tokens.tokens);
@@ -374,7 +374,7 @@ mod tests {
     #[test]
     fn test_group_comparison() {
         let sql = "select * from users where id > 0;";
-        let tokens = tokenize(sql, true);
+        let tokens = tokenize(sql);
         let mut token_list = TokenList::new(tokens);
         token_list.group_comparison();
         assert_eq!(token_list.tokens[10].typ, TokenType::Comparison)
