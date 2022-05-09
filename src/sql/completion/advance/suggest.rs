@@ -1,6 +1,5 @@
 use super::{last_word, find_prev_keyword, extract_tables};
 use sqlparse::{ Token, TokenType, TokenList, Parser };
-use std::time::Instant;
 
 #[derive(Debug)]
 pub enum SuggestType {
@@ -44,12 +43,14 @@ impl Suggest {
     pub fn suggest_type(&self, full_text: &str, text_before_cursor: &str) -> Vec<SuggestType> {
         let word_before_cursor = last_word(text_before_cursor, "many_punctuations");
         let mut identifier: Option<&Token> = None;
-        let p = &self.parser.parse(word_before_cursor)[0];
+        let mut tokens = vec![];
         
         let parsed: Vec<Token> =  if !word_before_cursor.is_empty() {
             if word_before_cursor.ends_with("(") {
                 self.parser.parse(text_before_cursor)
             } else {
+                tokens = self.parser.parse(word_before_cursor);
+                let p = &tokens[0];
                 let l = text_before_cursor.len() - word_before_cursor.len();
                 if p.children.len() > 0 && p.children.token_idx(Some(0)).map(|t| t.typ == TokenType::Identifier).unwrap_or(false) {
                     identifier = p.children.token_idx(Some(0))
