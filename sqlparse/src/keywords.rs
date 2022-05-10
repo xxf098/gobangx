@@ -70,15 +70,15 @@ pub fn sql_regex() -> Vec<RegexToken> {
         // (r'(?<!\w)[$:?]\w+', tokens.Name.Placeholder),
 
         new_rt(r"\\\w+", TokenType::Command),
-        new_rt(r"(NOT\s+)?(IN)\b", TokenType::OperatorComparison),
+        new_rt(r"(?i)(NOT\s+)?(IN)\b", TokenType::OperatorComparison),
 
-        new_rt(r"(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword),
+        new_rt(r"(?i)(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword),
 
-        new_rt(r"(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name),
-        new_cap(r"([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
+        new_rt(r"(?i)(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name),
+        new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
         // FIXME: backword match
-        RegexToken::new(r"(?:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1),
-        new_cap(r"([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
+        RegexToken::new(r"(?i:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1),
+        new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
 
         new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal),
         new_rt(r"-?\d+(\.\d+)?E-?\d+", TokenType::NumberFloat),
@@ -91,11 +91,11 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r#"(?:[^\w\])])(\[[^\]\[]+\])"#, TokenType::Name),
 
         new_rt(r"(?i)((LEFT\s+|RIGHT\s+|FULL\s+)?(INNER\s+|OUTER\s+|STRAIGHT\s+)?|(CROSS\s+|NATURAL\s+)?)?JOIN\b", TokenType::Keyword),
-        new_rt(r"END(\s+IF|\s+LOOP|\s+WHILE)?\b", TokenType::Keyword),
+        new_rt(r"(?i)END(\s+IF|\s+LOOP|\s+WHILE)?\b", TokenType::Keyword),
         new_rt(r"(?i)NOT\s+NULL\b", TokenType::Keyword),
-        new_rt(r"NULLS\s+(FIRST|LAST)\b", TokenType::Keyword),
-        new_rt(r"UNION\s+ALL\b", TokenType::Keyword),
-        new_rt(r"CREATE(\s+OR\s+REPLACE)?\b", TokenType::KeywordDDL),
+        new_rt(r"(?i)NULLS\s+(FIRST|LAST)\b", TokenType::Keyword),
+        new_rt(r"(?i)UNION\s+ALL\b", TokenType::Keyword),
+        new_rt(r"(?i)CREATE(\s+OR\s+REPLACE)?\b", TokenType::KeywordDDL),
         new_rt(r"(?i)DOUBLE\s+PRECISION\b", TokenType::NameBuiltin),
         new_rt(r"(?i)GROUP\s+BY\b", TokenType::Keyword),
         new_rt(r"(?i)ORDER\s+BY\b", TokenType::Keyword),

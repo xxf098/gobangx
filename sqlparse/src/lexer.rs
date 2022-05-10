@@ -197,10 +197,20 @@ mod tests {
 
     #[test]
     fn test_get_tokens5() {
-        let sql = "select * from test where name is NOT NULL ORDER BY id";
+        let sql = "select * from test where name is NOT NULL AND model LIKE '%a%' ORDER BY id";
         let tokens = tokenize(sql);
-        let sql_lower = "select * from test where name is not null order by id";
+        let sql_lower = "select * from test where name is not null and model like '%a%' order by id";
         let tokens_lower = tokenize(sql_lower);
         assert_eq!(tokens.len(), tokens_lower.len());
     }
+
+    #[test]
+    fn test_get_tokens6() {
+        let sql = "CREATE TABLE Persons (PersonID int, LastName varchar(255), FirstName varchar(255));";
+        let tokens = tokenize(sql);
+        let sql_lower = "create table Persons (PersonID int, LastName varchar(255), FirstName varchar(255));";
+        let tokens_lower = tokenize(sql_lower);
+        assert_eq!(tokens.len(), tokens_lower.len());
+    }
+
 }
