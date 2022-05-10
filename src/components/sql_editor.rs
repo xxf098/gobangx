@@ -234,7 +234,10 @@ impl<'a> Component for SqlEditorComponent<'a> {
                     return self.complete(false);
                 }
                 if key[0] == self.key_config.space && self.completion.visible() {
-                    return self.complete(true);
+                    let state = self.complete(true)?;
+                    if state.is_consumed() {
+                        return Ok(EventState::Consumed)
+                    }
                 }
                 if key[0] == self.key_config.move_up && self.completion.visible() {
                     return self.completion.event(key);

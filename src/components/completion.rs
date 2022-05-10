@@ -69,7 +69,7 @@ impl<T: Completion> CompletionComponent<T> {
         self.full_text = full_text.into();
         self.visible = false;
         self.state.select(None);
-        self.state.select(Some(0))
+        // self.state.select(Some(0))
     }
 
     pub fn reset(&mut self) {
