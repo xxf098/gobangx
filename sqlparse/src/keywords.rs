@@ -74,7 +74,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
 
         new_rt(r"(?i)(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword),
 
-        new_rt(r"(?i)(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name),
+        new_rt(r"(?i)(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name), // max name length is 64
         new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
         // FIXME: backword match
         RegexToken::new(r"(?i:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1),
@@ -103,7 +103,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r"(?i)(LATERAL\s+VIEW\s+)(EXPLODE|INLINE|PARSE_URL_TUPLE|POSEXPLODE|STACK)\b", TokenType::Keyword),
         new_rt(r"(?i)(AT|WITH')\s+TIME\s+ZONE\s+'[^']+'", TokenType::KeywordTZCast),
         new_rt(r"(?i)(NOT\s+)?(LIKE|ILIKE|RLIKE)\b", TokenType::OperatorComparison),
-        new_rt(r"(?i)[0-9_A-ZÀ-Ü][_$#\w]*", TokenType::KeywordRaw),
+        new_rt(r"(?i)[0-9_A-ZÀ-Ü][_$#\w]{1,26}", TokenType::KeywordRaw), // min length keyword: as, max length keyword: TRANSACTIONS_ROLLED_BACK TODO: move to special case
         new_rt(r"[;:()\[\],\.]", TokenType::Punctuation),
         new_rt(r"[<>=~!]+", TokenType::OperatorComparison),
         new_rt(r"[+/@#%^&|^-]+", TokenType::Operator)
