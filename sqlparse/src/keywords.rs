@@ -39,7 +39,7 @@ fn new_rt(s: &str, typ: TokenType) -> RegexToken{
 }
 
 #[inline]
-fn new_cap(s: &str, typ: TokenType, i: usize) -> RegexToken{
+fn _new_cap(s: &str, typ: TokenType, i: usize) -> RegexToken{
     RegexToken::new(s, typ, Some(i), 0)
 }
 
@@ -75,10 +75,10 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r"(?i)(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword),
 
         new_rt(r"(?i)(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name), // max name length is 64
-        new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
+        new_rt(r"(?i)[A-ZÀ-Ü]\w*(?:\s*\.)", TokenType::Name),
         // FIXME: backword match
         RegexToken::new(r"(?i:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1),
-        new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
+        new_rt(r"(?i)[A-ZÀ-Ü]\w*(?:\()", TokenType::Name),
 
         new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal),
         new_rt(r"-?\d+(\.\d+)?E-?\d+", TokenType::NumberFloat),
@@ -88,7 +88,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r"'(''|\\\\|\\'|[^'])*'", TokenType::StringSingle),
         new_rt(r#""(""|\\\\|\\"|[^"])*""#, TokenType::StringSymbol),
         new_rt(r#"(""|".*?[^\\]")"#, TokenType::StringSymbol),
-        new_rt(r#"(?:[^\w\])])(\[[^\]\[]+\])"#, TokenType::Name),
+        // new_rt(r#"(?:[^\w\])])(\[[^\]\[]+\])"#, TokenType::Name),
 
         new_rt(r"(?i)((LEFT\s+|RIGHT\s+|FULL\s+)?(INNER\s+|OUTER\s+|STRAIGHT\s+)?|(CROSS\s+|NATURAL\s+)?)?JOIN\b", TokenType::Keyword),
         new_rt(r"(?i)END(\s+IF|\s+LOOP|\s+WHILE)?\b", TokenType::Keyword),
@@ -175,6 +175,7 @@ pub fn is_keyword(k: &str) -> TokenType {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::time::Instant;
 
     #[test]
     fn test_sql_regex() {
@@ -195,5 +196,20 @@ mod tests {
         let c = reg.captures(".Orders").unwrap();
         println!("{:?}", c);
         assert_eq!(c.get(1).map(|m| m.as_str()), Some("Orders"))
+    }
+
+    #[test]
+    fn test_slow_regex() {
+        let reg = Regex::new(r"(?i)([A-ZÀ-Ü]\w*)(?:\s*\.)").unwrap();
+        let now = Instant::now();
+        let c = reg.captures("t.col").unwrap();
+        println!("captures {}", now.elapsed().as_micros());
+        println!("{:?}", c);
+        let reg = Regex::new(r"(?i)[A-ZÀ-Ü]\w*(?:\s*\.)").unwrap();
+        let s = "t.col";
+        let now = Instant::now();
+        let c = reg.find(s).unwrap();
+        println!("find {}", now.elapsed().as_micros());
+        println!("{:?}", &s[c.start()..c.end()]);
     }
 }
