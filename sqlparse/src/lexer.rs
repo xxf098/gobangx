@@ -196,9 +196,11 @@ mod tests {
     }
 
     #[test]
-    fn test_group_token() {
-        let v = vec![0,1,2,3];
-        let sub = v[1..2].to_vec();
-        println!("{:?}", sub);
+    fn test_get_tokens5() {
+        let sql = "select * from test where name is NOT NULL";
+        let tokens = tokenize(sql);
+        let sql_lower = "select * from test where name is not null";
+        let tokens_lower = tokenize(sql_lower);
+        assert_eq!(tokens.len(), tokens_lower.len());
     }
 }

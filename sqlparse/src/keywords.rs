@@ -92,7 +92,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
 
         new_rt(r"(?i)((LEFT\s+|RIGHT\s+|FULL\s+)?(INNER\s+|OUTER\s+|STRAIGHT\s+)?|(CROSS\s+|NATURAL\s+)?)?JOIN\b", TokenType::Keyword),
         new_rt(r"END(\s+IF|\s+LOOP|\s+WHILE)?\b", TokenType::Keyword),
-        new_rt(r"NOT\s+NULL\b", TokenType::Keyword),
+        new_rt(r"(?i)NOT\s+NULL\b", TokenType::Keyword),
         new_rt(r"NULLS\s+(FIRST|LAST)\b", TokenType::Keyword),
         new_rt(r"UNION\s+ALL\b", TokenType::Keyword),
         new_rt(r"CREATE(\s+OR\s+REPLACE)?\b", TokenType::KeywordDDL),
