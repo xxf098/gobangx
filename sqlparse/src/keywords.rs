@@ -39,7 +39,7 @@ fn new_rt(s: &str, typ: TokenType) -> RegexToken{
 }
 
 #[inline]
-fn _new_cap(s: &str, typ: TokenType, i: usize) -> RegexToken{
+fn new_cap(s: &str, typ: TokenType, i: usize) -> RegexToken{
     RegexToken::new(s, typ, Some(i), 0)
 }
 
@@ -70,15 +70,15 @@ pub fn sql_regex() -> Vec<RegexToken> {
         // (r'(?<!\w)[$:?]\w+', tokens.Name.Placeholder),
 
         new_rt(r"\\\w+", TokenType::Command),
-        new_rt(r"(?i)(NOT\s+)?(IN)\b", TokenType::OperatorComparison),
+        new_rt(r"(?i)NOT\s+IN\b", TokenType::OperatorComparison),
 
         new_rt(r"(?i)(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword),
 
         new_rt(r"(?i)(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name), // max name length is 64
-        new_rt(r"(?i)[A-ZÀ-Ü]\w*(?:\s*\.)", TokenType::Name),
+        new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
         // FIXME: backword match
         RegexToken::new(r"(?i:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1),
-        new_rt(r"(?i)[A-ZÀ-Ü]\w*(?:\()", TokenType::Name),
+        new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
 
         new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal),
         new_rt(r"-?\d+(\.\d+)?E-?\d+", TokenType::NumberFloat),
@@ -110,6 +110,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
     ]
 }
 
+// TODO: hash map
 pub fn is_keyword(k: &str) -> TokenType {
     let keyword = k.to_uppercase();
     match keyword.as_ref() {
