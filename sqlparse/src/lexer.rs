@@ -197,9 +197,9 @@ mod tests {
 
     #[test]
     fn test_get_tokens5() {
-        let sql = "select * from test where name is NOT NULL";
+        let sql = "select * from test where name is NOT NULL ORDER BY id";
         let tokens = tokenize(sql);
-        let sql_lower = "select * from test where name is not null";
+        let sql_lower = "select * from test where name is not null order by id";
         let tokens_lower = tokenize(sql_lower);
         assert_eq!(tokens.len(), tokens_lower.len());
     }
