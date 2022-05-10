@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn test_parser1() {
-        let sql= "select l from test";
+        let sql= "SELECT article, MAX(price) AS price FROM shop GROUP BY article ORDER BY article;";
         let p = Parser::default();
         let now = Instant::now();
         let _tokens = p.parse(sql);
@@ -86,6 +86,16 @@ mod tests {
         let p = Parser::default();
         let tokens = p.parse(sql);
         println!("{:?}", tokens);
+    }
+
+    #[test]
+    fn test_parser3() {
+        let sql= "SELECT COUNT(CustomerID), Country FROM Customers GROUP BY Country HAVING COUNT(CustomerID) > 5 ORDER BY COUNT(CustomerID) DESC;";
+        let p = Parser::default();
+        let now = Instant::now();
+        let _tokens = p.parse(sql);
+        let elapsed = now.elapsed();
+        println!("elapsed: {}ms", elapsed.as_millis());
     }
 
 }

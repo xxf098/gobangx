@@ -139,7 +139,8 @@ pub fn tokenize_internal(sql: &str, regs: &[RegexToken]) -> Vec<Token> {
                 continue
             }
             // println!("matched {}", rt.reg.as_str());
-            let v = opt.unwrap().as_str();
+            let opt = opt.unwrap();
+            let v = &t[opt.start()..opt.end()];
             forawrd = v.len();
             let typ = match rt.typ {
                 TokenType::KeywordRaw => is_keyword(v),
