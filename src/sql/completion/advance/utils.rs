@@ -25,10 +25,15 @@ pub fn last_word<'a>(text: &'a str, include: &str) -> &'a str {
     }
 }
 
+fn is_keyword_no_grouping(t: &Token) -> bool {
+    t.is_keyword() || t.typ == TokenType::KeywordDML || t.typ == TokenType::KeywordRaw
+}
+
 pub fn find_prev_keyword(sql: &str, parser: &Parser) -> (Option<Token>, String) {
     let parsed = parser.parse_no_grouping(sql);
+    // println!("parsed {:?}", parsed);
     let pos = parsed.iter().rposition(|t| {
-        t.value == "(" || (t.is_keyword() && LOGICAL_OPERATORS.iter().find(|l| **l == t.normalized).is_none())
+        t.value == "(" || (is_keyword_no_grouping(t) && LOGICAL_OPERATORS.iter().find(|l| **l == t.normalized).is_none())
     });
     if pos.is_none() {
         return (None, "".to_string())
@@ -146,6 +151,15 @@ mod tests {
         assert!(prev.0.is_some());
         assert_eq!(prev.0.map(|p| p.value).unwrap(), "where");
         // println!("{:?}", prev)
+    }
+
+    #[test]
+    fn test_find_prev_keyword1() {
+        let sql = "select id,";
+        let p = Parser::default();
+        let prev = find_prev_keyword(sql, &p);
+        assert!(prev.0.is_some());
+        assert_eq!(prev.0.map(|p| p.value).unwrap(), "select");
     }
 
     #[test]

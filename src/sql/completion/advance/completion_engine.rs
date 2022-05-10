@@ -109,13 +109,25 @@ impl Suggest {
                 }
                 suggestions
             },
-            v if v.ends_with(",") => {
-                vec![SuggestType::Keyword, SuggestType::Special]
+            v if v.ends_with(",") || is_operand(v) || ["=", "and", "or"].contains(&v) => {
+                let (prev_keyword, text_before_cursor) = find_prev_keyword(text_before_cursor, &self.parser);
+                if let Some(prev_keyword) = prev_keyword {
+                    self.suggest_based_on_last_token(Some(&prev_keyword), &text_before_cursor, &text_before_cursor, identifier)
+                } else {
+                    vec![]
+                }
             }
             _ => vec![SuggestType::Keyword, SuggestType::Special]
         }
     }
 
+}
+
+fn is_operand(op: &str) -> bool {
+    match op {
+        "+" | "-" | "*" | "/" => true,
+        _ => false,
+    }
 }
 
 /*

@@ -69,7 +69,7 @@ fn find_matches<T: AsRef<str>>(text: &str, collection: &[T], start_only: bool, f
 
 impl AdvanceSQLCompleter {
 
-    pub fn reset_completions(&mut self) {
+    pub fn _reset_completions(&mut self) {
         // self.databases = vec![];
         self.users = vec![];
         self.show_items = vec![];
@@ -196,6 +196,17 @@ mod tests {
         let suggest = Suggest::default();
         let now = Instant::now();
         let full_text = "select l";
+        let suggestions = suggest.suggest_type(full_text, full_text);
+        let elapsed = now.elapsed();
+        println!("elapsed: {:?}ms", elapsed.as_millis());
+        println!("{:?}", suggestions)
+    }
+
+    #[test]
+    fn test_suggest_type2() {
+        let suggest = Suggest::default();
+        let now = Instant::now();
+        let full_text = "select id,";
         let suggestions = suggest.suggest_type(full_text, full_text);
         let elapsed = now.elapsed();
         println!("elapsed: {:?}ms", elapsed.as_millis());
