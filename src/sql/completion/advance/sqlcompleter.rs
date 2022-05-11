@@ -109,6 +109,10 @@ impl AdvanceSQLCompleter {
                 let tables = &self.dbmetadata.read().unwrap().tables;
                 tables.clone()
             },
+            "schemas" => {
+                let schemas = &self.dbmetadata.read().unwrap().schemas;
+                schemas.clone()
+            },
             _ => vec![],
         }
     }

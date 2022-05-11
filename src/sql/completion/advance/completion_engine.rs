@@ -119,23 +119,27 @@ impl Suggest {
                 }
             }
             "copy" | "from" | "update" | "into" | "describe" | "truncate" | "desc" | "explain" => {
-                let schema = identifier.map(|i| i.get_parent_name()).flatten();
-                let mut suggest = vec![SuggestType::Table(schema.unwrap_or("").to_string())];
-                if schema.is_none() {
-                    suggest = vec![SuggestType::Schema(None), suggest[0].clone()];
-                }
-                if token_v != "truncate" {
-                    suggest.push(SuggestType::View(schema.unwrap_or("").to_string()));
-                }
-                suggest
+                suggest_schema(identifier, &token_v)
             },
             v if v.ends_with("join") && token.is_keyword() => {
-                vec![]
+                suggest_schema(identifier, &token_v)
             },
             _ => vec![SuggestType::Keyword, SuggestType::Special]
         }
     }
 
+}
+
+fn suggest_schema(identifier: Option<&Token>, token_v: &str) -> Vec<SuggestType> {
+    let schema = identifier.map(|i| i.get_parent_name()).flatten();
+    let mut suggest = vec![SuggestType::Table(schema.unwrap_or("").to_string())];
+    if schema.is_none() {
+        suggest = vec![SuggestType::Schema(None), suggest[0].clone()];
+    }
+    if token_v != "truncate" {
+        suggest.push(SuggestType::View(schema.unwrap_or("").to_string()));
+    }
+    suggest
 }
 
 fn is_operand(op: &str) -> bool {

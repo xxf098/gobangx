@@ -9,6 +9,7 @@ use crate::event::{Key, Store};
 use crate::clipboard::copy_to_clipboard;
 use crate::ui::common_nav;
 use crate::ui::scrolllist::draw_list_block;
+use crate::sql::Updater;
 use anyhow::Result;
 use database_tree::{Database, DatabaseTree, DatabaseTreeItem};
 use async_trait::async_trait;
@@ -64,7 +65,7 @@ impl<'a> DatabasesComponent<'a> {
         }
     }
 
-    pub async fn update(&mut self, connection: &Connection, pool: &Box<dyn Pool>) -> Result<()> {
+    pub async fn update(&mut self, connection: &Connection, pool: &Box<dyn Pool>, updater: &mut Updater) -> Result<()> {
         // TODO: load schema first
         let databases = match &connection.database {
             Some(database) => vec![Database::new(
@@ -76,6 +77,7 @@ impl<'a> DatabasesComponent<'a> {
         self.tree = DatabaseTree::new(databases.as_slice(), &BTreeSet::new())?;
         self.filterd_tree = None;
         self.filter.reset();
+        updater.update_from_databases(&databases);
         Ok(())
     }
 

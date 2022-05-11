@@ -191,7 +191,7 @@ impl<'a> App<'a> {
             ))
         };
         self.databases
-            .update(conn, self.pool.as_ref().unwrap())
+            .update(conn, self.pool.as_ref().unwrap(), &mut self.updater)
             .await?;
         self.focus = Focus::DabataseList;
         self.record_table.reset();
@@ -227,7 +227,7 @@ impl<'a> App<'a> {
                 ))
             };
             self.databases
-                .update(conn, self.pool.as_ref().unwrap())
+                .update(conn, self.pool.as_ref().unwrap(), &mut self.updater)
                 .await?;
             if is_focus { self.focus = Focus::DabataseList; }
             self.record_table.reset();
