@@ -41,6 +41,15 @@ impl Updater {
         });
     }
 
+    pub fn update_tables(&mut self, tables: Vec<String>) {
+        let mut db_metadata = self.db_metadata.write().unwrap();
+        tables.into_iter().for_each(|s| {
+            if db_metadata.tables.iter().find(|s1| *s1 == &s).is_none() {
+                db_metadata.tables.push(s)
+            }
+        });
+    }
+
     pub fn db_metadata(&self) -> Arc<RwLock<DbMetadata>> {
         self.db_metadata.clone()
     }
@@ -59,5 +68,15 @@ mod tests {
         let db_metadata = u.db_metadata();
         let db_metadata = db_metadata.read().unwrap();
         assert_eq!(db_metadata.schemas, vec!["schema1", "schema2", "schema3"])
+    }
+
+    #[test]
+    fn test_update_tables() {
+        let mut u = Updater::default();
+        let tables = vec!["table1".to_string(), "table2".to_string(), "table3".to_string()];
+        u.update_tables(tables);
+        let db_metadata = u.db_metadata();
+        let db_metadata = db_metadata.read().unwrap();
+        assert_eq!(db_metadata.tables, vec!["table1", "table2", "table3"])
     }
 }
