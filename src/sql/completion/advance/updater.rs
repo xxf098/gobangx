@@ -32,29 +32,29 @@ impl Updater {
         return true
     }
 
-    pub fn update_databases(&mut self, databases: Vec<String>) {
+    pub fn update_databases(&mut self, databases: Vec<&str>) {
         let mut db_metadata = self.db_metadata.write().unwrap();
         databases.into_iter().for_each(|s| {
             if db_metadata.databases.iter().find(|s1| *s1 == &s).is_none() {
-                db_metadata.databases.push(s)
+                db_metadata.databases.push(s.to_string())
             }
         });
     }
 
-    pub fn update_schemas(&mut self, schemas: Vec<String>) {
+    pub fn update_schemas(&mut self, schemas: Vec<&str>) {
         let mut db_metadata = self.db_metadata.write().unwrap();
         schemas.into_iter().for_each(|s| {
             if db_metadata.schemas.iter().find(|s1| *s1 == &s).is_none() {
-                db_metadata.schemas.push(s)
+                db_metadata.schemas.push(s.to_string())
             }
         });
     }
 
-    pub fn update_tables(&mut self, tables: Vec<String>) {
+    pub fn update_tables(&mut self, tables: Vec<&str>) {
         let mut db_metadata = self.db_metadata.write().unwrap();
         tables.into_iter().for_each(|s| {
             if db_metadata.tables.iter().find(|s1| *s1 == &s).is_none() {
-                db_metadata.tables.push(s)
+                db_metadata.tables.push(s.to_string())
             }
         });
     }
@@ -72,7 +72,7 @@ mod tests {
     #[test]
     fn test_update_schemas() {
         let mut u = Updater::default();
-        let schemas = vec!["schema1".to_string(), "schema2".to_string(), "schema3".to_string()];
+        let schemas = vec!["schema1", "schema2", "schema3"];
         u.update_schemas(schemas);
         let db_metadata = u.db_metadata();
         let db_metadata = db_metadata.read().unwrap();
@@ -82,7 +82,7 @@ mod tests {
     #[test]
     fn test_update_tables() {
         let mut u = Updater::default();
-        let tables = vec!["table1".to_string(), "table2".to_string(), "table3".to_string()];
+        let tables = vec!["table1", "table2", "table3"];
         u.update_tables(tables);
         let db_metadata = u.db_metadata();
         let db_metadata = db_metadata.read().unwrap();
