@@ -373,7 +373,7 @@ impl<'a> App<'a> {
                             .unwrap()
                             .get_records(&database, &table, 0, None, None)
                             .await?;
-                        if self.updater.update(&database, &table, &headers) {
+                        if self.updater.update_columns(&database, &table, &headers) {
                             self.sql_editor.update_db_metadata(self.updater.db_metadata());
                         }
                         self.record_table

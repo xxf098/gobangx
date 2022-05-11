@@ -17,7 +17,7 @@ impl Default for Updater {
 impl Updater {
 
     // if already exist,then return false 
-    pub fn update(&mut self, database: &Database, table: &Table, headers: &Vec<Header>) -> bool {
+    pub fn update_columns(&mut self, database: &Database, table: &Table, headers: &Vec<Header>) -> bool {
         let key = (table.schema.clone().unwrap_or(database.name.clone()),table.name.clone());
         let db_metadata = self.db_metadata.read().unwrap();
         let cols = db_metadata.tables.get(&key);
