@@ -9,12 +9,13 @@ pub use advance::Updater;
 pub struct DbMetadata {
     tables: HashMap<(String, String), Vec<String>>, // {"(schema, table)": vec!["col1", "col2", "col3"]}
     views: HashMap<(String, String), Vec<String>>,
-    dbname: String
+    dbname: String,
+    schemas: Vec<String>, // schema
 }
 
 impl Default for DbMetadata {
     fn default() -> Self {
-        Self { tables: HashMap::new(), views: HashMap::new(), dbname: "".to_string() }
+        Self { tables: HashMap::new(), views: HashMap::new(), dbname: "".to_string(), schemas: vec![], }
     }
 }
 

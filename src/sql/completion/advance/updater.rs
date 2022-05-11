@@ -32,8 +32,32 @@ impl Updater {
         return true
     }
 
+    pub fn update_schemas(&mut self, schemas: Vec<String>) {
+        let mut db_metadata = self.db_metadata.write().unwrap();
+        schemas.into_iter().for_each(|s| {
+            if db_metadata.schemas.iter().find(|s1| *s1 == &s).is_none() {
+                db_metadata.schemas.push(s)
+            }
+        });
+    }
+
     pub fn db_metadata(&self) -> Arc<RwLock<DbMetadata>> {
         self.db_metadata.clone()
     }
 }
 
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_update_schemas() {
+        let mut u = Updater::default();
+        let schemas = vec!["schema1".to_string(), "schema2".to_string(), "schema3".to_string()];
+        u.update_schemas(schemas);
+        let db_metadata = u.db_metadata();
+        let db_metadata = db_metadata.read().unwrap();
+        assert_eq!(db_metadata.schemas, vec!["schema1", "schema2", "schema3"])
+    }
+}
