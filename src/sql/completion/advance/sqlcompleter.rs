@@ -43,7 +43,7 @@ pub struct AdvanceSQLCompleter {
     show_items: Vec<String>,
     dbname: String,
     dbmetadata: Arc<RwLock<DbMetadata>>,
-    all_completions: Vec<String>,
+    // all_completions: Vec<String>,
     keywords: Vec<&'static str>,
     suggest: Suggest,
     // functions: Vec<&'static str>,
@@ -75,7 +75,7 @@ impl AdvanceSQLCompleter {
         self.show_items = vec![];
         self.dbname = "".to_string();
         self.dbmetadata = Arc::new(RwLock::new(DbMetadata::default()));
-        self.all_completions = self.keywords.iter().map(|k| k.to_string()).collect::<Vec<_>>();
+        // self.all_completions = self.keywords.iter().map(|k| k.to_string()).collect::<Vec<_>>();
     }
 
     fn populate_scoped_cols(&self, scoped_tbls: &Vec<SuggestTable>) -> Vec<String> {
@@ -103,11 +103,11 @@ impl AdvanceSQLCompleter {
     // get table names
     // schema: schema name
     // obj_type: tables, views
-    fn populate_schema_objects(&self, schema: &str, obj_type: &str) -> Vec<String> {
+    fn populate_schema_objects(&self, _schema: &str, obj_type: &str) -> Vec<String> {
         match obj_type {
             "tables" => {
-                let cols = &self.dbmetadata.read().unwrap().columns;
-                cols.iter().filter_map(|(k, _)| if k.0 == schema { Some(k.1.clone()) } else { None } ).collect()
+                let tables = &self.dbmetadata.read().unwrap().tables;
+                tables.clone()
             },
             _ => vec![],
         }
@@ -152,14 +152,14 @@ impl Completion for AdvanceSQLCompleter {
     fn new(db_type: DatabaseType, _candidates: Vec<String>) -> Self {
         let dbmetadata = Arc::new(RwLock::new(DbMetadata::default()));
         let keywords: Vec<_> = db_type.clone().into();
-        let all_completions = keywords.iter().map(|k| k.to_string()).collect::<Vec<_>>();
+        // let all_completions = keywords.iter().map(|k| k.to_string()).collect::<Vec<_>>();
         AdvanceSQLCompleter{
             // databases: vec![],
             users: vec![],
             show_items: vec![],
             dbname: "".to_string(),
             dbmetadata: dbmetadata,
-            all_completions: all_completions,
+            // all_completions: all_completions,
             keywords: keywords,
             suggest: Suggest::default(), // TODO: init background
             // functions: FUNCTIONS.to_vec(),

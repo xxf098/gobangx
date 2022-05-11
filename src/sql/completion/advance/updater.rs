@@ -1,5 +1,5 @@
 use std::sync::{Arc, RwLock};
-use database_tree::{Database, Table};
+use database_tree::{Database, Table, Child};
 use crate::sql::DbMetadata;
 use crate::database::meta::Header;
 
@@ -30,6 +30,22 @@ impl Updater {
         db_metadata.columns.insert(key, cols);
         db_metadata.current_db = database.name.clone();
         return true
+    }
+
+    pub fn update_from_databases(&mut self, databases: &[Database]) {
+        for database in databases {
+            self.update_databases(vec![&database.name]);
+            for child in &database.children {
+                match child {
+                    Child::Table(t)=> self.update_tables(vec![&t.name]),
+                    Child::Schema(s) => {
+                        self.update_schemas(vec![&s.name]);
+                        let tables = s.tables.iter().map(|t| t.name.as_str()).collect::<Vec<_>>();
+                        self.update_tables(tables);
+                    },
+                };
+            }
+        }
     }
 
     pub fn update_databases(&mut self, databases: Vec<&str>) {
