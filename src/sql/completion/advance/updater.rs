@@ -32,6 +32,15 @@ impl Updater {
         return true
     }
 
+    pub fn update_databases(&mut self, databases: Vec<String>) {
+        let mut db_metadata = self.db_metadata.write().unwrap();
+        databases.into_iter().for_each(|s| {
+            if db_metadata.databases.iter().find(|s1| *s1 == &s).is_none() {
+                db_metadata.databases.push(s)
+            }
+        });
+    }
+
     pub fn update_schemas(&mut self, schemas: Vec<String>) {
         let mut db_metadata = self.db_metadata.write().unwrap();
         schemas.into_iter().for_each(|s| {
