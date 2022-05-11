@@ -37,7 +37,7 @@ impl Completion for Plain {
         }
 
         if let Some(db_metadata) = db_metadata {
-            for (key, cols) in &db_metadata.read().unwrap().tables {
+            for (key, cols) in &db_metadata.read().unwrap().columns {
                 if self.candidates.iter().find(|x| **x == key.1).is_none() {
                     self.candidates.push(key.1.clone())
                 }

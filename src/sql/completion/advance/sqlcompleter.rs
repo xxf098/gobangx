@@ -86,7 +86,7 @@ impl AdvanceSQLCompleter {
             let relname = tbl.table.clone();
             // let escaped_relname = "";
             let key = (schema, relname);
-            if let Some(cols) = meta.tables.get(&key) {
+            if let Some(cols) = meta.columns.get(&key) {
                 // FIXME: use ref
                 columns.extend(cols.clone());
                 continue;
@@ -106,8 +106,8 @@ impl AdvanceSQLCompleter {
     fn populate_schema_objects(&self, schema: &str, obj_type: &str) -> Vec<String> {
         match obj_type {
             "tables" => {
-                let tables = &self.dbmetadata.read().unwrap().tables;
-                tables.iter().filter_map(|(k, _)| if k.0 == schema { Some(k.1.clone()) } else { None } ).collect()
+                let cols = &self.dbmetadata.read().unwrap().columns;
+                cols.iter().filter_map(|(k, _)| if k.0 == schema { Some(k.1.clone()) } else { None } ).collect()
             },
             _ => vec![],
         }
@@ -128,7 +128,7 @@ impl AdvanceSQLCompleter {
                     let cols = if tables.is_empty() {
                         let meta = self.dbmetadata.read().unwrap();
                         let mut scoped_cols = vec![];
-                        meta.tables.iter().for_each(|(_, v)| scoped_cols.extend(v));
+                        meta.columns.iter().for_each(|(_, v)| scoped_cols.extend(v));
                         find_matches(word_before_cursor, &scoped_cols, false, true)
                     } else {
                         let scoped_cols = self.populate_scoped_cols(&tables);
@@ -187,7 +187,7 @@ mod tests {
     #[test]
     fn test_get_keyword() {
         let completer = AdvanceSQLCompleter::new(DatabaseType::MySql, vec![]);
-        let completions = completer.get_completions("s");
+        let completions = completer.get_completions("sel");
         println!("{:?}", completions);
     }
 

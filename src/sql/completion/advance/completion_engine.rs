@@ -1,20 +1,20 @@
 use super::{last_word, find_prev_keyword, extract_tables};
 use sqlparse::{ Token, TokenType, TokenList, Parser };
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum SuggestType {
     Keyword,
     Special,
-    Table(String), // Option<String>
-    Schema(Vec<String>),
+    Table(String), // schema name
+    Schema(Option<String>), // database name
     Column(Vec<SuggestTable>),
-    View(Vec<String>),
+    View(String),
     Function(Vec<String>),
     Alias(Vec<String>),
     Show,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SuggestTable {
     pub schema: Option<String>,
     pub table: String,
@@ -118,6 +118,20 @@ impl Suggest {
                     vec![]
                 }
             }
+            "copy" | "from" | "update" | "into" | "describe" | "truncate" | "desc" | "explain" => {
+                let schema = identifier.map(|i| i.get_parent_name()).flatten();
+                let mut suggest = vec![SuggestType::Table(schema.unwrap_or("").to_string())];
+                if schema.is_none() {
+                    suggest = vec![SuggestType::Schema(None), suggest[0].clone()];
+                }
+                if token_v != "truncate" {
+                    suggest = vec![SuggestType::View(schema.unwrap_or("").to_string())];
+                }
+                suggest
+            },
+            v if v.ends_with("join") && token.is_keyword() => {
+                vec![]
+            },
             _ => vec![SuggestType::Keyword, SuggestType::Special]
         }
     }
