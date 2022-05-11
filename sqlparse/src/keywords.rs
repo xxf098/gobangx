@@ -102,8 +102,8 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r"(?i)HANDLER\s+FOR\b", TokenType::Keyword),
         new_rt(r"(?i)(LATERAL\s+VIEW\s+)(EXPLODE|INLINE|PARSE_URL_TUPLE|POSEXPLODE|STACK)\b", TokenType::Keyword),
         new_rt(r"(?i)(AT|WITH')\s+TIME\s+ZONE\s+'[^']+'", TokenType::KeywordTZCast),
-        new_rt(r"(?i)(NOT\s+)?(LIKE|ILIKE|RLIKE)\b", TokenType::OperatorComparison),
-        new_rt(r"(?i)[0-9_A-ZÀ-Ü][_$#\w]{1,26}", TokenType::KeywordRaw), // min length keyword: as, max length keyword: TRANSACTIONS_ROLLED_BACK TODO: move to special case
+        new_rt(r"(?i)NOT\s+(LIKE|ILIKE|RLIKE)\b", TokenType::OperatorComparison),
+        new_rt(r"(?i)[0-9_A-ZÀ-Ü][_$#\w]{0,26}", TokenType::KeywordRaw), // min length keyword: as, max length keyword: TRANSACTIONS_ROLLED_BACK TODO: move to special case
         new_rt(r"[;:()\[\],\.]", TokenType::Punctuation),
         new_rt(r"[<>=~!]+", TokenType::OperatorComparison),
         new_rt(r"[+/@#%^&|^-]+", TokenType::Operator)
@@ -116,7 +116,7 @@ pub fn is_keyword(k: &str) -> TokenType {
     match keyword.as_ref() {
         // KEYWORDS_COMMON
         "SELECT" | "INSERT" | "DELETE" | "UPDATE" | "UPSERT" |"REPLACE" |  "MERGE" | "DROP" | "CREATE" | "ALTER" => TokenType::KeywordDML,
-        "WHERE" |"FROM" |"INNER" |"JOIN" |"STRAIGHT_JOIN" |"AND" |"OR" |"LIKE" |"ON" |"IN" |"SET" => TokenType::Keyword,
+        "WHERE" |"FROM" |"INNER" |"JOIN" |"STRAIGHT_JOIN" |"AND" |"OR" |"LIKE" | "ILIKE" | "RLIKE" |"ON" |"IN" |"SET" => TokenType::Keyword,
         "BY" | "GROUP" |"ORDER" |"LEFT" |"OUTER" |"FULL" => TokenType::Keyword,
         "IF" |"END" |"THEN" |"LOOP" |"AS" |"ELSE" |"FOR" |"WHILE" => TokenType::Keyword,
         "CASE" | "WHEN" | "MIN" | "MAX" | "DISTINCT" => TokenType::Keyword,

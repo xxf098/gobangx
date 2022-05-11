@@ -85,6 +85,8 @@ mod tests {
         let sql= "s";
         let p = Parser::default();
         let tokens = p.parse(sql);
+        assert_eq!(tokens.len(), 1);
+        assert_eq!(tokens[0].typ, TokenType::Identifier);
         println!("{:?}", tokens);
     }
 
