@@ -7,9 +7,10 @@ use crate::config::{DatabaseType};
 pub use advance::Updater;
 
 pub struct DbMetadata {
-    columns: HashMap<(String, String), Vec<String>>, // {"(schema, table)": vec!["col1", "col2", "col3"]}
+    columns: HashMap<(String, String), Vec<String>>, // {"(database, schema, table)": vec!["col1", "col2", "col3"]}
     views: HashMap<(String, String), Vec<String>>,
-    dbname: String,
+    current_db: String,
+    databases: Vec<String>,
     schemas: Vec<String>, // schema
     tables: Vec<String>,
 }
@@ -18,8 +19,9 @@ impl Default for DbMetadata {
     fn default() -> Self {
         Self { 
             columns: HashMap::new(), 
-            views: HashMap::new(), 
-            dbname: "".to_string(), 
+            views: HashMap::new(),
+            current_db: "".to_string(), 
+            databases: vec![], 
             schemas: vec![],
             tables: vec![], 
         }

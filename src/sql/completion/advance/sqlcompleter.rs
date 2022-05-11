@@ -172,7 +172,7 @@ impl Completion for AdvanceSQLCompleter {
 
     fn update(&mut self, _candidates: &[String], db_metadata: Option<Arc<RwLock<DbMetadata>>>) {
         if let Some(db_metadata) = db_metadata {
-            self.dbname = db_metadata.read().unwrap().dbname.clone();
+            self.dbname = db_metadata.read().unwrap().current_db.clone();
             self.dbmetadata = db_metadata;
         }
     }
