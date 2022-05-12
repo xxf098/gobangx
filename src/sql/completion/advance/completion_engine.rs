@@ -10,7 +10,7 @@ pub enum SuggestType {
     Table(String), // schema name
     View(String),
     Column(Vec<SuggestTable>),
-    Function(Vec<String>),
+    Function(String),
     Alias(Vec<String>),
     Show,
 }
@@ -30,6 +30,12 @@ impl SuggestTable {
             table: table.to_string(), 
             alias: alias.map(|s| s.to_string()),
         }
+    }
+
+    pub fn identifies(&self, id: &str) -> bool {
+        self.alias.as_deref() == Some(id) || 
+        self.table == id ||
+        self.schema.as_ref().map(|s| format!("{}.{}", s, self.table)).as_deref() == Some(id)
     }
 }
 
@@ -102,12 +108,12 @@ impl Suggest {
                 let tables = extract_tables(full_text, &self.parser);
                 let mut suggestions = vec![];
                 if let Some(_p) = parent {
-                    unimplemented!()
+                    // TODO:
                 } else {
                     let alias = tables.iter().map(|t| t.alias.clone().unwrap_or(t.table.clone())).collect::<Vec<_>>();
                     let s = vec![
                         SuggestType::Column(tables),
-                        SuggestType::Function(vec![]),
+                        SuggestType::Function("".to_string()),
                         SuggestType::Alias(alias),
                         SuggestType::Keyword,
                     ];
@@ -119,6 +125,29 @@ impl Suggest {
             "copy" | "from" | "update" | "into" | "describe" | "truncate" | "desc" | "explain" => {
                 suggest_schema(identifier, &token_v)
             },
+            "on" => {
+                let tables = extract_tables(full_text, &self.parser);
+                let parent = identifier.map(|i| i.get_parent_name()).flatten();
+                if parent.is_some() {
+                    //  "ON parent.<suggestion>"
+                    let parent = parent.unwrap();
+                    let tables = tables.into_iter().filter(|t| t.identifies(parent)).collect::<Vec<_>>();
+                    vec![
+                        SuggestType::Column(tables),
+                        SuggestType::Table(parent.to_string()),
+                        SuggestType::View(parent.to_string()),
+                        SuggestType::Function(parent.to_string()),
+                    ]
+                } else {
+                    // ON <suggestion>
+                    let aliases = tables.iter().map(|t| t.alias.as_ref().unwrap_or(&t.table).clone()).collect::<Vec<_>>();
+                    if aliases.len() < 1 {
+                        vec![SuggestType::Alias(aliases), SuggestType::Table("".to_string())]
+                    } else {
+                        vec![SuggestType::Alias(aliases)]
+                    }
+                }
+            }
             "use" | "database" | "template" | "connect" => vec![SuggestType::Database],
             v if v.ends_with(",") || is_operand(v) || ["=", "and", "or"].contains(&v) => {
                 let (prev_keyword, text_before_cursor) = find_prev_keyword(text_before_cursor, &self.parser);
