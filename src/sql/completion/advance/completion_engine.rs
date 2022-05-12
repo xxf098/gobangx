@@ -12,7 +12,7 @@ pub enum SuggestType {
     Column(Vec<SuggestTable>),
     Function(Vec<String>),
     Alias(Vec<String>),
-    // Show,
+    Show,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -96,6 +96,7 @@ impl Suggest {
                 vec![SuggestType::Column(tables)]
             },
             "as" => vec![], // suggest nothing for an alias
+            "show" => vec![SuggestType::Show],
             "select" | "where" | "having" => {
                 let parent = identifier.map(|id| id.get_parent_name()).flatten();
                 let tables = extract_tables(full_text, &self.parser);
