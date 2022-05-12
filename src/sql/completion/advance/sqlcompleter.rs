@@ -39,7 +39,7 @@ const FUNCTIONS: [&str; 19] = ["AVG","CONCAT","COUNT","DISTINCT","FIRST","FORMAT
 pub struct AdvanceSQLCompleter {
     // databases: Vec<String>,
     // db_type: DatabaseType,
-    users: Vec<String>,
+    // users: Vec<String>,
     show_items: Vec<String>,
     dbname: String,
     dbmetadata: Arc<RwLock<DbMetadata>>,
@@ -71,7 +71,7 @@ impl AdvanceSQLCompleter {
 
     pub fn _reset_completions(&mut self) {
         // self.databases = vec![];
-        self.users = vec![];
+        // self.users = vec![];
         self.show_items = vec![];
         self.dbname = "".to_string();
         self.dbmetadata = Arc::new(RwLock::new(DbMetadata::default()));
@@ -154,6 +154,10 @@ impl AdvanceSQLCompleter {
                     let keywords = find_matches(word_before_cursor, &self.keywords, true, false);
                     completions.extend(keywords);
                 },
+                SuggestType::Show => {
+                    let show_items = find_matches(word_before_cursor, &self.show_items, false, true);
+                    completions.extend(show_items);
+                }
                 _ => {}
            }
         }
@@ -168,7 +172,7 @@ impl Completion for AdvanceSQLCompleter {
         // let all_completions = keywords.iter().map(|k| k.to_string()).collect::<Vec<_>>();
         AdvanceSQLCompleter{
             // databases: vec![],
-            users: vec![],
+            // users: vec![],
             show_items: vec![],
             dbname: "".to_string(),
             dbmetadata: dbmetadata,
