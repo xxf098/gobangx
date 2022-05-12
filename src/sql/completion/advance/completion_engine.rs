@@ -115,15 +115,11 @@ impl Suggest {
                 }
                 suggestions
             },
-            v if v.ends_with("join") && token.is_keyword() => {
-                suggest_schema(identifier, &token_v)
-            },
+            v if v.ends_with("join") && token.is_keyword() => suggest_schema(identifier, &token_v),
             "copy" | "from" | "update" | "into" | "describe" | "truncate" | "desc" | "explain" => {
                 suggest_schema(identifier, &token_v)
             },
-            "use" | "database" | "template" | "connect" => {
-                vec![SuggestType::Database]
-            }
+            "use" | "database" | "template" | "connect" => vec![SuggestType::Database],
             v if v.ends_with(",") || is_operand(v) || ["=", "and", "or"].contains(&v) => {
                 let (prev_keyword, text_before_cursor) = find_prev_keyword(text_before_cursor, &self.parser);
                 if let Some(prev_keyword) = prev_keyword {
