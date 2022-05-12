@@ -113,6 +113,10 @@ impl AdvanceSQLCompleter {
                 let schemas = &self.dbmetadata.read().unwrap().schemas;
                 schemas.clone()
             },
+            "databases" => {
+                let databases = &self.dbmetadata.read().unwrap().databases;
+                databases.clone()
+            },
             _ => vec![],
         }
     }
@@ -124,10 +128,6 @@ impl AdvanceSQLCompleter {
         let mut completions= vec![];
         for suggestion in suggestions {
            match suggestion {
-                SuggestType::Keyword => {
-                    let keywords = find_matches(word_before_cursor, &self.keywords, true, false);
-                    completions.extend(keywords);
-                },
                 SuggestType::Column(tables) => {
                     let cols = if tables.is_empty() {
                         let meta = self.dbmetadata.read().unwrap();
@@ -144,6 +144,15 @@ impl AdvanceSQLCompleter {
                     let tables = self.populate_schema_objects(&schema, "tables");
                     let tables = find_matches(word_before_cursor, &tables, false, true);
                     completions.extend(tables)
+                },
+                SuggestType::Database => {
+                    let databases = self.populate_schema_objects("", "databases");
+                    let databases = find_matches(word_before_cursor, &databases, false, true);
+                    completions.extend(databases)
+                },
+                SuggestType::Keyword => {
+                    let keywords = find_matches(word_before_cursor, &self.keywords, true, false);
+                    completions.extend(keywords);
                 },
                 _ => {}
            }
