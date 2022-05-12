@@ -91,7 +91,11 @@ impl Suggest {
             token_v = token.value.to_lowercase();
         }
         match token_v.as_ref() {
-            "set" | "order by" | "distinct" => vec![SuggestType::Keyword, SuggestType::Special],
+            "set" | "order by" | "distinct" => {
+                let tables = extract_tables(full_text, &self.parser);
+                vec![SuggestType::Column(tables)]
+            },
+            "as" => vec![], // suggest nothing for an alias
             "select" | "where" | "having" => {
                 let parent = identifier.map(|id| id.get_parent_name()).flatten();
                 let tables = extract_tables(full_text, &self.parser);
@@ -110,7 +114,6 @@ impl Suggest {
                 }
                 suggestions
             },
-            "as" => vec![], // suggest nothing for an alias
             v if v.ends_with("join") && token.is_keyword() => {
                 suggest_schema(identifier, &token_v)
             },
@@ -172,5 +175,13 @@ mod tests {
         let full_text = "use ";
         let suggestions = suggest.suggest_type(full_text, full_text);
         assert_eq!(suggestions[0], SuggestType::Database);
+    }
+
+    #[test]
+    fn test_extract_tables() {
+        let p = Parser::default();
+        let sql = "select id from logs order by ";
+        let tables = extract_tables(sql, &p);
+        println!("{:?}", tables);
     }
 }
