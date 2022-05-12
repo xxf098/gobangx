@@ -1,20 +1,21 @@
 use super::{last_word, find_prev_keyword, extract_tables};
 use sqlparse::{ Token, TokenType, TokenList, Parser };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum SuggestType {
     Keyword,
     Special,
-    Table(String), // schema name
+    Database,
     Schema(Option<String>), // database name
-    Column(Vec<SuggestTable>),
+    Table(String), // schema name
     View(String),
+    Column(Vec<SuggestTable>),
     Function(Vec<String>),
     Alias(Vec<String>),
     // Show,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SuggestTable {
     pub schema: Option<String>,
     pub table: String,
@@ -110,6 +111,15 @@ impl Suggest {
                 suggestions
             },
             "as" => vec![], // suggest nothing for an alias
+            v if v.ends_with("join") && token.is_keyword() => {
+                suggest_schema(identifier, &token_v)
+            },
+            "copy" | "from" | "update" | "into" | "describe" | "truncate" | "desc" | "explain" => {
+                suggest_schema(identifier, &token_v)
+            },
+            "use" | "database" | "template" | "connect" => {
+                vec![SuggestType::Database]
+            }
             v if v.ends_with(",") || is_operand(v) || ["=", "and", "or"].contains(&v) => {
                 let (prev_keyword, text_before_cursor) = find_prev_keyword(text_before_cursor, &self.parser);
                 if let Some(prev_keyword) = prev_keyword {
@@ -117,12 +127,6 @@ impl Suggest {
                 } else {
                     vec![]
                 }
-            }
-            "copy" | "from" | "update" | "into" | "describe" | "truncate" | "desc" | "explain" => {
-                suggest_schema(identifier, &token_v)
-            },
-            v if v.ends_with("join") && token.is_keyword() => {
-                suggest_schema(identifier, &token_v)
             },
             _ => vec![SuggestType::Keyword, SuggestType::Special]
         }
@@ -160,5 +164,13 @@ mod tests {
         let full_text = "select id from ";
         let suggestions = suggest.suggest_type(full_text, full_text);
         println!("{:?}", suggestions);
+    }
+
+    #[test]
+    fn test_suggest_database() {
+        let suggest = Suggest::default();
+        let full_text = "use ";
+        let suggestions = suggest.suggest_type(full_text, full_text);
+        assert_eq!(suggestions[0], SuggestType::Database);
     }
 }
