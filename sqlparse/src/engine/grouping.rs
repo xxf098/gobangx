@@ -135,7 +135,7 @@ impl TokenList {
             return Token::imt(token, &types, Some(&patterns))
         }
 
-        fn post(_tlist: &TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
+        fn post(_tlist: &mut TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
             (pidx, nidx)
         }
 
@@ -175,11 +175,37 @@ impl TokenList {
             }
         }
 
-        fn post(_tlist: &TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
+        fn post(_tlist: &mut TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
             (pidx, nidx)
         }
 
         group_internal(self, TokenType::Comparison, matcher, valid, valid, post, false, true);
+     }
+
+     fn group_operator(&mut self) {
+
+        fn matcher(token: &Token) -> bool {
+            token.typ == TokenType::Operator || token.typ == TokenType::Wildcard
+        }
+
+        fn valid(token: Option<&Token>) -> bool {
+            let mut types = T_NUMERICAL.iter()
+                .chain(&T_STRING)
+                .chain(&T_NAME)
+                .map(|t| t.clone())
+                .collect::<Vec<_>>();
+            types.extend(vec![TokenType::SquareBrackets, TokenType::Parenthesis, TokenType::Function, 
+                    TokenType::Identifier, TokenType::Operation, TokenType::TypedLiteral]);
+            Token::imt(token, &types, None) || 
+                token.map(|t| t.typ == TokenType::Keyword && (t.value == "CURRENT_DATE" || t.value == "CURRENT_TIME" || t.value == "CURRENT_TIMESTAMP")).unwrap_or(false)
+        }
+
+        fn post(tlist: &mut TokenList, pidx: usize, tidx: usize, nidx: usize) -> (usize, usize) {
+            tlist.tokens[tidx].typ = TokenType::Operator; 
+            (pidx, nidx)
+        }
+
+        group_internal(self, TokenType::Operation, matcher, valid, valid, post, false, true)
      }
 
      // schema.table
@@ -197,7 +223,7 @@ impl TokenList {
             true
         }
 
-        fn post(tlist: &TokenList, pidx: usize, tidx: usize, nidx: usize) -> (usize, usize) {
+        fn post(tlist: &mut TokenList, pidx: usize, tidx: usize, nidx: usize) -> (usize, usize) {
             let ttypes = vec![TokenType::Name, TokenType::StringSymbol, TokenType::Wildcard, TokenType::SquareBrackets, TokenType::Function];
             let next = tlist.token_idx(Some(nidx));
             let valid_next = Token::imt(next, &ttypes, None);
@@ -223,7 +249,7 @@ impl TokenList {
             !Token::imt(token, &ttypes, None)
         }
 
-        fn post(_tlist: &TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
+        fn post(_tlist: &mut TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
             (pidx, nidx)
         }
 
@@ -252,6 +278,7 @@ impl TokenList {
         self.group_period();
         self.group_identifier();
         self.group_order();
+        self.group_operator();
         self.group_comparison();
         self.group_as();
         self.group_identifier_list();
@@ -285,15 +312,14 @@ impl TokenList {
 
 }
 
-
-
+// TODO: interface Grouping
 fn group_internal(
         tlist: &mut TokenList, 
         group_type: TokenType,
         matcher: fn(&Token) -> bool,
         valid_prev: fn(Option<&Token>) -> bool,
         valid_next: fn(Option<&Token>) -> bool,
-        post: fn(tlist: &TokenList, pidx: usize, tidx: usize, nidx: usize) -> (usize, usize),
+        post: fn(tlist: &mut TokenList, pidx: usize, tidx: usize, nidx: usize) -> (usize, usize),
         extend: bool,
         recurse: bool,
     ) {
@@ -323,7 +349,7 @@ fn group_internal(
                 let nidx = tlist.token_next(idx+1);
                 let next_ = tlist.token_idx(nidx);
                 if pidx.is_some() && prev_.is_some() && valid_prev(prev_.as_ref()) && valid_next(next_) {
-                    let (from_idx, to_idx) = post(&tlist, pidx.unwrap(), idx, nidx.unwrap());
+                    let (from_idx, to_idx) = post(tlist, pidx.unwrap(), idx, nidx.unwrap());
                     tlist.group_tokens(group_type.clone(), from_idx, to_idx+1, extend);
                     pidx = Some(from_idx);
                     prev_ = tlist.token_idx(pidx).map(|t| t.clone());
@@ -477,5 +503,15 @@ mod tests {
         let parent_name = id.get_parent_name();
         assert_eq!(real_name, Some("person"));
         assert_eq!(parent_name, None);
+    }
+
+    #[test]
+    fn test_group_operator() {
+        let sqls = vec!["foo+100", "foo + 100", "foo*100"];
+        for sql in sqls {
+            let mut token_list = TokenList::from(sql);
+            token_list.group();
+            assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Operation);
+        }
     }
 }
