@@ -312,6 +312,35 @@ impl TokenList {
 
 }
 
+fn group_matching(tlist: &mut TokenList, typ: &TokenType, open: &str, close: &str) {
+    // Groups Tokens that have beginning and end.
+    let mut opens = vec![];
+    let mut tidx_offset = 0;
+    for (idx, token) in tlist.tokens.iter_mut().enumerate() {
+        let tidx = idx - tidx_offset;
+        if token.is_whitespace() {
+            continue
+        }
+        if token.is_group() && token.typ != *typ {
+            group_matching(&mut token.children, typ, open, close);
+            continue
+        }
+        if token.value == open {
+            opens.push(tidx);
+        } else if token.value == close {
+            if opens.len() < 1 {
+                continue
+            }
+            let open_idx = opens[opens.len()-1];
+            opens.truncate(opens.len()-1);
+            let close_idx = tidx;
+            std::mem::drop(token);
+            tlist.group_tokens(typ.clone(), open_idx, close_idx, false);
+            tidx_offset += close_idx - open_idx;
+        }
+    }
+}
+
 // TODO: interface Grouping
 fn group_internal(
         tlist: &mut TokenList, 
