@@ -104,6 +104,10 @@ impl TokenList {
         group_matching(self, &TokenType::Parenthesis, "(", ")");
     }
 
+    fn group_case(&mut self) {
+        group_matching(self, &TokenType::Case, "CASE", "END");
+    }
+
     fn group_identifier(&mut self) {
         // TODO: macro
         for token in self.tokens.iter_mut() {
@@ -307,6 +311,7 @@ impl TokenList {
 
         // group_matching
         self.group_parenthesis();
+        self.group_case();
 
         self.group_where();
         self.group_period();
@@ -366,9 +371,9 @@ fn group_matching(tlist: &mut TokenList, typ: &TokenType, open: &str, close: &st
             continue
         }
         idx += 1;
-        if token.value == open {
+        if token.normalized == open {
             opens.push(tidx);
-        } else if token.value == close {
+        } else if token.normalized == close {
             if opens.len() < 1 {
                 continue
             }
@@ -614,5 +619,14 @@ mod tests {
         let mut token_list = TokenList::from(sql);
         token_list.group();
         assert_eq!(token_list.tokens[0].children.token_idx(Some(1)).unwrap().typ, TokenType::Comparison);
+    }
+
+    #[test]
+    fn test_grouping_subquery_no_parens() {
+        let sql = "CASE WHEN 1 THEN select 2 where foo = 1 end";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        assert_eq!(token_list.len(), 1);
+        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Case);
     }
 }
