@@ -514,4 +514,12 @@ mod tests {
             assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Operation);
         }
     }
+
+    #[test]
+    fn test_grouping_where() {
+        let sql = "select * from foo where bar = 1 order by id desc";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        assert_eq!(token_list.len(), 12);
+    }
 }
