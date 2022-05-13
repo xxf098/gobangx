@@ -100,6 +100,10 @@ impl TokenList {
         self.tokens.splice(start..end, group_token).for_each(drop);
     }
 
+    fn group_parenthesis(&mut self) {
+        group_matching(self, &TokenType::Parenthesis, "(", ")");
+    }
+
     fn group_identifier(&mut self) {
         // TODO: macro
         for token in self.tokens.iter_mut() {
@@ -256,6 +260,32 @@ impl TokenList {
         group_internal(self, TokenType::Identifier, matcher, valid_prev, valid_next, post, true, true);
     }
 
+    fn group_functions(&mut self) {
+        let mut has_create = false;
+        let mut has_table = false;
+        for tmp_token in &self.tokens {
+            if tmp_token.normalized == "CREATE" {
+                has_create = true;
+            }
+            if tmp_token.normalized == "TABLE" {
+                has_table = true;
+            }
+        }
+        if has_create && has_table {
+            return
+        }
+        let ttypes = vec![TokenType::Name];
+        let mut tidx = self.token_next_by(&ttypes, None, 0);
+        while let Some(idx) = tidx {
+            let nidx = self.token_next(idx+1);
+            let next = self.token_idx(nidx);
+            if next.map(|n| n.typ == TokenType::Parenthesis).unwrap_or(false) {
+                self.group_tokens(TokenType::Function, idx, nidx.unwrap(), false)
+            }
+            tidx =  self.token_next_by(&ttypes, None, idx+1);
+        }
+    }
+
     //  Group together Identifier and Asc/Desc token
     fn group_order(&mut self) {
         let ttypes = vec![TokenType::KeywordOrder];
@@ -274,6 +304,10 @@ impl TokenList {
     }
 
     fn group(&mut self) {
+
+        // group_matching
+        self.group_parenthesis();
+
         self.group_where();
         self.group_period();
         self.group_identifier();
@@ -316,15 +350,22 @@ fn group_matching(tlist: &mut TokenList, typ: &TokenType, open: &str, close: &st
     // Groups Tokens that have beginning and end.
     let mut opens = vec![];
     let mut tidx_offset = 0;
-    for (idx, token) in tlist.tokens.iter_mut().enumerate() {
+    let count = tlist.tokens.len();
+    let mut idx = 0;
+    while idx < count {
         let tidx = idx - tidx_offset;
+        let token = &tlist.tokens[idx];
         if token.is_whitespace() {
+            idx += 1;
             continue
         }
         if token.is_group() && token.typ != *typ {
+            let token = &mut tlist.tokens[idx];
             group_matching(&mut token.children, typ, open, close);
+            idx += 1;
             continue
         }
+        idx += 1;
         if token.value == open {
             opens.push(tidx);
         } else if token.value == close {
@@ -334,8 +375,7 @@ fn group_matching(tlist: &mut TokenList, typ: &TokenType, open: &str, close: &st
             let open_idx = opens[opens.len()-1];
             opens.truncate(opens.len()-1);
             let close_idx = tidx;
-            std::mem::drop(token);
-            tlist.group_tokens(typ.clone(), open_idx, close_idx, false);
+            tlist.group_tokens(typ.clone(), open_idx, close_idx+1, false);
             tidx_offset += close_idx - open_idx;
         }
     }
@@ -391,7 +431,6 @@ fn group_internal(
             prev_ = Some(token.clone());
             idx += 1;
         }
-
 }
 
 
@@ -550,5 +589,30 @@ mod tests {
         let mut token_list = TokenList::from(sql);
         token_list.group();
         assert_eq!(token_list.len(), 12);
+    }
+
+    #[test]
+    fn test_grouping_function() {
+        let sql = "foo()";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Function);
+    }
+
+
+    #[test]
+    fn test_grouping_comparison_exclude() {
+        let sql = "(=)";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Parenthesis);
+        let sql = "(a=111)";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        assert_eq!(token_list.tokens[0].children.token_idx(Some(1)).unwrap().typ, TokenType::Comparison);
+        let sql = "(a>=123)";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        assert_eq!(token_list.tokens[0].children.token_idx(Some(1)).unwrap().typ, TokenType::Comparison);
     }
 }
