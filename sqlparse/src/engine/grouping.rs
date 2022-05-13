@@ -108,6 +108,10 @@ impl TokenList {
         group_matching(self, &TokenType::Case, "CASE", "END");
     }
 
+    fn group_if(&mut self) {
+        group_matching(self, &TokenType::Case, "IF", "END IF");
+    }
+
     fn group_identifier(&mut self) {
         // TODO: macro
         for token in self.tokens.iter_mut() {
@@ -312,6 +316,7 @@ impl TokenList {
         // group_matching
         self.group_parenthesis();
         self.group_case();
+        self.group_if();
 
         self.group_where();
         self.group_period();
@@ -371,9 +376,9 @@ fn group_matching(tlist: &mut TokenList, typ: &TokenType, open: &str, close: &st
             continue
         }
         idx += 1;
-        if token.normalized == open {
+        if token.value.to_uppercase() == open {
             opens.push(tidx);
-        } else if token.normalized == close {
+        } else if token.value.to_uppercase() == close {
             if opens.len() < 1 {
                 continue
             }
