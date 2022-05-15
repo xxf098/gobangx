@@ -330,6 +330,7 @@ impl TokenList {
         self.group_for();
         self.group_begin();
 
+        self.group_functions();
         self.group_where();
         self.group_period();
         self.group_identifier();
@@ -616,6 +617,10 @@ mod tests {
     #[test]
     fn test_grouping_function() {
         let sql = "foo()";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Function);
+        let sql = "foo(null, bar)";
         let mut token_list = TokenList::from(sql);
         token_list.group();
         assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Function);
