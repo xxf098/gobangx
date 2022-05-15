@@ -47,6 +47,9 @@ pub enum TokenType {
     CTE,
     // group type
     Case,
+    If,
+    For,
+    Begin,
     Identifier,
     IdentifierList,
     Where,

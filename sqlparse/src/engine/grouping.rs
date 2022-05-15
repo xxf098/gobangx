@@ -101,16 +101,26 @@ impl TokenList {
     }
 
     fn group_parenthesis(&mut self) {
-        group_matching(self, &TokenType::Parenthesis, "(", ")");
+        group_matching(self, &TokenType::Parenthesis, &["("], ")");
     }
 
     fn group_case(&mut self) {
-        group_matching(self, &TokenType::Case, "CASE", "END");
+        group_matching(self, &TokenType::Case, &["CASE"], "END");
     }
 
     fn group_if(&mut self) {
-        group_matching(self, &TokenType::Case, "IF", "END IF");
+        group_matching(self, &TokenType::If, &["IF"], "END IF");
     }
+
+    // FIXME: multiple space
+    fn group_for(&mut self) {
+        group_matching(self, &TokenType::For, &["FOR", "FOREACH"], "END LOOP");
+    }
+
+    fn group_begin(&mut self) {
+        group_matching(self, &TokenType::Case, &["BEGIN"], "END");
+    }
+
 
     fn group_identifier(&mut self) {
         // TODO: macro
@@ -317,6 +327,7 @@ impl TokenList {
         self.group_parenthesis();
         self.group_case();
         self.group_if();
+        self.group_for();
 
         self.group_where();
         self.group_period();
@@ -356,7 +367,7 @@ impl TokenList {
 
 }
 
-fn group_matching(tlist: &mut TokenList, typ: &TokenType, open: &str, close: &str) {
+fn group_matching(tlist: &mut TokenList, typ: &TokenType, open: &[&str], close: &str) {
     // Groups Tokens that have beginning and end.
     let mut opens = vec![];
     let mut tidx_offset = 0;
@@ -376,9 +387,9 @@ fn group_matching(tlist: &mut TokenList, typ: &TokenType, open: &str, close: &st
             continue
         }
         idx += 1;
-        if token.value.to_uppercase() == open {
+        if open.contains(&token.normalized.as_str()) {
             opens.push(tidx);
-        } else if token.value.to_uppercase() == close {
+        } else if token.normalized == close {
             if opens.len() < 1 {
                 continue
             }
@@ -633,5 +644,16 @@ mod tests {
         token_list.group();
         assert_eq!(token_list.len(), 1);
         assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Case);
+    }
+
+    #[test]
+    fn test_forloops() {
+        let sqls = vec!["for foo in bar LOOP foobar END LOOP", "FOREACH foo in bar LOOP foobar END LOOP"];
+        for sql in sqls.into_iter() {
+            let mut token_list = TokenList::from(sql);
+            token_list.group();
+            assert_eq!(token_list.len(), 1);
+            assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::For);
+        }
     }
 }
