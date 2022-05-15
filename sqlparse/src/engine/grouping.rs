@@ -664,6 +664,13 @@ mod tests {
         let mut token_list = TokenList::from(sql);
         token_list.group();
         assert_eq!(token_list.len(), 1);
+        let children_len = token_list.tokens[0].children.len();
+        assert_eq!(token_list.tokens[0].children.token_idx(Some(0)).unwrap().normalized, "FOR");
+        assert_eq!(token_list.tokens[0].children.token_idx(Some(children_len-1)).unwrap().normalized, "END LOOP");
+        let inner = token_list.tokens[0].children.token_idx(Some(6)).unwrap();
+        assert_eq!(inner.children.token_idx(Some(0)).unwrap().normalized, "FOR");
+        let inner_len = inner.children.len();
+        assert_eq!(inner.children.token_idx(Some(inner_len-1)).unwrap().normalized, "END LOOP");
     }
 
     #[test]
