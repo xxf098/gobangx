@@ -118,7 +118,7 @@ impl TokenList {
     }
 
     fn group_begin(&mut self) {
-        group_matching(self, &TokenType::Case, &["BEGIN"], "END");
+        group_matching(self, &TokenType::Begin, &["BEGIN"], "END");
     }
 
 
@@ -328,6 +328,7 @@ impl TokenList {
         self.group_case();
         self.group_if();
         self.group_for();
+        self.group_begin();
 
         self.group_where();
         self.group_period();
@@ -655,5 +656,18 @@ mod tests {
             assert_eq!(token_list.len(), 1);
             assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::For);
         }
+    }
+
+    #[test]
+    fn test_begin() {
+        let sql = "BEGIN foo END";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        assert_eq!(token_list.len(), 1);
+        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Begin);
+        // let sql = "BEGIN foo BEGIN bar END END";
+        // let mut token_list = TokenList::from(sql);
+        // token_list.group();
+        // assert_eq!(token_list.len(), 1);
     }
 }
