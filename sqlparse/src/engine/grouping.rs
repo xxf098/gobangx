@@ -376,13 +376,13 @@ fn group_matching(tlist: &mut TokenList, typ: &TokenType, open: &[&str], close: 
     let mut idx = 0;
     while idx < count {
         let tidx = idx - tidx_offset;
-        let token = &tlist.tokens[idx];
+        let token = &tlist.tokens[tidx];
         if token.is_whitespace() {
             idx += 1;
             continue
         }
         if token.is_group() && token.typ != *typ {
-            let token = &mut tlist.tokens[idx];
+            let token = &mut tlist.tokens[tidx];
             group_matching(&mut token.children, typ, open, close);
             idx += 1;
             continue
@@ -659,15 +659,34 @@ mod tests {
     }
 
     #[test]
+    fn test_nested_for() {
+        let sql = "FOR foo LOOP FOR bar LOOP END LOOP END LOOP";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        assert_eq!(token_list.len(), 1);
+    }
+
+    #[test]
     fn test_begin() {
         let sql = "BEGIN foo END";
         let mut token_list = TokenList::from(sql);
         token_list.group();
         assert_eq!(token_list.len(), 1);
         assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Begin);
-        // let sql = "BEGIN foo BEGIN bar END END";
-        // let mut token_list = TokenList::from(sql);
-        // token_list.group();
-        // assert_eq!(token_list.len(), 1);
+    }
+
+    #[test]
+    fn test_nested_begin() {
+        let sql = "BEGIN foo BEGIN bar END END";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        assert_eq!(token_list.len(), 1);
+        let children_len = token_list.tokens[0].children.len();
+        assert_eq!(token_list.tokens[0].children.token_idx(Some(0)).unwrap().normalized, "BEGIN");
+        assert_eq!(token_list.tokens[0].children.token_idx(Some(children_len-1)).unwrap().normalized, "END");
+        let inner = token_list.tokens[0].children.token_idx(Some(4)).unwrap();
+        assert_eq!(inner.children.token_idx(Some(0)).unwrap().normalized, "BEGIN");
+        let inner_len = inner.children.len();
+        assert_eq!(inner.children.token_idx(Some(inner_len-1)).unwrap().normalized, "END");
     }
 }
