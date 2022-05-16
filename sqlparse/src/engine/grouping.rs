@@ -832,4 +832,13 @@ mod tests {
         assert_eq!(token_list.len(), 1);
         assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
     }
+
+    #[test]
+    fn test_comparison_with_floats() {
+        let sql = "foo = 25.5";
+        let token_list = _group_tokenlist(sql);
+        assert_eq!(token_list.len(), 1);
+        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
+        assert_eq!(token_list.tokens[0].children.len(), 5);
+    }
 }
