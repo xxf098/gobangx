@@ -334,6 +334,20 @@ impl TokenList {
         group_internal(self, TokenType::Assignment, matcher, valid, valid, post, true, true);
     }
 
+    fn group_aliased(&mut self) {
+        let ttypes = vec![TokenType::Parenthesis, TokenType::Function, TokenType::Case, TokenType::Identifier, 
+            TokenType::Operation, TokenType::Comparison, TokenType::NumberInteger, TokenType::NumberFloat, TokenType::NumberHexadecimal, TokenType::Number];
+        let mut tidx = self.token_next_by(&ttypes, None, 0);
+        while let Some(idx) = tidx {
+            let nidx = self.token_next(idx+1);
+            let next = self.token_idx(nidx);
+            if next.map(|n| n.typ == TokenType::Identifier).unwrap_or(false) {
+                self.group_tokens(TokenType::Identifier, idx, nidx.unwrap()+1, true)
+            }
+            tidx = self.token_next_by(&ttypes, None, idx+1);
+        }
+    }
+
     fn group_functions(&mut self) {
         let mut has_create = false;
         let mut has_table = false;
@@ -396,7 +410,9 @@ impl TokenList {
         self.group_operator();
         self.group_comparison();
         self.group_as();
+        self.group_aliased();
         self.group_assignment();
+
         self.group_identifier_list();
     }
 
@@ -781,5 +797,13 @@ mod tests {
             assert_eq!(token_list.tokens[2].typ, TokenType::Identifier);
             println!("{:?}", token_list.tokens[2]);
         }
+    }
+
+    #[test]
+    fn test_aliased_literal_without_as() {
+        let sql = "1 foo";
+        let mut token_list = TokenList::from(sql);
+        token_list.group();
+        assert_eq!(token_list.len(), 1);
     }
 }
