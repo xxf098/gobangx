@@ -139,6 +139,24 @@ impl TokenList {
         group_internal(self, TokenType::Identifier, matcher, valid, valid, post, true, true)
     }
 
+    fn group_tzcasts(&mut self) {
+
+        fn matcher(token: &Token) -> bool {
+            token.typ == TokenType::KeywordTZCast
+        }
+
+        fn valid(token: Option<&Token>) -> bool {
+            token.is_some()
+        }
+
+        fn post(_tlist: &mut TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
+            (pidx, nidx)
+        }
+
+        group_internal(self, TokenType::Identifier, matcher, valid, valid, post, true, true)
+
+    }
+
 
     fn group_identifier(&mut self) {
         // TODO: macro
@@ -374,6 +392,7 @@ impl TokenList {
         self.group_identifier();
         self.group_order();
         self.group_typecasts();
+        self.group_tzcasts();
         self.group_operator();
         self.group_comparison();
         self.group_as();
