@@ -278,6 +278,26 @@ impl TokenList {
         group_internal(self, TokenType::Identifier, matcher, valid_prev, valid_next, post, true, true);
     }
 
+    fn group_assignment(&mut self) {
+
+        fn matcher(token: &Token) -> bool {
+            token.typ == TokenType::Assignment && token.value == ":="
+        }
+
+        fn valid(token: Option<&Token>) -> bool {
+            token.map(|t| t.typ != TokenType::Keyword).unwrap_or(false)
+        }
+
+        fn post(tlist: &mut TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
+            let m_semicolon = (TokenType::Punctuation, vec![";"]);
+            let snidx = tlist.token_next_by(&vec![], Some(&m_semicolon), nidx);
+            let nidx = snidx.unwrap_or(nidx);
+            (pidx, nidx)
+        }
+
+        group_internal(self, TokenType::Assignment, matcher, valid, valid, post, true, true);
+    }
+
     fn group_functions(&mut self) {
         let mut has_create = false;
         let mut has_table = false;
@@ -338,6 +358,7 @@ impl TokenList {
         self.group_operator();
         self.group_comparison();
         self.group_as();
+        self.group_assignment();
         self.group_identifier_list();
     }
 
@@ -700,5 +721,16 @@ mod tests {
         assert_eq!(inner.children.token_idx(Some(0)).unwrap().normalized, "BEGIN");
         let inner_len = inner.children.len();
         assert_eq!(inner.children.token_idx(Some(inner_len-1)).unwrap().normalized, "END");
+    }
+
+    #[test]
+    fn test_grouping_assignment() {
+        let sqls = vec!["foo := 1", "foo := 1;"];
+        for sql in sqls {
+            let mut token_list = TokenList::from(sql);
+            token_list.group();
+            assert_eq!(token_list.len(), 1);
+            assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Assignment);
+        }
     }
 }
