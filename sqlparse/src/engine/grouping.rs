@@ -121,6 +121,23 @@ impl TokenList {
         group_matching(self, &TokenType::Begin, &["BEGIN"], "END");
     }
 
+    fn group_typecasts(&mut self) {
+        
+        fn matcher(token: &Token) -> bool {
+            token.typ == TokenType::Punctuation && token.value == "::"
+        }
+
+        fn valid(token: Option<&Token>) -> bool {
+            token.is_some()
+        }
+
+        fn post(_tlist: &mut TokenList, pidx: usize, _tidx: usize, nidx: usize) -> (usize, usize) {
+            (pidx, nidx)
+        }
+
+        group_internal(self, TokenType::Identifier, matcher, valid, valid, post, true, true)
+    }
+
 
     fn group_identifier(&mut self) {
         // TODO: macro
@@ -355,6 +372,7 @@ impl TokenList {
         self.group_period();
         self.group_identifier();
         self.group_order();
+        self.group_typecasts();
         self.group_operator();
         self.group_comparison();
         self.group_as();
@@ -731,6 +749,17 @@ mod tests {
             token_list.group();
             assert_eq!(token_list.len(), 1);
             assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Assignment);
+        }
+    }
+
+    #[test]
+    fn test_grouping_typecast() {
+        let sqls = vec!["select foo::integer from bar", "select (current_database())::information_schema.sql_identifier"];
+        for sql in sqls {
+            let mut token_list = TokenList::from(sql);
+            token_list.group();
+            assert_eq!(token_list.tokens[2].typ, TokenType::Identifier);
+            println!("{:?}", token_list.tokens[2]);
         }
     }
 }
