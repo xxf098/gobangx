@@ -806,4 +806,16 @@ mod tests {
         token_list.group();
         assert_eq!(token_list.len(), 1);
     }
+
+    #[test]
+    fn test_comparison_with_strings() {
+        let sqls = vec!["foo = bar", "foo != bar", "foo > bar", "foo > bar", "foo <= bar", "foo >= bar", "foo ~ bar",
+        "foo ~~ bar", "foo !~~ bar", "foo LIKE bar", "foo NOT LIKE bar", "foo ILIKE bar", "foo NOT ILIKE bar"];
+        for sql in sqls {
+            let mut token_list = TokenList::from(sql);
+            token_list.group();
+            assert_eq!(token_list.len(), 1);
+            assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
+        }
+    }
 }
