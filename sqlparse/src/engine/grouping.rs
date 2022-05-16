@@ -92,6 +92,7 @@ impl TokenList {
             let sub_tokens = self.tokens[start_idx+1..end].to_vec();
             let start = &mut self.tokens[start_idx];
             start.children.extend(sub_tokens);
+            start.value = Token::new_value(&start.children.tokens);
             self.tokens.splice(start_idx+1..end, []).for_each(drop);
             return
         }
