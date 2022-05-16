@@ -13,6 +13,12 @@ pub fn group(tokens: Vec<Token>) -> Vec<Token> {
     token_list.tokens
 }
 
+fn _group_tokenlist(sql: &str) -> TokenList {
+    let mut token_list = TokenList::from(sql);
+    token_list.group();
+    token_list
+}
+
 impl From<&str> for TokenList {
     
     fn from(sql: &str) -> Self {
@@ -222,7 +228,7 @@ impl TokenList {
             let types = vec![TokenType::Number, TokenType::NumberInteger, TokenType::NumberFloat, 
                 TokenType::String, TokenType::StringSingle, TokenType::StringSymbol,
                 TokenType::Name, TokenType::NamePlaceholder,
-                TokenType::Function, TokenType::Identifier, TokenType::Operation, TokenType::TypedLiteral];
+                TokenType::Parenthesis, TokenType::Function, TokenType::Identifier, TokenType::Operation, TokenType::TypedLiteral];
             let patterns = (TokenType::Parenthesis, vec!["(", ")"]);
             if Token::imt(token, &types, Some(&patterns)) {
                 true
@@ -817,5 +823,13 @@ mod tests {
             assert_eq!(token_list.len(), 1);
             assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
         }
+    }
+
+    #[test]
+    fn test_comparison_with_parenthesis() {
+        let sql = "(3 + 4) = 7";
+        let token_list = _group_tokenlist(sql);
+        assert_eq!(token_list.len(), 1);
+        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
     }
 }
