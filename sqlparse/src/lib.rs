@@ -2,10 +2,13 @@ mod engine;
 mod lexer;
 mod keywords;
 mod tokens;
+mod formatter;
+mod filters;
 
 
 pub use tokens::TokenType;
 pub use lexer::{Token, TokenList};
+pub use formatter::{FormatOption, validate_options};
 
 pub struct Parser {
     stack: engine::FilterStack,
