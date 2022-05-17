@@ -58,4 +58,5 @@ pub enum TokenType {
     TypedLiteral,
     Parenthesis,
     SquareBrackets,
+    Values,
 }

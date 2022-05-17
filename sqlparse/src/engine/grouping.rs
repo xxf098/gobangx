@@ -394,7 +394,24 @@ impl TokenList {
             }
             tidx = self.token_next_by(&ttypes, None, tidx.unwrap()+1);
         }
+    }
 
+    // insert into table_name values()
+    fn group_values(&mut self) {
+        let values = (TokenType::Keyword, vec!["VALUES"]);
+        let mut tidx = self.token_next_by(&vec![], Some(&values), 0);
+        let start_idx = tidx;
+        let mut end_idx: Option<usize> = None;
+        while let Some(idx) = tidx {
+            let token = self.token_idx(Some(idx));
+            if token.map(|t| t.typ == TokenType::Parenthesis).unwrap_or(false) {
+               end_idx = tidx 
+            }
+            tidx = self.token_next(idx);
+        }
+        if let Some(e_idx) = end_idx {
+            self.group_tokens(TokenType::Values, start_idx.unwrap(), e_idx, true);
+        }
     }
 
     fn group(&mut self) {
@@ -420,6 +437,7 @@ impl TokenList {
         self.group_assignment();
 
         self.group_identifier_list();
+        self.group_values();
     }
 
     pub fn get_first_name(&self, idx: Option<usize>, reverse: bool, keywords: bool, real_name: bool) -> Option<&str> {
