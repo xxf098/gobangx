@@ -872,4 +872,15 @@ mod tests {
         assert_eq!(token_list.len(), 1);
         assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
     }
+
+    #[test]
+    fn test_grouping_parenthesis() {
+        let sql = "select (select (x3) x2) and (y2) bar";
+        let token_list = _group_tokenlist(sql);
+        assert_eq!(token_list.len(), 7);
+        assert_eq!(token_list.token_idx(Some(2)).unwrap().typ, TokenType::Parenthesis);
+        assert_eq!(token_list.token_idx(Some(6)).unwrap().typ, TokenType::Identifier);
+        let sub_tokens = &token_list.token_idx(Some(2)).unwrap().children;
+        assert_eq!(sub_tokens.token_idx(Some(3)).unwrap().typ, TokenType::Parenthesis);
+    }
 }
