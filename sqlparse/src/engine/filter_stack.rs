@@ -5,9 +5,9 @@ use crate::filters::Filter;
 // 'a
 pub struct FilterStack {
     regs: Vec<RegexToken>,
-    preprocess: Vec<Box<dyn Filter>>,
-    stmtprocess: Vec<Box<dyn Filter>>,
-    postprocess: Vec<Box<dyn Filter>>,
+    pub preprocess: Vec<Box<dyn Filter>>,
+    pub stmtprocess: Vec<Box<dyn Filter>>,
+    pub postprocess: Vec<Box<dyn Filter>>,
 }
 
 

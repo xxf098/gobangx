@@ -48,6 +48,14 @@ pub fn parse_no_grouping(sql: &str) -> Vec<Token> {
     stack.run(sql, false)
 }
 
+pub fn format(sql: &str, options: formatter::FormatOption) -> String {
+    let stack = engine::FilterStack::new();
+    let options = formatter::validate_options(options);
+    let stack = formatter::build_filter_stack(stack, &options);
+    let tokens = stack.format(sql);
+    tokens.iter().map(|token| token.value.as_str()).collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,6 +109,15 @@ mod tests {
         let _tokens = p.parse(sql);
         let elapsed = now.elapsed();
         println!("elapsed: {}ms", elapsed.as_millis());
+    }
+
+    #[test]
+    fn test_format() {
+        let sql = "select * from users limit 10";
+        let mut formatter = formatter::FormatOption::default();
+        formatter.keyword_case = "upper";
+        let formatted_sql = format(sql, formatter);
+        println!("{}", formatted_sql);
     }
 
 }
