@@ -19,10 +19,10 @@ pub struct TokenList {
 
 impl Token {
 
-    pub fn new(typ: TokenType, value: String) -> Self {
+    pub fn new(typ: TokenType, value: &str) -> Self {
         let token_list = TokenList::new(vec![]);
-        let normalized = if typ == TokenType::Keyword { value.to_uppercase() } else { value.clone() };
-        Self { typ, value, children: token_list, normalized }
+        let normalized = if typ == TokenType::Keyword { value.to_uppercase() } else { value.to_string() };
+        Self { typ, value: value.to_string(), children: token_list, normalized }
     }
 
     pub fn new_parent(typ: TokenType, children: Vec<Token>) -> Self {
@@ -153,7 +153,7 @@ pub fn tokenize_internal(sql: &str, regs: &[RegexToken]) -> Vec<Token> {
                 TokenType::KeywordRaw => is_keyword(v),
                 _ => rt.typ.clone()
             };
-            let t = Token::new(typ, v.to_string());
+            let t = Token::new(typ, v);
             tokens.push(t);
             break;
         }
