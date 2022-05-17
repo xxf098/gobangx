@@ -42,7 +42,10 @@ impl Token {
     }
 
     pub fn is_keyword(&self) -> bool {
-        self.typ == TokenType::Keyword       
+        self.typ == TokenType::Keyword || 
+        self.typ == TokenType::KeywordDML || 
+        self.typ == TokenType::KeywordDDL || 
+        self.typ == TokenType::KeywordCTE
     }
 
     pub fn is_group(&self) -> bool {
