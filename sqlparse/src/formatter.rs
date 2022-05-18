@@ -1,6 +1,8 @@
 use super::engine::FilterStack;
-use super::filters::{Filter};
-use super::filters::tokens::{KeywordCaseFilter, IdentifierCaseFilter};
+use super::filters::{
+    Filter, StmtFilter,
+    KeywordCaseFilter, IdentifierCaseFilter, StripWhitespaceFilter
+};
 
 #[derive(Default)]
 pub struct FormatOption<'a> {
@@ -37,6 +39,7 @@ pub fn build_filter_stack(stack: &mut FilterStack, options: &mut FormatOption) {
     }
     if options.strip_whitespace {
         options.grouping = true;
-        
+        let filter = Box::new(StripWhitespaceFilter{}) as Box<dyn StmtFilter>;
+        stack.stmtprocess.push(filter);
     }
 }

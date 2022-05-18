@@ -37,6 +37,12 @@ impl Token {
         children.iter().map(|child| child.value.as_ref()).collect::<Vec<_>>().join("")
     }
 
+    pub fn update_value(&mut self) {
+        if self.children.len() > 0 {
+            self.value = Token::new_value(&self.children.tokens);
+        }
+    }
+
     pub fn is_whitespace(&self) -> bool {
         self.typ == TokenType::Whitespace
     }
