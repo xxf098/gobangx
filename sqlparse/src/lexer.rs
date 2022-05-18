@@ -44,7 +44,7 @@ impl Token {
     }
 
     pub fn is_whitespace(&self) -> bool {
-        self.typ == TokenType::Whitespace
+        self.typ == TokenType::Whitespace || self.typ == TokenType::Newline
     }
 
     pub fn is_keyword(&self) -> bool {

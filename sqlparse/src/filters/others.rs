@@ -14,7 +14,7 @@ impl StripWhitespaceFilter {
         let mut is_first_char = true;
         for token in tokens.iter_mut() {
             if token.is_whitespace() {
-                if last_was_ws || is_first_char { token.value = "".to_string() };
+                token.value = if last_was_ws || is_first_char { "".to_string() } else { " ".to_string() };
             }
             last_was_ws = token.is_whitespace();
             is_first_char = false;

@@ -53,7 +53,7 @@ pub fn format(sql: &str, options: &mut formatter::FormatOption) -> String {
     formatter::validate_options(options);
     formatter::build_filter_stack(&mut stack, options);
     let tokens = stack.format(sql, options.grouping);
-    // for token in &tokens[13].children.tokens {
+    // for token in &tokens{
     //     println!("{:?}", token);
     // }
     tokens.iter().map(|token| token.value.as_str()).collect()
@@ -133,7 +133,17 @@ mod tests {
         let mut formatter = formatter::FormatOption::default();
         formatter.strip_whitespace = true;
         let formatted_sql = format(sql, &mut formatter);
-        println!("formatted_sql: {}", formatted_sql);
         assert_eq!(formatted_sql, "select * from users where id = 1;");
     }
+
+
+    #[test]
+    fn test_strip_ws1() {
+        let sql = "select\n* from      foo\n\twhere  ( 1 = 2 )\n";
+        let mut formatter = formatter::FormatOption::default();
+        formatter.strip_whitespace = true;
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, "select * from foo where (1 = 2)");
+    }
+    
 }
