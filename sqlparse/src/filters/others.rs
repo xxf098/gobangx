@@ -39,7 +39,7 @@ impl StripWhitespaceFilter {
 
 impl StmtFilter for StripWhitespaceFilter {
 
-    // strip which
+    // TODO: remove depth 
     fn process(&self, tokens: &mut Vec<Token>, depth: usize) {
         for token in tokens.iter_mut() {
             if token.is_group() {
@@ -49,7 +49,6 @@ impl StmtFilter for StripWhitespaceFilter {
             }
         }
         Self::stripws(tokens);
-        // pop
     }
 }
 

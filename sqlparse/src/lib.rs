@@ -48,10 +48,11 @@ pub fn parse_no_grouping(sql: &str) -> Vec<Token> {
     stack.run(sql, false)
 }
 
-pub fn format(sql: &str, options: &mut formatter::FormatOption) -> String {
+pub fn format(mut sql: &str, options: &mut formatter::FormatOption) -> String {
     let mut stack = engine::FilterStack::new();
     formatter::validate_options(options);
     formatter::build_filter_stack(&mut stack, options);
+    if options.strip_whitespace { sql = sql.trim(); };
     let tokens = stack.format(sql, options.grouping);
     // for token in &tokens{
     //     println!("{:?}", token);
