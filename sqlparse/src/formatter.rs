@@ -19,13 +19,14 @@ pub struct FormatOption<'a> {
     pub wrap_after: bool,
     pub comma_first: bool,
     pub right_margin: bool,
+    pub grouping: bool,
 }
 
-pub fn validate_options(options: &mut FormatOption) {
+pub fn validate_options(_options: &mut FormatOption) {
 }
 
 
-pub fn build_filter_stack(mut stack: FilterStack, options: &FormatOption) -> FilterStack {
+pub fn build_filter_stack(stack: &mut FilterStack, options: &mut FormatOption) {
     if options.keyword_case.len() > 0 {
         let filter = Box::new(KeywordCaseFilter::new("upper")) as Box<dyn Filter>;
         stack.preprocess.push(filter);
@@ -34,5 +35,8 @@ pub fn build_filter_stack(mut stack: FilterStack, options: &FormatOption) -> Fil
         let filter = Box::new(IdentifierCaseFilter::new("upper")) as Box<dyn Filter>;
         stack.preprocess.push(filter);
     }
-    stack
+    if options.strip_whitespace {
+        options.grouping = true;
+        
+    }
 }

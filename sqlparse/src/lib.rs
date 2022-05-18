@@ -49,10 +49,10 @@ pub fn parse_no_grouping(sql: &str) -> Vec<Token> {
 }
 
 pub fn format(sql: &str, options: &mut formatter::FormatOption) -> String {
-    let stack = engine::FilterStack::new();
+    let mut stack = engine::FilterStack::new();
     formatter::validate_options(options);
-    let stack = formatter::build_filter_stack(stack, options);
-    let tokens = stack.format(sql);
+    formatter::build_filter_stack(&mut stack, options);
+    let tokens = stack.format(sql, options.grouping);
     tokens.iter().map(|token| token.value.as_str()).collect()
 }
 

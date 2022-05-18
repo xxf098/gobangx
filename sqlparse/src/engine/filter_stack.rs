@@ -32,12 +32,23 @@ impl FilterStack {
     }
 
     // format sql
-    pub fn format(&self, sql: &str) -> Vec<Token> {
+    pub fn format(&self, sql: &str, grouping: bool) -> Vec<Token> {
         let mut tokens = tokenize_internal(sql, &self.regs);
-        for token in tokens.iter_mut() {
-            self.preprocess.iter().for_each(|filter| filter.process(token));
-            self.stmtprocess.iter().for_each(|filter| filter.process(token));
-            self.postprocess.iter().for_each(|filter| filter.process(token));
+        if grouping {
+            for token in tokens.iter_mut() {
+                self.preprocess.iter().for_each(|filter| filter.process(token, 0));
+            }
+            tokens = super::grouping::group(tokens);
+            for token in tokens.iter_mut() {
+                self.stmtprocess.iter().for_each(|filter| filter.process(token, 0));
+                self.postprocess.iter().for_each(|filter| filter.process(token, 0));
+            }
+        } else {
+            for token in tokens.iter_mut() {
+                self.preprocess.iter().for_each(|filter| filter.process(token, 0));
+                self.stmtprocess.iter().for_each(|filter| filter.process(token, 0));
+                self.postprocess.iter().for_each(|filter| filter.process(token, 0));
+            }
         }
         tokens
     }
