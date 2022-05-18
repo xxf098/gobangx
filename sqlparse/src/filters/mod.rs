@@ -6,7 +6,7 @@ pub use tokens::{IdentifierCaseFilter, KeywordCaseFilter};
 pub use others::StripWhitespaceFilter;
 
 pub trait Filter: Send+Sync {
-    fn process(&self, token: &mut Token, depth: usize);
+    fn process(&self, token: &mut Token);
 }
 
 

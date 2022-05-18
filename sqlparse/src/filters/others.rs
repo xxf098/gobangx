@@ -1,5 +1,5 @@
 use super::StmtFilter;
-use crate::lexer::{Token, TokenList};
+use crate::lexer::{Token};
 
 pub struct StripWhitespaceFilter { }
 
@@ -34,6 +34,7 @@ impl StmtFilter for StripWhitespaceFilter {
             }
         }
         Self::stripws(tokens);
+        // pop
     }
 }
 

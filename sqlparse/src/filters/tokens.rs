@@ -31,7 +31,7 @@ impl KeywordCaseFilter {
 
 impl Filter for KeywordCaseFilter {
 
-    fn process(&self, token: &mut Token, _depth: usize) {
+    fn process(&self, token: &mut Token) {
         if token.is_keyword() {
              match self.case {
                 Case::Upper => { token.value = token.value.to_uppercase() },
@@ -56,7 +56,7 @@ impl IdentifierCaseFilter {
 
 impl Filter for IdentifierCaseFilter {
 
-    fn process(&self, token: &mut Token, _depth: usize) { 
+    fn process(&self, token: &mut Token) { 
         if token.typ == TokenType::Name || token.typ == TokenType::StringSymbol {
             if !token.value.starts_with("\"") {
                 match self.case {
@@ -78,7 +78,7 @@ mod tests {
     fn test_keyword_case_filter() {
         let f = KeywordCaseFilter::new("upper");
         let mut t = Token::new(TokenType::Keyword, "select");
-        f.process(&mut t, 0);
+        f.process(&mut t);
         assert_eq!(t.value, "SELECT");
     }
 }
