@@ -48,10 +48,10 @@ pub fn parse_no_grouping(sql: &str) -> Vec<Token> {
     stack.run(sql, false)
 }
 
-pub fn format(sql: &str, options: formatter::FormatOption) -> String {
+pub fn format(sql: &str, options: &mut formatter::FormatOption) -> String {
     let stack = engine::FilterStack::new();
-    let options = formatter::validate_options(options);
-    let stack = formatter::build_filter_stack(stack, &options);
+    formatter::validate_options(options);
+    let stack = formatter::build_filter_stack(stack, options);
     let tokens = stack.format(sql);
     tokens.iter().map(|token| token.value.as_str()).collect()
 }
@@ -117,8 +117,11 @@ mod tests {
         let mut formatter = formatter::FormatOption::default();
         formatter.keyword_case = "upper";
         formatter.identifier_case = "upper";
-        let formatted_sql = format(sql, formatter);
+        let formatted_sql = format(sql, &mut formatter);
         assert_eq!(formatted_sql, "SELECT * FROM USERS LIMIT 10");
+        let sql = "select * from \"t\".\"users\" limit 10";
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, "SELECT * FROM \"t\".\"users\" LIMIT 10");
     }
 
 }

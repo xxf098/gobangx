@@ -21,8 +21,7 @@ pub struct FormatOption<'a> {
     pub right_margin: bool,
 }
 
-pub fn validate_options(options: FormatOption) -> FormatOption {
-    options
+pub fn validate_options(options: &mut FormatOption) {
 }
 
 
