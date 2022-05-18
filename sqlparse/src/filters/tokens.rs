@@ -5,6 +5,17 @@ use crate::tokens::TokenType;
 pub enum Case {
     Upper,
     Lower,
+    Origin, // keep origin
+}
+
+impl From<&str> for Case {
+    fn from(case: &str) -> Self {
+        match case {
+            "upper" => Case::Upper,
+            "lower" => Case::Lower,
+            _ => Case::Origin,
+        }
+    }
 }
 
 pub struct KeywordCaseFilter {
@@ -14,7 +25,7 @@ pub struct KeywordCaseFilter {
 impl KeywordCaseFilter {
 
     pub fn new(case: &str) -> Self {
-        Self { case: if case == "upper" { Case::Upper } else { Case::Lower } }
+        Self { case: case.into() }
     }
 }
 
@@ -22,9 +33,10 @@ impl Filter for KeywordCaseFilter {
 
     fn process(&self, token: &mut Token) {
         if token.is_keyword() {
-            token.value = match self.case {
-                Case::Upper => { token.value.to_uppercase() },
-                Case::Lower => { token.value.to_lowercase() }
+             match self.case {
+                Case::Upper => { token.value = token.value.to_uppercase() },
+                Case::Lower => { token.value = token.value.to_lowercase() },
+                _ => {},
             };
         }
     }
@@ -38,7 +50,7 @@ pub struct IdentifierCaseFilter{
 impl IdentifierCaseFilter {
 
     pub fn new(case: &str) -> Self {
-        Self { case: if case == "upper" { Case::Upper } else { Case::Lower } }
+        Self { case: case.into() }
     }
 }
 
@@ -47,9 +59,10 @@ impl Filter for IdentifierCaseFilter {
     fn process(&self, token: &mut Token) { 
         if token.typ == TokenType::Name || token.typ == TokenType::StringSymbol {
             if !token.value.starts_with("\"") {
-                token.value = match self.case {
-                    Case::Upper => { token.value.to_uppercase() },
-                    Case::Lower => { token.value.to_lowercase() }
+                match self.case {
+                    Case::Upper => { token.value = token.value.to_uppercase() },
+                    Case::Lower => { token.value = token.value.to_lowercase() },
+                    _ => {},
                 };
             }
         }
