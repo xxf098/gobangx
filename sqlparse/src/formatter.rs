@@ -1,5 +1,6 @@
 use super::engine::FilterStack;
-use super::filters::{Filter, tokens::KeywordCaseFilter};
+use super::filters::{Filter};
+use super::filters::tokens::{KeywordCaseFilter, IdentifierCaseFilter};
 
 #[derive(Default)]
 pub struct FormatOption<'a> {
@@ -29,6 +30,10 @@ pub fn build_filter_stack(mut stack: FilterStack, options: &FormatOption) -> Fil
     if options.keyword_case.len() > 0 {
         let filter = Box::new(KeywordCaseFilter::new("upper")) as Box<dyn Filter>;
         stack.preprocess.push(filter);
-    } 
+    }
+    if options.identifier_case.len() > 0 {
+        let filter = Box::new(IdentifierCaseFilter::new("upper")) as Box<dyn Filter>;
+        stack.preprocess.push(filter);
+    }
     stack
 }

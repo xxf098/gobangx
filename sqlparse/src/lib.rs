@@ -116,8 +116,9 @@ mod tests {
         let sql = "select * from users limit 10";
         let mut formatter = formatter::FormatOption::default();
         formatter.keyword_case = "upper";
+        formatter.identifier_case = "upper";
         let formatted_sql = format(sql, formatter);
-        println!("{}", formatted_sql);
+        assert_eq!(formatted_sql, "SELECT * FROM USERS LIMIT 10");
     }
 
 }
