@@ -108,6 +108,10 @@ impl TokenList {
         self.tokens.splice(start..end, group_token).for_each(drop);
     }
 
+    fn insert_before(&mut self, index: usize, token: Token){
+        self.tokens.insert(index, token)
+    }
+
     fn group_parenthesis(&mut self) {
         group_matching(self, &TokenType::Parenthesis, &["("], ")");
     }
@@ -629,6 +633,16 @@ mod tests {
         let t = token_list.token_prev(token_list.len(), true);
         let t = token_list.token_idx(t).unwrap();
         assert_eq!(t.value, "from");
+    }
+
+    #[test]
+    fn test_insert_before() {
+        let sql= "select * from ";
+        let mut token_list = TokenList::from(sql);
+        let token = Token::new(TokenType::Whitespace, " ");
+        token_list.insert_before(4, token);
+        let v = Token::new_value(&token_list.tokens);
+        assert_eq!(v, "select *  from ");
     }
 
     #[test]
