@@ -40,8 +40,8 @@ impl FilterStack {
         if grouping {
             tokens = super::grouping::group(tokens);
         }
-        self.stmtprocess.iter().for_each(|filter| filter.process(&mut tokens, 0));
-        self.postprocess.iter().for_each(|filter| filter.process(&mut tokens, 0));
+        self.stmtprocess.iter().for_each(|filter| filter.process(&mut tokens));
+        self.postprocess.iter().for_each(|filter| filter.process(&mut tokens));
         tokens
     }
 }

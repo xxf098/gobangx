@@ -1,5 +1,6 @@
 pub mod tokens;
 pub mod others;
+pub mod reindent;
 
 use super::Token;
 pub use tokens::{IdentifierCaseFilter, KeywordCaseFilter};
@@ -11,5 +12,5 @@ pub trait Filter: Send+Sync {
 
 
 pub trait StmtFilter: Send+Sync {
-    fn process(&self, tokens: &mut Vec<Token>, depth: usize);
+    fn process(&self, tokens: &mut Vec<Token>);
 }

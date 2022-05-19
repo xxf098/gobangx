@@ -40,11 +40,11 @@ impl StripWhitespaceFilter {
 impl StmtFilter for StripWhitespaceFilter {
 
     // TODO: remove depth 
-    fn process(&self, tokens: &mut Vec<Token>, depth: usize) {
+    fn process(&self, tokens: &mut Vec<Token>) {
         for token in tokens.iter_mut() {
             if token.is_group() {
                 Self::stripws_parenthesis(token);
-                self.process(&mut token.children.tokens, depth+1);
+                self.process(&mut token.children.tokens);
                 token.update_value();
             }
         }
