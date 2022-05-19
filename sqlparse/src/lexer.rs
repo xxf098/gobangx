@@ -92,7 +92,7 @@ impl Token {
         let pattern = (TokenType::Punctuation, vec!["."]);
         let children = &self.children;
         let dot_idx = children.token_next_by(&vec![], Some(&pattern), 0);
-        let prev_idx = dot_idx.map(|idx| children.token_prev(idx)).flatten();
+        let prev_idx = dot_idx.map(|idx| children.token_prev(idx, true)).flatten();
         let prev = children.token_idx(prev_idx);
         prev.map(|p| remove_quotes(&p.value))
     }

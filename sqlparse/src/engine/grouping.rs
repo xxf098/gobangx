@@ -78,9 +78,10 @@ impl TokenList {
         return self.token_matching_fn(|t| !t.is_whitespace(), idx, self.len(), false);
     }
 
-    pub fn token_prev(&self, idx: usize) -> Option<usize> {
+    pub fn token_prev(&self, idx: usize, skip_ws: bool) -> Option<usize> {
         if idx > self.len() || idx == 0 { None } 
-        else { self.token_matching_fn(|t| !t.is_whitespace(), 0, idx, true) }
+        else if skip_ws { self.token_matching_fn(|t| !t.is_whitespace(), 0, idx, true) }
+        else {  self.token_matching_fn(|_| true, 0, idx, true) }
     }
 
     pub fn token_idx(&self, idx: Option<usize>) -> Option<&Token> {
@@ -385,7 +386,7 @@ impl TokenList {
         let ttypes = vec![TokenType::KeywordOrder];
         let mut tidx = self.token_next_by(&ttypes, None, 0);
         while let Some(idx) = tidx {
-            let pidx = self.token_prev(idx);
+            let pidx = self.token_prev(idx, true);
             let prev = self.token_idx(pidx);
             let ttypes = vec![TokenType::Identifier, TokenType::Number];
             if Token::imt(prev, &ttypes, None) {
@@ -625,9 +626,9 @@ mod tests {
     fn test_token_prev() {
         let sql= "select * from ";
         let token_list = TokenList::from(sql);
-        let t = token_list.token_prev(token_list.len());
+        let t = token_list.token_prev(token_list.len(), true);
         let t = token_list.token_idx(t).unwrap();
-        assert_eq!(t.value, "where");
+        assert_eq!(t.value, "from");
     }
 
     #[test]
