@@ -71,7 +71,7 @@ impl Suggest {
     
         let statement = TokenList::new(parsed);
     
-        let last_token_idx = statement.token_prev(statement.len());
+        let last_token_idx = statement.token_prev(statement.len(), true);
         let last_token = statement.token_idx(last_token_idx);
    
     
