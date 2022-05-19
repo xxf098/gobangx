@@ -147,4 +147,12 @@ mod tests {
         assert_eq!(formatted_sql, "select * from foo where (1 = 2)");
     }
     
+    #[test]
+    fn test_preserve_ws() {
+        let sql = "select\n* /* foo */  from bar ";
+        let mut formatter = formatter::FormatOption::default();
+        formatter.strip_whitespace = true;
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, "select * /* foo */ from bar");
+    }
 }
