@@ -78,7 +78,7 @@ impl ReindentFilter {
                 token_list.insert_before(idx, self.nl(0));
                 idx += 1;
             }
-            tidx = self.next_token(token_list, idx)
+            tidx = self.next_token(token_list, idx+1)
         }
     }
 

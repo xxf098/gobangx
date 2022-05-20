@@ -155,4 +155,17 @@ mod tests {
         let formatted_sql = format(sql, &mut formatter);
         assert_eq!(formatted_sql, "select * /* foo */ from bar");
     }
+
+    #[test]
+    fn test_reindent_keywords() {
+        let sql = "select * from foo union select * from bar;";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "select *", 
+            "from foo", 
+            "union", 
+            "select *", 
+            "from bar;"].join("\n"))
+    }
 }
