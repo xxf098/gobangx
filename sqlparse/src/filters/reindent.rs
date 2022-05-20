@@ -19,8 +19,8 @@ pub struct ReindentFilter {
 
 impl TokenListFilter for ReindentFilter {
 
-    fn process(&self, token_list: &mut TokenList) {
-
+    fn process(&mut self, token_list: &mut TokenList) {
+        self.process_default(token_list);
     }
 }
 
@@ -100,11 +100,34 @@ impl ReindentFilter {
         }
     }
 
-    fn process_default(&self, token_list: &mut TokenList) {
+
+    fn process_internal(&mut self, token_list: &mut TokenList, token_type: &TokenType) {
+        match token_type {
+            TokenType::Where => self.process_where(token_list),
+            _ => self.process_default(token_list),
+        }
+    }
+
+    fn process_where(&mut self, token_list: &mut TokenList) {
+        let patterns = (TokenType::Keyword, vec!["WHERE"]);
+        let tidx = token_list.token_next_by(&vec![], Some(&patterns), 0);
+        if let Some(idx) = tidx {
+            token_list.insert_before(idx, self.nl(0));
+            self.indent += 1;
+            self.process_default(token_list);
+            self.indent -= 1;
+        }
+    }
+
+    fn process_default(&mut self, token_list: &mut TokenList) {
         self.split_statements(token_list);
         self.split_kwds(token_list);
+        for token in token_list.tokens.iter_mut() {
+            if token.is_group() {
+                self.process_internal(&mut token.children, &token.typ);
+            }
+        }
     }
-    
 }
 
 

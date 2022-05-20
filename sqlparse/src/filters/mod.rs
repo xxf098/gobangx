@@ -17,5 +17,5 @@ pub trait StmtFilter: Send+Sync {
 
 
 pub trait TokenListFilter: Send+Sync {
-    fn process(&self, token_list: &mut TokenList);
+    fn process(&mut self, token_list: &mut TokenList);
 }
