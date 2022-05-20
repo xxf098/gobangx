@@ -55,10 +55,10 @@ impl ReindentFilter {
         let mut tidx = token_list.token_next_by(&vec![], Some(&patterns), idx);
         let token = token_list.token_idx(tidx);
         if token.map(|t| t.normalized == "BETWEEN").unwrap_or(false) {
-            tidx = self.next_token(token_list, tidx.unwrap());
+            tidx = self.next_token(token_list, tidx.unwrap()+1);
             let token = token_list.token_idx(tidx);
             if token.map(|t| t.normalized == "AND").unwrap_or(false) {
-                tidx = self.next_token(token_list, tidx.unwrap());
+                tidx = self.next_token(token_list, tidx.unwrap()+1);
             } 
         }
         tidx

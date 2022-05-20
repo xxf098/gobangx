@@ -168,4 +168,17 @@ mod tests {
             "select *", 
             "from bar;"].join("\n"))
     }
+
+    #[test]
+    fn test_reindent_keywords_between() {
+        let sql = "and foo between 1 and 2 and bar = 3";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        let formatted_sql = format(sql, &mut formatter);
+        println!("{}", formatted_sql);
+        assert_eq!(formatted_sql, vec![
+            "",
+            "and foo between 1 and 2",
+            "and bar = 3",
+        ].join("\n"))
+    }
 }
