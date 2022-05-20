@@ -2,6 +2,9 @@ use super::TokenListFilter;
 use crate::lexer::{Token, TokenList};
 use crate::tokens::TokenType;
 
+const SPLIT_WORDS: [&str; 14] = ["FROM", "STRAIGHT_JOIN", "JOIN", "AND", "OR", "GROUP BY", 
+    "ORDER BY", "UNION", "VALUES", "SET", "BETWEEN", "EXCEPT", "HAVING", "LIMIT"];
+
 pub struct ReindentFilter {
     n: String, // newline
     width: usize,
@@ -47,8 +50,36 @@ impl ReindentFilter {
         Token::new(TokenType::Whitespace, &white)
     }
 
+    fn next_token(&self, token_list: &TokenList, idx: usize) -> Option<usize> {
+        let patterns = (TokenType::Keyword, SPLIT_WORDS.to_vec());
+        let mut tidx = token_list.token_next_by(&vec![], Some(&patterns), idx);
+        let token = token_list.token_idx(tidx);
+        if token.map(|t| t.normalized == "BETWEEN").unwrap_or(false) {
+            tidx = self.next_token(token_list, tidx.unwrap());
+            let token = token_list.token_idx(tidx);
+            if token.map(|t| t.normalized == "AND").unwrap_or(false) {
+                tidx = self.next_token(token_list, tidx.unwrap());
+            } 
+        }
+        tidx
+    }
+
     fn split_kwds(&self, token_list: &mut TokenList) {
-        
+        let mut tidx = self.next_token(token_list, 0);
+        while let Some(mut idx) = tidx {
+            let pidx = token_list.token_prev(idx, false);
+            let prev = token_list.token_idx(pidx);
+            let is_newline = prev.map(|t| t.value.ends_with("\n") || t.value.ends_with("\r")).unwrap_or(false);
+            if prev.map(|t| t.is_whitespace()).unwrap_or(false) {
+                token_list.tokens.remove(pidx.unwrap());
+                idx -= 1;
+            }
+            if !is_newline {
+                token_list.insert_before(idx, self.nl(0));
+                idx += 1;
+            }
+            tidx = self.next_token(token_list, idx)
+        }
     }
 
     fn split_statements(&self, token_list: &mut TokenList) {
@@ -71,7 +102,7 @@ impl ReindentFilter {
 
     fn process_default(&self, token_list: &mut TokenList) {
         self.split_statements(token_list);
-
+        self.split_kwds(token_list);
     }
     
 }
