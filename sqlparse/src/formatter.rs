@@ -12,8 +12,9 @@ pub struct FormatOption<'a> {
     pub strip_comments: bool,
     pub use_space_around_operators: bool,
     pub strip_whitespace: bool,
-    pub indent_columns: bool,
+    // reindent
     pub reindent: bool,
+    pub indent_columns: bool,
     pub reindent_aligned: bool,
     pub indent_after_first: bool,
     pub indent_tabs: bool,
@@ -23,6 +24,17 @@ pub struct FormatOption<'a> {
     pub comma_first: bool,
     pub right_margin: bool,
     pub grouping: bool,
+}
+
+impl<'a> FormatOption<'a> {
+
+    pub fn default_reindent() -> Self {
+        let mut options = Self::default();
+        options.reindent = true;
+        options.indent_width = 2;
+        options.indent_char = " ";
+        options
+    }
 }
 
 pub fn validate_options(_options: &mut FormatOption) {
