@@ -5,6 +5,7 @@ pub mod reindent;
 use super::{Token, TokenList};
 pub use tokens::{IdentifierCaseFilter, KeywordCaseFilter};
 pub use others::StripWhitespaceFilter;
+pub use reindent::ReindentFilter;
 
 pub trait Filter: Send+Sync {
     fn process(&self, token: &mut Token);

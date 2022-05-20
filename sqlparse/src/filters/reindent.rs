@@ -27,7 +27,7 @@ impl TokenListFilter for ReindentFilter {
 
 impl ReindentFilter {
 
-    fn new(width: usize, chr: &str, wrap_after: usize, n: &str, 
+    pub fn new(width: usize, chr: &str, wrap_after: usize, n: &str, 
         comma_first: bool, indent_after_first: bool, indent_columns: bool) -> Self {
         Self {
             n: n.to_string(),
