@@ -1,5 +1,5 @@
 use super::TokenListFilter;
-use crate::lexer::TokenList;
+use crate::lexer::{Token, TokenList};
 use crate::tokens::TokenType;
 
 pub struct ReindentFilter {
@@ -38,16 +38,40 @@ impl ReindentFilter {
         }
     }
 
-    fn process_default(token_list: &mut TokenList) {
-
+    fn leading_ws(&self) -> usize {
+        self.offset + self.indent * self.width
     }
 
-    fn split_statements(token_list: &mut TokenList) {
+    fn nl(&self, offset: usize) -> Token {
+        let white = format!("{}{}", self.n, self.chr.repeat(self.leading_ws()+offset));
+        Token::new(TokenType::Whitespace, &white)
+    }
+
+    fn split_kwds(&self, token_list: &mut TokenList) {
+        
+    }
+
+    fn split_statements(&self, token_list: &mut TokenList) {
         let ttypes = vec![TokenType::KeywordDML, TokenType::KeywordDDL];
-        let tidx = token_list.token_next_by(&ttypes, None, 0);
-        while let Some(idx) = tidx {
+        let mut tidx = token_list.token_next_by(&ttypes, None, 0);
+        while let Some(mut idx) = tidx {
             let pidx = token_list.token_prev(idx, false);
+            let prev = token_list.token_idx(pidx);
+            if prev.map(|t| t.is_whitespace()).unwrap_or(false) {
+                token_list.tokens.remove(pidx.unwrap());
+                idx -= 1;
+            }
+            if pidx.is_some() {
+                token_list.insert_before(idx, self.nl(0));
+                idx += 1;
+            }
+            tidx = token_list.token_next_by(&ttypes, None, idx+1) 
         }
+    }
+
+    fn process_default(&self, token_list: &mut TokenList) {
+        self.split_statements(token_list);
+
     }
     
 }

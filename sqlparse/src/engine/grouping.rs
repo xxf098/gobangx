@@ -108,7 +108,7 @@ impl TokenList {
         self.tokens.splice(start..end, group_token).for_each(drop);
     }
 
-    fn insert_before(&mut self, index: usize, token: Token){
+    pub fn insert_before(&mut self, index: usize, token: Token){
         self.tokens.insert(index, token)
     }
 
