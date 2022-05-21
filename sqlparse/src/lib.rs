@@ -174,11 +174,25 @@ mod tests {
         let sql = "and foo between 1 and 2 and bar = 3";
         let mut formatter = formatter::FormatOption::default_reindent();
         let formatted_sql = format(sql, &mut formatter);
-        println!("{}", formatted_sql);
         assert_eq!(formatted_sql, vec![
             "",
             "and foo between 1 and 2",
             "and bar = 3",
+        ].join("\n"))
+    }
+
+    #[test]
+    fn test_reindent_where() {
+        let sql = "select * from foo where bar = 1 and baz = 2 or bzz = 3;";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        let formatted_sql = format(sql, &mut formatter);
+        // println!("{}", formatted_sql);
+        assert_eq!(formatted_sql, vec![
+            "select *",
+            "from foo ",
+            "where bar = 1",
+            "  and baz = 2",
+            "  or bzz = 3;",
         ].join("\n"))
     }
 }

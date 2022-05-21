@@ -125,6 +125,7 @@ impl ReindentFilter {
         for token in token_list.tokens.iter_mut() {
             if token.is_group() {
                 self.process_internal(&mut token.children, &token.typ);
+                token.update_value();
             }
         }
     }
