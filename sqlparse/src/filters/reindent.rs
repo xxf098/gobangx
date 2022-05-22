@@ -20,7 +20,7 @@ pub struct ReindentFilter {
 impl TokenListFilter for ReindentFilter {
 
     fn process(&mut self, token_list: &mut TokenList) {
-        self.process_default(token_list);
+        self.process_default(token_list, true);
     }
 }
 
@@ -41,8 +41,16 @@ impl ReindentFilter {
         }
     }
 
+    fn flatten_up_to_token(&self, idx: usize) {
+
+    }
+
     fn leading_ws(&self) -> usize {
         self.offset + self.indent * self.width
+    }
+
+    fn get_offset(&self, idx: usize) -> usize {
+        return 0
     }
 
     fn nl(&self, offset: usize) -> Token {
@@ -104,7 +112,8 @@ impl ReindentFilter {
     fn process_internal(&mut self, token_list: &mut TokenList, token_type: &TokenType) {
         match token_type {
             TokenType::Where => self.process_where(token_list),
-            _ => self.process_default(token_list),
+            TokenType::Parenthesis => self.process_parenthesis(token_list),
+            _ => self.process_default(token_list, true),
         }
     }
 
@@ -114,13 +123,34 @@ impl ReindentFilter {
         if let Some(idx) = tidx {
             token_list.insert_before(idx, self.nl(0));
             self.indent += 1;
-            self.process_default(token_list);
+            self.process_default(token_list, true);
             self.indent -= 1;
         }
     }
 
-    fn process_default(&mut self, token_list: &mut TokenList) {
-        self.split_statements(token_list);
+    fn process_parenthesis(&mut self, token_list: &mut TokenList) {
+        let patterns = (TokenType::Punctuation, vec!["("]);
+        let pidx = token_list.token_next_by(&vec![], Some(&patterns), 0);
+        if pidx.is_none() {
+            return
+        }
+        let ttypes = vec![TokenType::KeywordDML, TokenType::KeywordDDL];
+        let tidx = token_list.token_next_by(&ttypes, None, 0);
+
+        let indent = if tidx.is_some() { 1 } else { 0 };
+        self.indent += indent;
+        if tidx.is_some() {
+            token_list.insert_before(0, self.nl(0));
+        }
+        let offset = self.get_offset(pidx.unwrap());
+        self.offset += offset;
+        self.process_default(token_list, tidx.is_some());
+        self.offset -= offset;
+        self.indent -= indent;
+    }
+
+    fn process_default(&mut self, token_list: &mut TokenList, split: bool) {
+        if split { self.split_statements(token_list); }
         self.split_kwds(token_list);
         for token in token_list.tokens.iter_mut() {
             if token.is_group() {
