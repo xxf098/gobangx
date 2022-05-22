@@ -29,7 +29,7 @@ impl Token {
         let value = Token::new_value(&children);
         let token_list = TokenList::new(children);
         // let v = value.split_whitespace().collect::<Vec<_>>().join(" ");
-        let normalized = if typ == TokenType::Keyword { value.to_uppercase().split_whitespace().collect::<Vec<_>>().join(" ") } else { value.clone() };
+        let normalized = if Token::is_keyword_internal(&typ) { value.to_uppercase().split_whitespace().collect::<Vec<_>>().join(" ") } else { value.clone() };
         Self { typ, value, children: token_list, normalized }
     }
 
@@ -48,10 +48,14 @@ impl Token {
     }
 
     pub fn is_keyword(&self) -> bool {
-        self.typ == TokenType::Keyword || 
-        self.typ == TokenType::KeywordDML || 
-        self.typ == TokenType::KeywordDDL || 
-        self.typ == TokenType::KeywordCTE
+        Token::is_keyword_internal(&self.typ)
+    }
+
+    fn is_keyword_internal(typ: &TokenType) -> bool {
+        *typ == TokenType::Keyword || 
+        *typ == TokenType::KeywordDML || 
+        *typ == TokenType::KeywordDDL || 
+        *typ == TokenType::KeywordCTE
     }
 
     pub fn is_group(&self) -> bool {
