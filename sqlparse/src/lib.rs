@@ -227,5 +227,19 @@ mod tests {
             "from foo",
             "inner join bar on 1 = 2",
         ].join("\n"));
+        let sql = "select * from foo left outer join bar on 1 = 2";
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "select *",
+            "from foo",
+            "left outer join bar on 1 = 2",
+        ].join("\n"));
+        let sql = "select * from foo straight_join bar on 1 = 2";
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "select *",
+            "from foo",
+            "straight_join bar on 1 = 2",
+        ].join("\n"));
     }
 }
