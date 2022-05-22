@@ -195,4 +195,18 @@ mod tests {
             "  or bzz = 3;",
         ].join("\n"))
     }
+
+    #[test]
+    fn test_reindent_parenthesis() {
+        let sql = "select count(*) from (select * from foo);";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        let formatted_sql = format(sql, &mut formatter);
+        println!("{}", formatted_sql);
+        assert_eq!(formatted_sql, vec![
+            "select count(*)",
+            "from ",
+            "  (select *",
+            "   from foo);",
+        ].join("\n"))
+    }
 }

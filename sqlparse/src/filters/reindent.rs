@@ -83,6 +83,7 @@ impl ReindentFilter {
                 idx -= 1;
             }
             if !is_newline {
+                // println!("{}", "nl split_kwds");
                 token_list.insert_before(idx, self.nl(0));
                 idx += 1;
             }
@@ -101,6 +102,7 @@ impl ReindentFilter {
                 idx -= 1;
             }
             if pidx.is_some() {
+                // println!("{}", "nl split_statements");
                 token_list.insert_before(idx, self.nl(0));
                 idx += 1;
             }
@@ -142,7 +144,7 @@ impl ReindentFilter {
         if tidx.is_some() {
             token_list.insert_before(0, self.nl(0));
         }
-        let offset = self.get_offset(pidx.unwrap());
+        let offset = self.get_offset(pidx.unwrap())+1;
         self.offset += offset;
         self.process_default(token_list, tidx.is_none());
         self.offset -= offset;
