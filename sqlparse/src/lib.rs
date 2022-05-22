@@ -189,7 +189,7 @@ mod tests {
         // println!("{}", formatted_sql);
         assert_eq!(formatted_sql, vec![
             "select *",
-            "from foo ",
+            "from foo",
             "where bar = 1",
             "  and baz = 2",
             "  or bzz = 3;",
@@ -201,10 +201,10 @@ mod tests {
         let sql = "select count(*) from (select * from foo);";
         let mut formatter = formatter::FormatOption::default_reindent();
         let formatted_sql = format(sql, &mut formatter);
-        println!("{}", formatted_sql);
+        // println!("{}", formatted_sql);
         assert_eq!(formatted_sql, vec![
             "select count(*)",
-            "from ",
+            "from",
             "  (select *",
             "   from foo);",
         ].join("\n"))
