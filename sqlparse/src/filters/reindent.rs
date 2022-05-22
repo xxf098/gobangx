@@ -144,7 +144,7 @@ impl ReindentFilter {
         }
         let offset = self.get_offset(pidx.unwrap());
         self.offset += offset;
-        self.process_default(token_list, tidx.is_some());
+        self.process_default(token_list, tidx.is_none());
         self.offset -= offset;
         self.indent -= indent;
     }
