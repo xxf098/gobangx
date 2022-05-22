@@ -209,4 +209,23 @@ mod tests {
             "   from foo);",
         ].join("\n"))
     }
+
+    #[test]
+    fn test_reindent_join() {
+        let sql = "select * from foo join bar on 1 = 2";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "select *",
+            "from foo",
+            "join bar on 1 = 2",
+        ].join("\n"));
+        let sql = "select * from foo inner join bar on 1 = 2";
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "select *",
+            "from foo",
+            "inner join bar on 1 = 2",
+        ].join("\n"));
+    }
 }

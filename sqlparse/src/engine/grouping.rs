@@ -74,6 +74,10 @@ impl TokenList {
         self.token_matching(types, pattern, start, self.tokens.len())
     }
 
+    pub fn token_next_by_fn(&self, f: fn(&Token) -> bool,start: usize) -> Option<usize> {
+        self.token_matching_fn(f, start, self.tokens.len(), false)
+    }
+
     fn token_next(&self, idx: usize) -> Option<usize> {
         return self.token_matching_fn(|t| !t.is_whitespace(), idx, self.len(), false);
     }

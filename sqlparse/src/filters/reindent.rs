@@ -2,7 +2,7 @@ use super::TokenListFilter;
 use crate::lexer::{Token, TokenList};
 use crate::tokens::TokenType;
 
-const SPLIT_WORDS: [&str; 14] = ["FROM", "STRAIGHT_JOIN", "JOIN", "AND", "OR", "GROUP BY", 
+const SPLIT_WORDS: [&str; 12] = ["FROM", "AND", "OR", "GROUP BY", 
     "ORDER BY", "UNION", "VALUES", "SET", "BETWEEN", "EXCEPT", "HAVING", "LIMIT"];
 
 pub struct ReindentFilter {
@@ -59,8 +59,8 @@ impl ReindentFilter {
     }
 
     fn next_token(&self, token_list: &TokenList, idx: usize) -> Option<usize> {
-        let patterns = (TokenType::Keyword, SPLIT_WORDS.to_vec());
-        let mut tidx = token_list.token_next_by(&vec![], Some(&patterns), idx);
+        let mut tidx = token_list.token_next_by_fn(|t| t.typ == TokenType::Keyword && 
+            (SPLIT_WORDS.iter().find(|w| **w == t.normalized).is_some() || t.normalized.ends_with("STRAIGHT_JOIN") || t.normalized.ends_with("JOIN")), idx);
         let token = token_list.token_idx(tidx);
         if token.map(|t| t.normalized == "BETWEEN").unwrap_or(false) {
             tidx = self.next_token(token_list, tidx.unwrap()+1);
