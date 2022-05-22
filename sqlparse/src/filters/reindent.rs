@@ -41,7 +41,7 @@ impl ReindentFilter {
         }
     }
 
-    fn flatten_up_to_token(&self, idx: usize) {
+    fn flatten_up_to_token(&self, _idx: usize) {
 
     }
 
@@ -49,7 +49,7 @@ impl ReindentFilter {
         self.offset + self.indent * self.width
     }
 
-    fn get_offset(&self, idx: usize) -> usize {
+    fn get_offset(&self, _idx: usize) -> usize {
         return 0
     }
 
@@ -115,6 +115,7 @@ impl ReindentFilter {
         match token_type {
             TokenType::Where => self.process_where(token_list),
             TokenType::Parenthesis => self.process_parenthesis(token_list),
+            TokenType::Values => self.process_values(token_list),
             _ => self.process_default(token_list, true),
         }
     }
@@ -149,6 +150,28 @@ impl ReindentFilter {
         self.process_default(token_list, tidx.is_none());
         self.offset -= offset;
         self.indent -= indent;
+    }
+
+    fn process_values(&mut self, token_list: &mut TokenList) {
+        token_list.insert_before(0, self.nl(0));
+        let ttypes = vec![TokenType::Parenthesis];
+        let mut tidx = token_list.token_next_by(&ttypes, None, 0);
+        let first_idx = tidx;
+        while let Some(idx) = tidx {
+            let patterns = (TokenType::Punctuation, vec![","]);
+            let pidx = token_list.token_next_by(&vec![], Some(&patterns), idx);
+            if let Some(idx1) = pidx {
+                if self.comma_first {
+                    let offset = self.get_offset(first_idx.unwrap());
+                    token_list.insert_before(idx1, self.nl(offset));
+                } else {
+                    let offset = self.get_offset(idx);
+                    let nl = self.nl(offset);
+                    token_list.insert_after(idx1, nl, true);
+                }
+            }
+            tidx = token_list.token_next_by(&ttypes, None, idx+1); 
+        }
     }
 
     fn process_default(&mut self, token_list: &mut TokenList, split: bool) {

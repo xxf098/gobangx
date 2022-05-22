@@ -116,6 +116,15 @@ impl TokenList {
         self.tokens.insert(index, token)
     }
 
+    pub fn insert_after(&mut self, index: usize, token: Token, _skip_ws: bool) {
+        let nidx = self.token_next(index+1);
+        if let Some(idx) = nidx {
+            self.tokens.insert(idx, token)
+        } else {
+            self.tokens.push(token)
+        }
+    }
+
     fn group_parenthesis(&mut self) {
         group_matching(self, &TokenType::Parenthesis, &["("], ")");
     }
@@ -416,7 +425,7 @@ impl TokenList {
             if token.map(|t| t.typ == TokenType::Parenthesis).unwrap_or(false) {
                end_idx = tidx 
             }
-            tidx = self.token_next(idx);
+            tidx = self.token_next(idx+1);
         }
         if let Some(e_idx) = end_idx {
             self.group_tokens(TokenType::Values, start_idx.unwrap(), e_idx, true);

@@ -242,4 +242,15 @@ mod tests {
             "straight_join bar on 1 = 2",
         ].join("\n"));
     }
+
+    #[test]
+    fn test_insert_values() {
+        let sql = "insert into foo values (1, 2)";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "insert into foo",
+            "values (1, 2)",
+        ].join("\n"));
+    }
 }
