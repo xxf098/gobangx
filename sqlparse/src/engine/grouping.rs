@@ -125,6 +125,41 @@ impl TokenList {
         }
     }
 
+    fn get_case(&self, skip_ws: bool) -> Vec<(Vec<&Token>, Vec<&Token>)> {
+        let mut mode = 1;
+        let mut ret: Vec<(Vec<&Token>, Vec<&Token>)> = vec![];
+        for token in self.tokens.iter() {
+            if token.typ == TokenType::Keyword && token.normalized == "CASE" {
+                continue
+            } else if skip_ws && token.is_whitespace() {
+                continue
+            } else if token.typ == TokenType::Keyword && token.normalized == "WHEN" {
+                ret.push((vec![], vec![]));
+                mode = 1;
+            } else if token.typ == TokenType::Keyword && token.normalized == "THEN" {
+                mode = 2;
+            } else if token.typ == TokenType::Keyword && token.normalized == "ELSE" {
+                ret.push((vec![], vec![]));
+                mode = 2;
+            } else if token.typ == TokenType::Keyword && token.normalized == "END" {
+                mode = 0;
+            }
+
+            // First condition without preceding WHEN
+            if mode > 0 && ret.len() < 1 {
+                ret.push((vec![], vec![]));
+            }
+            // Append token depending of the current mode
+            let length = ret.len();
+            if mode == 1 {
+                ret[length-1].0.push(token);
+            } else if mode == 2 {
+                ret[length-1].1.push(token);
+            }
+        }
+        ret
+    }
+
     fn group_parenthesis(&mut self) {
         group_matching(self, &TokenType::Parenthesis, &["("], ")");
     }
@@ -910,5 +945,17 @@ mod tests {
         assert_eq!(token_list.token_idx(Some(6)).unwrap().typ, TokenType::Identifier);
         let sub_tokens = &token_list.token_idx(Some(2)).unwrap().children;
         assert_eq!(sub_tokens.token_idx(Some(3)).unwrap().typ, TokenType::Parenthesis);
+    }
+
+    #[test]
+    fn test_get_case() {
+        let sql = "case when foo = 1 then 2 when foo = 3 then 4 else 5 end";
+        let token_list = _group_tokenlist(sql);
+        // println!("{:?}", token_list);
+        let cases = token_list.tokens[0].children.get_case(false);
+        assert_eq!(cases.len(), 4);
+        // for token in &token_list.tokens[0].children.tokens {
+        //     println!("{:?}", token);
+        // }
     }
 }
