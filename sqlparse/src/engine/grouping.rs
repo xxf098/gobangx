@@ -125,10 +125,10 @@ impl TokenList {
         }
     }
 
-    fn get_case(&self, skip_ws: bool) -> Vec<(Vec<&Token>, Vec<&Token>)> {
+    pub fn get_case(&self, skip_ws: bool) -> Vec<(Vec<usize>, Vec<usize>)> {
         let mut mode = 1;
-        let mut ret: Vec<(Vec<&Token>, Vec<&Token>)> = vec![];
-        for token in self.tokens.iter() {
+        let mut ret: Vec<(Vec<usize>, Vec<usize>)> = vec![];
+        for (idx, token) in self.tokens.iter().enumerate() {
             if token.typ == TokenType::Keyword && token.normalized == "CASE" {
                 continue
             } else if skip_ws && token.is_whitespace() {
@@ -152,9 +152,9 @@ impl TokenList {
             // Append token depending of the current mode
             let length = ret.len();
             if mode == 1 {
-                ret[length-1].0.push(token);
+                ret[length-1].0.push(idx);
             } else if mode == 2 {
-                ret[length-1].1.push(token);
+                ret[length-1].1.push(idx);
             }
         }
         ret

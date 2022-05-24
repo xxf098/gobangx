@@ -11,6 +11,7 @@ pub struct Token {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct TokenList {
+    // pub parent_type: TokenType,
     pub tokens: Vec<Token>,
 }
 

@@ -11,6 +11,7 @@ pub struct ReindentFilter {
     chr: String, // indent space character
     indent: usize,
     offset: usize,
+    prev_sql: String, // accumulate previous token to sql
     wrap_after: usize,
     comma_first: bool,
     indent_columns: bool,
@@ -20,7 +21,7 @@ pub struct ReindentFilter {
 impl TokenListFilter for ReindentFilter {
 
     fn process(&mut self, token_list: &mut TokenList) {
-        self.process_default(token_list, true);
+        self.process_default(token_list, true, 0);
     }
 }
 
@@ -35,22 +36,26 @@ impl ReindentFilter {
             chr: chr.to_string(),
             indent: if indent_after_first { 1 } else { 0},
             offset: 0,
+            prev_sql: "".to_string(),
             wrap_after,
             comma_first,
             indent_columns,
         }
     }
 
-    fn flatten_up_to_token(&self, _idx: usize) {
-
-    }
+    // fn flatten_up_to_token(&self, token_list: &TokenList, idx: usize) {
+    //     unimplemented!()
+    // }
 
     fn leading_ws(&self) -> usize {
         self.offset + self.indent * self.width
     }
 
-    fn get_offset(&self, _idx: usize) -> usize {
-        return 0
+    fn get_offset(&self, extra_str: &str) -> usize {
+        let s = format!("{}{}", self.prev_sql, extra_str);
+        let line = s.split('\n').last().unwrap_or("");
+        // println!("line: {:?}", line);
+        line.len().saturating_sub(self.chr.len()*self.leading_ws())
     }
 
     fn nl(&self, offset: usize) -> Token {
@@ -111,12 +116,13 @@ impl ReindentFilter {
     }
 
 
-    fn process_internal(&mut self, token_list: &mut TokenList, token_type: &TokenType) {
+    fn process_internal(&mut self, token_list: &mut TokenList, token_type: &TokenType, level: usize) {
         match token_type {
             TokenType::Where => self.process_where(token_list),
             TokenType::Parenthesis => self.process_parenthesis(token_list),
             TokenType::Values => self.process_values(token_list),
-            _ => self.process_default(token_list, true),
+            TokenType::Case => self.process_case(token_list),
+            _ => self.process_default(token_list, true, level),
         }
     }
 
@@ -126,7 +132,7 @@ impl ReindentFilter {
         if let Some(idx) = tidx {
             token_list.insert_before(idx, self.nl(0));
             self.indent += 1;
-            self.process_default(token_list, true);
+            self.process_default(token_list, true, 1);
             self.indent -= 1;
         }
     }
@@ -142,30 +148,63 @@ impl ReindentFilter {
 
         let indent = if tidx.is_some() { 1 } else { 0 };
         self.indent += indent;
+        let mut offset = self.get_offset("")+1;
         if tidx.is_some() {
-            token_list.insert_before(0, self.nl(0));
+            let t = self.nl(0);
+            offset = self.get_offset(&t.value)+1;
+            token_list.insert_before(0, t);
         }
-        let offset = self.get_offset(pidx.unwrap())+1;
         self.offset += offset;
-        self.process_default(token_list, tidx.is_none());
+        self.process_default(token_list, tidx.is_none(), 1);
         self.offset -= offset;
         self.indent -= indent;
+    }
+
+    fn process_case(&mut self, token_list: &mut TokenList) {
+        let cases = token_list.get_case(false);
+        let cond = &cases[0];
+        let first = cond.0[0];
+        {
+            let offset = self.get_offset("");
+            self.offset += offset;
+            {
+                let offset = self.get_offset("");
+                self.offset += offset;
+                for (cond, value) in cases.iter().skip(1) {
+                    let token_idx = if cond.len() < 1 { value[0] } else { cond[0] };
+                    token_list.insert_before(token_idx, self.nl(0));
+                    {
+                        let n = "WHEN ".len();
+                        self.offset += n;
+                        self.process_default(token_list, true, 1);
+                        self.offset -= n;
+                    }
+                }
+                let pattern = (TokenType::Case, vec!["END"]);
+                let end_idx = token_list.token_next_by(&vec![], Some(&pattern), 0);
+                if let Some(idx) = end_idx {
+                    token_list.insert_before(idx, self.nl(0))
+                }
+                self.offset -= offset;
+            }
+            self.offset -= offset;
+        }
     }
 
     fn process_values(&mut self, token_list: &mut TokenList) {
         token_list.insert_before(0, self.nl(0));
         let ttypes = vec![TokenType::Parenthesis];
         let mut tidx = token_list.token_next_by(&ttypes, None, 0);
-        let first_idx = tidx;
+        // let first_idx = tidx;
         while let Some(idx) = tidx {
             let patterns = (TokenType::Punctuation, vec![","]);
             let pidx = token_list.token_next_by(&vec![], Some(&patterns), idx);
             if let Some(idx1) = pidx {
                 if self.comma_first {
-                    let offset = self.get_offset(first_idx.unwrap());
+                    let offset = self.get_offset("");
                     token_list.insert_before(idx1, self.nl(offset));
                 } else {
-                    let offset = self.get_offset(idx);
+                    let offset = self.get_offset("");
                     let nl = self.nl(offset);
                     token_list.insert_after(idx1, nl, true);
                 }
@@ -174,17 +213,22 @@ impl ReindentFilter {
         }
     }
 
-    fn process_default(&mut self, token_list: &mut TokenList, split: bool) {
+    fn process_default(&mut self, token_list: &mut TokenList, split: bool, level: usize) {
         if split { self.split_statements(token_list); }
         self.split_kwds(token_list);
         let mut remove_indexes = vec![];
         for (i, token) in token_list.tokens.iter_mut().enumerate() {
             if token.is_group() {
-                self.process_internal(&mut token.children, &token.typ);
+                self.process_internal(&mut token.children, &token.typ, 1);
                 token.update_value();
+                
                 if token.value.starts_with("\n") && i > 0 {
                     remove_indexes.push(i-1);
                 }
+            }
+            // top level only
+            if level == 0 {
+                self.prev_sql.push_str(&token.value);
             }
         }
         remove_indexes.iter().enumerate().for_each(|(i, idx)| {token_list.tokens.remove(idx-i);});
