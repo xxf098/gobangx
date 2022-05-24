@@ -116,6 +116,18 @@ impl TokenList {
         self.tokens.insert(index, token)
     }
 
+    // insert newline and remove before space
+    // return true if any space removed
+    pub fn insert_newline_before(&mut self, index: usize, token: Token) -> bool {
+        if index > 0 && self.tokens.get(index-1).map(|t| t.is_whitespace()).unwrap_or(false) {
+            self.tokens[index-1] = token;
+            true
+        } else {
+            self.tokens.insert(index, token);
+            false
+        }
+    }
+
     pub fn insert_after(&mut self, index: usize, token: Token, _skip_ws: bool) {
         let nidx = self.token_next(index+1);
         if let Some(idx) = nidx {

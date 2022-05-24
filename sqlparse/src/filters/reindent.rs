@@ -161,6 +161,7 @@ impl ReindentFilter {
     }
 
     fn process_case(&mut self, token_list: &mut TokenList) {
+        // println!("{}", token_list);
         let cases = token_list.get_case(false);
         // println!("cases: {:?}", cases);
         let cond = &cases[0];
@@ -175,8 +176,9 @@ impl ReindentFilter {
                 let mut insert_count = 0; // insert newline count
                 for (cond, value) in cases.iter().skip(1) {
                     let token_idx = if cond.len() < 1 { value[0] } else { cond[0] };
-                    token_list.insert_before(token_idx+insert_count, self.nl(0));
-                    insert_count += 1;
+                    if !token_list.insert_newline_before(token_idx+insert_count, self.nl(0)) {
+                        insert_count += 1;
+                    }
                 }
                 {
                     let n = "WHEN ".len();
@@ -188,7 +190,7 @@ impl ReindentFilter {
                 let pattern = (TokenType::Keyword, vec!["END"]);
                 let end_idx = token_list.token_next_by(&vec![], Some(&pattern), 0);
                 if let Some(idx) = end_idx {
-                    token_list.insert_before(idx, self.nl(0));
+                    token_list.insert_newline_before(idx, self.nl(0));
                 }
             }
             self.offset -= offset;
