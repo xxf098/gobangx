@@ -304,4 +304,18 @@ mod tests {
             "     b"
         ].join("\n"));
     }
+
+    #[test]
+    fn test_identifier_list_with_wrap_after() {
+        let sql = "select foo, bar, baz from table1, table2 where 1 = 2";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        formatter.wrap_after = 14;
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "select foo, bar,",
+            "       baz",
+            "from table1, table2",
+            "where 1 = 2"
+        ].join("\n"));
+    }
 }
