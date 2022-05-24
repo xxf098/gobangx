@@ -295,5 +295,13 @@ mod tests {
             "     table2",
             "where 1 = 2"
         ].join("\n"));
+        let sql = "select a.*, b.id from a, b";
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "select a.*,",
+            "       b.id",
+            "from a,",
+            "     b"
+        ].join("\n"));
     }
 }
