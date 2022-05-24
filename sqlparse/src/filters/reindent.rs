@@ -15,7 +15,6 @@ pub struct ReindentFilter {
     wrap_after: usize,
     comma_first: bool,
     indent_columns: bool,
-
 }
 
 impl TokenListFilter for ReindentFilter {
@@ -58,8 +57,9 @@ impl ReindentFilter {
         line.len().saturating_sub(self.chr.len()*self.leading_ws())
     }
 
-    fn nl(&self, offset: usize) -> Token {
-        let white = format!("{}{}", self.n, self.chr.repeat(self.leading_ws()+offset));
+    fn nl(&self, offset: isize) -> Token {
+        let i = 0.max(self.leading_ws() as isize +offset);
+        let white = format!("{}{}", self.n, self.chr.repeat(i as usize));
         Token::new(TokenType::Whitespace, &white)
     }
 
@@ -122,6 +122,7 @@ impl ReindentFilter {
             TokenType::Parenthesis => self.process_parenthesis(token_list),
             TokenType::Values => self.process_values(token_list),
             TokenType::Case => self.process_case(token_list),
+            TokenType::IdentifierList => self.process_identifierlist(token_list),
             _ => self.process_default(token_list, true, level),
         }
     }
@@ -160,8 +161,53 @@ impl ReindentFilter {
         self.indent -= indent;
     }
 
+    fn process_identifierlist(&mut self, token_list: &mut TokenList) {
+        let mut identifiers = token_list.get_identifiers();
+        let num_offset = if self.indent_columns {
+            if self.chr == "\n" { 1 } else { self.width }
+        } else {
+            if self.chr == "\t" { 1 } else {
+                let first = identifiers.remove(0);
+                let extra = token_list.tokens.iter().take(first).map(|t| t.value.as_str()).collect::<Vec<&str>>().join("");
+                self.get_offset(&extra)
+            }
+        };
+        // not tlist.within(sql.Function) and not tlist.within(sql.Values)
+        {
+            self.offset += num_offset;
+            let mut position = 0;
+            for mut tidx in identifiers {
+                let token = token_list.token_idx(Some(tidx)).unwrap();
+                // Add 1 for the "," separator
+                position += token.value.len() + 1;
+                if position + self.offset > self.wrap_after {
+                    let mut adjust: isize = 0;
+                    if self.comma_first {
+                        adjust = -2;
+                        let comma_idx = token_list.token_prev(tidx, true);
+                        if comma_idx.is_none() {
+                            continue
+                        }
+                        tidx = comma_idx.unwrap();
+                    }
+                    token_list.insert_before(tidx, self.nl(adjust));
+                    if self.comma_first {
+                        let ws_idx = token_list.token_next(tidx, false);
+                        let ws = token_list.token_idx(ws_idx);
+                        if ws.is_some() && ws.unwrap().typ == TokenType::Whitespace {
+                            token_list.insert_after(tidx, Token::new(TokenType::Whitespace, " "), true);
+                        }
+                    }
+                    position = 0;
+                }
+            }
+            self.offset -= num_offset;
+        }
+        self.process_default(token_list, true, 1)
+
+    }
+
     fn process_case(&mut self, token_list: &mut TokenList) {
-        // println!("{}", token_list);
         let cases = token_list.get_case(false);
         // println!("cases: {:?}", cases);
         let cond = &cases[0];
@@ -208,10 +254,10 @@ impl ReindentFilter {
             if let Some(idx1) = pidx {
                 if self.comma_first {
                     let offset = self.get_offset("");
-                    token_list.insert_before(idx1, self.nl(offset));
+                    token_list.insert_before(idx1, self.nl(offset as isize));
                 } else {
                     let offset = self.get_offset("");
-                    let nl = self.nl(offset);
+                    let nl = self.nl(offset as isize);
                     token_list.insert_after(idx1, nl, true);
                 }
             }
