@@ -267,4 +267,18 @@ mod tests {
             "end"
         ].join("\n"));
     }
+
+    #[test]
+    fn test_reindent_case2() {
+        let sql = "case(foo) when bar = 1 then 2 else 3 end";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "case(foo)",
+            "    when bar = 1 then 2",
+            "    else 3",
+            "end"
+        ].join("\n"));
+
+    }
 }
