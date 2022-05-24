@@ -253,4 +253,18 @@ mod tests {
             "values (1, 2)",
         ].join("\n"));
     }
+
+    #[test]
+    fn test_reindent_case() {
+        let sql = "case when foo = 1 then 2 when foo = 3 then 4 else 5 end";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "case",
+            "    when foo = 1 then 2",
+            "    when foo = 3 then 4",
+            "    else 5",
+            "end"
+        ].join("\n"));
+    }
 }
