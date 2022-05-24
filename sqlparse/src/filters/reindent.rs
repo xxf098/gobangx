@@ -148,12 +148,12 @@ impl ReindentFilter {
 
         let indent = if tidx.is_some() { 1 } else { 0 };
         self.indent += indent;
-        let mut offset = self.get_offset("")+1;
-        if tidx.is_some() {
+        let offset = if tidx.is_some() {
             let t = self.nl(0);
-            offset = self.get_offset(&t.value)+1;
+            let offset = self.get_offset(&t.value);
             token_list.insert_before(0, t);
-        }
+            offset+1
+        } else { self.get_offset("")+1 };
         self.offset += offset;
         self.process_default(token_list, tidx.is_none(), 1);
         self.offset -= offset;
