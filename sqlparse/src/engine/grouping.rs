@@ -78,8 +78,10 @@ impl TokenList {
         self.token_matching_fn(f, start, self.tokens.len(), false)
     }
 
-    fn token_next(&self, idx: usize) -> Option<usize> {
-        return self.token_matching_fn(|t| !t.is_whitespace(), idx, self.len(), false);
+    pub fn token_next(&self, idx: usize, skip_ws: bool) -> Option<usize> {
+        if skip_ws { self.token_matching_fn(|t| !t.is_whitespace(), idx, self.len(), false) }
+        else { self.token_matching_fn(|_| true, idx, self.len(), false) } 
+        // return self.token_matching_fn(|t| !t.is_whitespace(), idx, self.len(), false);
     }
 
     pub fn token_prev(&self, idx: usize, skip_ws: bool) -> Option<usize> {
@@ -129,7 +131,7 @@ impl TokenList {
     }
 
     pub fn insert_after(&mut self, index: usize, token: Token, _skip_ws: bool) {
-        let nidx = self.token_next(index+1);
+        let nidx = self.token_next(index+1, true);
         if let Some(idx) = nidx {
             self.tokens.insert(idx, token)
         } else {
@@ -170,6 +172,11 @@ impl TokenList {
             }
         }
         ret
+    }
+
+    //  Whitespaces and punctuations are not included
+    pub fn get_identifiers(&self) -> Vec<usize> {
+        self.tokens.iter().enumerate().filter(|(_, t)| !(t.is_whitespace() || t.value == ",")).map(|(i, _)| i).collect::<Vec<_>>()
     }
 
     fn group_parenthesis(&mut self) {
@@ -410,7 +417,7 @@ impl TokenList {
             TokenType::Operation, TokenType::Comparison, TokenType::NumberInteger, TokenType::NumberFloat, TokenType::NumberHexadecimal, TokenType::Number];
         let mut tidx = self.token_next_by(&ttypes, None, 0);
         while let Some(idx) = tidx {
-            let nidx = self.token_next(idx+1);
+            let nidx = self.token_next(idx+1, true);
             let next = self.token_idx(nidx);
             if next.map(|n| n.typ == TokenType::Identifier).unwrap_or(false) {
                 self.group_tokens(TokenType::Identifier, idx, nidx.unwrap()+1, true)
@@ -436,7 +443,7 @@ impl TokenList {
         let ttypes = vec![TokenType::Name];
         let mut tidx = self.token_next_by(&ttypes, None, 0);
         while let Some(idx) = tidx {
-            let nidx = self.token_next(idx+1);
+            let nidx = self.token_next(idx+1, true);
             let next = self.token_idx(nidx);
             if next.map(|n| n.typ == TokenType::Parenthesis).unwrap_or(false) {
                 self.group_tokens(TokenType::Function, idx, nidx.unwrap(), false)
@@ -472,7 +479,7 @@ impl TokenList {
             if token.map(|t| t.typ == TokenType::Parenthesis).unwrap_or(false) {
                end_idx = tidx 
             }
-            tidx = self.token_next(idx+1);
+            tidx = self.token_next(idx+1, true);
         }
         if let Some(e_idx) = end_idx {
             self.group_tokens(TokenType::Values, start_idx.unwrap(), e_idx, true);
@@ -602,7 +609,7 @@ fn group_internal(
 
             let token = &tlist.tokens[idx];
             if matcher(token) {
-                let nidx = tlist.token_next(idx+1);
+                let nidx = tlist.token_next(idx+1, true);
                 let next_ = tlist.token_idx(nidx);
                 if pidx.is_some() && prev_.is_some() && valid_prev(prev_.as_ref()) && valid_next(next_) {
                     let (from_idx, to_idx) = post(tlist, pidx.unwrap(), idx, nidx.unwrap());
