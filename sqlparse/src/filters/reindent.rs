@@ -190,7 +190,7 @@ impl ReindentFilter {
                         }
                         tidx = comma_idx.unwrap();
                     }
-                    token_list.insert_before(tidx, self.nl(adjust));
+                    token_list.insert_newline_before(tidx, self.nl(adjust));
                     if self.comma_first {
                         let ws_idx = token_list.token_next(tidx, false);
                         let ws = token_list.token_idx(ws_idx);
