@@ -169,26 +169,27 @@ impl ReindentFilter {
             let offset = self.get_offset("");
             self.offset += offset;
             {
-                let offset = self.get_offset("");
+                let extra = token_list.tokens.iter().take(first).map(|t| t.value.as_str()).collect::<Vec<&str>>().join("");
+                let offset = self.get_offset(&extra);
                 self.offset += offset;
                 let mut insert_count = 0; // insert newline count
                 for (cond, value) in cases.iter().skip(1) {
                     let token_idx = if cond.len() < 1 { value[0] } else { cond[0] };
                     token_list.insert_before(token_idx+insert_count, self.nl(0));
                     insert_count += 1;
-                    {
-                        let n = "WHEN ".len();
-                        self.offset += n;
-                        self.process_default(token_list, true, 1);
-                        self.offset -= n;
-                    }
                 }
+                {
+                    let n = "WHEN ".len();
+                    self.offset += n;
+                    self.process_default(token_list, true, 1);
+                    self.offset -= n;
+                }
+                self.offset -= offset;
                 let pattern = (TokenType::Keyword, vec!["END"]);
                 let end_idx = token_list.token_next_by(&vec![], Some(&pattern), 0);
                 if let Some(idx) = end_idx {
                     token_list.insert_before(idx, self.nl(0));
                 }
-                self.offset -= offset;
             }
             self.offset -= offset;
         }
