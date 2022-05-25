@@ -163,7 +163,9 @@ impl ReindentFilter {
     }
 
     fn process_identifierlist(&mut self, token_list: &mut TokenList) {
+        // println!("{}", token_list);
         let mut identifiers = token_list.get_identifiers();
+        // println!("{:?}", identifiers);
         let num_offset = if self.indent_columns {
             if self.chr == "\n" { 1 } else { self.width }
         } else {
@@ -177,7 +179,9 @@ impl ReindentFilter {
         {
             self.offset += num_offset;
             let mut position = 0;
+            let mut insert_count = 0;
             for mut tidx in identifiers {
+                tidx += insert_count;
                 let token = token_list.token_idx(Some(tidx)).unwrap();
                 // Add 1 for the "," separator
                 position += token.value.len() + 1;
@@ -191,12 +195,15 @@ impl ReindentFilter {
                         }
                         tidx = comma_idx.unwrap();
                     }
-                    token_list.insert_newline_before(tidx, self.nl(adjust));
+                    let is_space_removed = token_list.insert_newline_before(tidx, self.nl(adjust));
+                    if !is_space_removed { insert_count += 1; }
                     if self.comma_first {
-                        let ws_idx = token_list.token_next(tidx, false);
+                        let count = if is_space_removed { 0 } else { 1 };
+                        let ws_idx = token_list.token_next(tidx+count+1, false);
                         let ws = token_list.token_idx(ws_idx);
                         if ws.is_some() && ws.unwrap().typ != TokenType::Whitespace {
-                            token_list.insert_after(tidx, Token::new(TokenType::Whitespace, " "), true);
+                            token_list.insert_after(tidx+count, Token::new(TokenType::Whitespace, " "), true);
+                            insert_count += 1;
                         }
                     }
                     position = 0;

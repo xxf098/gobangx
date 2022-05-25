@@ -318,4 +318,22 @@ mod tests {
             "where 1 = 2"
         ].join("\n"));
     }
+
+    #[test]
+    fn test_identifier_list_comment_first() {
+        let sql = "select foo, bar, baz from table where foo in (1, 2,3)";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        formatter.comma_first = true;
+        let formatted_sql = format(sql, &mut formatter);
+        // println!("{}", formatted_sql);
+        assert_eq!(formatted_sql, vec![
+            "select foo",
+            "     , bar",
+            "     , baz",
+            "from table",
+            "where foo in (1",
+            "          , 2",
+            "          , 3)"
+        ].join("\n"));
+    }
 }
