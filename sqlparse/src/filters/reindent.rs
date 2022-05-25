@@ -15,6 +15,7 @@ pub struct ReindentFilter {
     wrap_after: usize,
     comma_first: bool,
     indent_columns: bool,
+    // parents_type: Option<TokenType>,
 }
 
 impl TokenListFilter for ReindentFilter {
@@ -194,7 +195,7 @@ impl ReindentFilter {
                     if self.comma_first {
                         let ws_idx = token_list.token_next(tidx, false);
                         let ws = token_list.token_idx(ws_idx);
-                        if ws.is_some() && ws.unwrap().typ == TokenType::Whitespace {
+                        if ws.is_some() && ws.unwrap().typ != TokenType::Whitespace {
                             token_list.insert_after(tidx, Token::new(TokenType::Whitespace, " "), true);
                         }
                     }
