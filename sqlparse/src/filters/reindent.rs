@@ -291,11 +291,13 @@ impl ReindentFilter {
                 if token.value.starts_with("\n") && i > 0 {
                     remove_indexes.push(i-1);
                 }
-            }
-            // top level only
-            if parents.len() == 0 {
+            } else {
                 self.prev_sql.push_str(&token.value);
             }
+            // top level only
+            // if parents.len() == 0 {
+            //     self.prev_sql.push_str(&token.value);
+            // }
         }
         remove_indexes.iter().enumerate().for_each(|(i, idx)| {token_list.tokens.remove(idx-i);});
     }
