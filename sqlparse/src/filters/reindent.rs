@@ -17,6 +17,7 @@ pub struct ReindentFilter {
     comma_first: bool,
     indent_columns: bool,
     // parents_type: Option<TokenType>,
+    last_func_len: usize,
 }
 
 impl TokenListFilter for ReindentFilter {
@@ -41,6 +42,7 @@ impl ReindentFilter {
             wrap_after,
             comma_first,
             indent_columns,
+            last_func_len: 0, 
         }
     }
 
@@ -212,6 +214,54 @@ impl ReindentFilter {
                 }
             }
             self.offset -= num_offset;
+        } else {
+            let mut n = 0;
+            while n < token_list.len() {
+                let token = token_list.token_idx(Some(n)).unwrap();
+                if token.value != "," {
+                    n += 1;
+                    continue
+                }
+                let next_id = token_list.token_next(0, false);
+                let next_ws = token_list.token_idx(next_id);
+                if next_ws.map(|t| t.is_whitespace()).unwrap_or(false) {
+                    token_list.insert_after(n, Token::new(TokenType::Whitespace, " "), true);
+                    n += 1;
+                }
+                n += 1;
+            }
+
+            let end_at: usize = identifiers.iter().map(|i| token_list.tokens[*i].value.len()+1).sum();
+            let mut adjusted_offset: isize = 0;
+            if self.wrap_after > 0 && end_at + self.offset > self.wrap_after && self.last_func_len > 0{
+                adjusted_offset = 0-(self.last_func_len as isize)-1;
+            }
+            {
+                self.indent += 1;
+                let abs = adjusted_offset.abs() as usize;
+                let offset = self.offset;
+                self.offset = if abs > offset { 0 } else { offset - abs };
+
+                if adjusted_offset < 0 {
+                    token_list.insert_before(identifiers[0], self.nl(0));
+                }
+                let mut position = 0;
+                let mut insert_count = 0;
+                for mut tidx in identifiers {
+                    tidx += insert_count;
+                    let token = token_list.token_idx(Some(tidx)).unwrap();
+                    position += token.value.len() + 1;
+                    if self.wrap_after > 0 && position + self.offset > self.wrap_after {
+                        if !token_list.insert_newline_before(tidx, self.nl(0)) {
+                            insert_count += 1;
+                        }
+                        position = 0;
+                    }
+                }
+                self.offset = offset;
+                self.indent -= 1;
+            }
+
         }
         parents.push(TokenType::IdentifierList);
         self.process_default(token_list, true, parents)
@@ -255,7 +305,7 @@ impl ReindentFilter {
         }
     }
 
-    // FIXME:
+    // FIXME: insert_count
     fn process_values(&mut self, token_list: &mut TokenList) {
         token_list.insert_before(0, self.nl(0));
         let ttypes = vec![TokenType::Parenthesis];

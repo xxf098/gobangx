@@ -336,4 +336,18 @@ mod tests {
             "            , 3)"
         ].join("\n"));
     }
+
+    #[test]
+    fn test_identifier_list_with_functions() {
+        let sql = "select 'abc' as foo, coalesce(col1, col2)||col3 as bar, col3 from my_table";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "select 'abc' as foo,",
+            "       coalesce(col1, col2)||col3 as bar,",
+            "       col3",
+            "from my_table"
+        ].join("\n"));
+    }
+
 }
