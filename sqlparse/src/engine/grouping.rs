@@ -482,7 +482,7 @@ impl TokenList {
             tidx = self.token_next(idx+1, true);
         }
         if let Some(e_idx) = end_idx {
-            self.group_tokens(TokenType::Values, start_idx.unwrap(), e_idx, true);
+            self.group_tokens(TokenType::Values, start_idx.unwrap(), e_idx+1, true);
         }
     }
 

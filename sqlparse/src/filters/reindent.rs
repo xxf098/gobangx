@@ -305,7 +305,6 @@ impl ReindentFilter {
         }
     }
 
-    // FIXME: insert_count
     fn process_values(&mut self, token_list: &mut TokenList) {
         token_list.insert_before(0, self.nl(0));
         let ttypes = vec![TokenType::Parenthesis];
