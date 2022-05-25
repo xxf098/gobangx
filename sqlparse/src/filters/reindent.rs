@@ -178,8 +178,7 @@ impl ReindentFilter {
                 self.get_offset(&extra)
             }
         };
-        // not tlist.within(sql.Function) and not tlist.within(sql.Values)
-        {
+        if parents.iter().find(|t| **t == TokenType::Function || **t == TokenType::Values).is_none() {
             self.offset += num_offset;
             let mut position = 0;
             let mut insert_count = 0;

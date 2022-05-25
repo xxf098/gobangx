@@ -332,8 +332,8 @@ mod tests {
             "     , baz",
             "from table",
             "where foo in (1",
-            "          , 2",
-            "          , 3)"
+            "            , 2",
+            "            , 3)"
         ].join("\n"));
     }
 }
