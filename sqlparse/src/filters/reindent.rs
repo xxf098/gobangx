@@ -22,7 +22,7 @@ pub struct ReindentFilter {
 impl TokenListFilter for ReindentFilter {
 
     fn process(&mut self, token_list: &mut TokenList) {
-        self.process_default(token_list, true, 0);
+        self.process_default(token_list, true, vec![]);
     }
 }
 
@@ -118,29 +118,30 @@ impl ReindentFilter {
     }
 
 
-    fn process_internal(&mut self, token_list: &mut TokenList, token_type: &TokenType, level: usize) {
+    fn process_internal(&mut self, token_list: &mut TokenList, token_type: &TokenType, parents: Vec<TokenType>) {
         match token_type {
-            TokenType::Where => self.process_where(token_list),
-            TokenType::Parenthesis => self.process_parenthesis(token_list),
+            TokenType::Where => self.process_where(token_list, parents),
+            TokenType::Parenthesis => self.process_parenthesis(token_list, parents),
             TokenType::Values => self.process_values(token_list),
-            TokenType::Case => self.process_case(token_list),
-            TokenType::IdentifierList => self.process_identifierlist(token_list),
-            _ => self.process_default(token_list, true, level),
+            TokenType::Case => self.process_case(token_list, parents),
+            TokenType::IdentifierList => self.process_identifierlist(token_list, parents),
+            _ => self.process_default(token_list, true, parents),
         }
     }
 
-    fn process_where(&mut self, token_list: &mut TokenList) {
+    fn process_where(&mut self, token_list: &mut TokenList, mut parents: Vec<TokenType>) {
         let patterns = (TokenType::Keyword, vec!["WHERE"]);
         let tidx = token_list.token_next_by(&vec![], Some(&patterns), 0);
         if let Some(idx) = tidx {
             token_list.insert_before(idx, self.nl(0));
             self.indent += 1;
-            self.process_default(token_list, true, 1);
+            parents.push(TokenType::Where);
+            self.process_default(token_list, true, parents);
             self.indent -= 1;
         }
     }
 
-    fn process_parenthesis(&mut self, token_list: &mut TokenList) {
+    fn process_parenthesis(&mut self, token_list: &mut TokenList, mut parents: Vec<TokenType>) {
         let patterns = (TokenType::Punctuation, vec!["("]);
         let pidx = token_list.token_next_by(&vec![], Some(&patterns), 0);
         if pidx.is_none() {
@@ -158,12 +159,13 @@ impl ReindentFilter {
             offset+1
         } else { self.get_offset("")+1 };
         self.offset += offset;
-        self.process_default(token_list, tidx.is_none(), 1);
+        parents.push(TokenType::Parenthesis);
+        self.process_default(token_list, tidx.is_none(), parents);
         self.offset -= offset;
         self.indent -= indent;
     }
 
-    fn process_identifierlist(&mut self, token_list: &mut TokenList) {
+    fn process_identifierlist(&mut self, token_list: &mut TokenList, mut parents: Vec<TokenType>) {
         // println!("{}", token_list);
         let mut identifiers = token_list.get_identifiers();
         // println!("{:?}", identifiers);
@@ -212,11 +214,12 @@ impl ReindentFilter {
             }
             self.offset -= num_offset;
         }
-        self.process_default(token_list, true, 1)
+        parents.push(TokenType::IdentifierList);
+        self.process_default(token_list, true, parents)
 
     }
 
-    fn process_case(&mut self, token_list: &mut TokenList) {
+    fn process_case(&mut self, token_list: &mut TokenList, mut parents: Vec<TokenType>) {
         let cases = token_list.get_case(false);
         // println!("cases: {:?}", cases);
         let cond = &cases[0];
@@ -238,7 +241,8 @@ impl ReindentFilter {
                 {
                     let n = "WHEN ".len();
                     self.offset += n;
-                    self.process_default(token_list, true, 1);
+                    parents.push(TokenType::Case);
+                    self.process_default(token_list, true, parents);
                     self.offset -= n;
                 }
                 self.offset -= offset;
@@ -252,6 +256,7 @@ impl ReindentFilter {
         }
     }
 
+    // FIXME:
     fn process_values(&mut self, token_list: &mut TokenList) {
         token_list.insert_before(0, self.nl(0));
         let ttypes = vec![TokenType::Parenthesis];
@@ -274,13 +279,13 @@ impl ReindentFilter {
         }
     }
 
-    fn process_default(&mut self, token_list: &mut TokenList, split: bool, level: usize) {
+    fn process_default(&mut self, token_list: &mut TokenList, split: bool, parents: Vec<TokenType>) {
         if split { self.split_statements(token_list); }
         self.split_kwds(token_list);
         let mut remove_indexes = vec![];
         for (i, token) in token_list.tokens.iter_mut().enumerate() {
             if token.is_group() {
-                self.process_internal(&mut token.children, &token.typ, 1);
+                self.process_internal(&mut token.children, &token.typ, parents.clone());
                 token.update_value();
                 
                 if token.value.starts_with("\n") && i > 0 {
@@ -288,7 +293,7 @@ impl ReindentFilter {
                 }
             }
             // top level only
-            if level == 0 {
+            if parents.len() == 0 {
                 self.prev_sql.push_str(&token.value);
             }
         }
