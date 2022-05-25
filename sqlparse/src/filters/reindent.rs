@@ -12,6 +12,7 @@ pub struct ReindentFilter {
     indent: usize,
     offset: usize,
     prev_sql: String, // accumulate previous token to sql
+    // sub_prev_sql: String, // accumulate sub previous token to sql
     wrap_after: usize,
     comma_first: bool,
     indent_columns: bool,
@@ -59,8 +60,8 @@ impl ReindentFilter {
     }
 
     fn nl(&self, offset: isize) -> Token {
-        let i = 0.max(self.leading_ws() as isize +offset);
-        let white = format!("{}{}", self.n, self.chr.repeat(i as usize));
+        let i = 0.max(self.leading_ws() as isize +offset) as usize;
+        let white = format!("{}{}", self.n, self.chr.repeat(i));
         Token::new(TokenType::Whitespace, &white)
     }
 
