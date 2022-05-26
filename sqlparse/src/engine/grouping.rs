@@ -49,6 +49,11 @@ impl TokenList {
         self.tokens.len()
     }
 
+    // join first n value
+    pub fn take_value(&self, idx: usize) -> String {
+        self.tokens.iter().take(idx).map(|t| t.value.as_str()).collect::<Vec<&str>>().join("")
+    }
+
     fn token_matching(&self, types: &[TokenType], pattern: Option<&(TokenType, Vec<&str>)>, start: usize, end: usize) -> Option<usize> {
         let pos = if types.len() > 0 {
             self.tokens[start..end].iter()
@@ -130,13 +135,31 @@ impl TokenList {
         }
     }
 
-    pub fn insert_after(&mut self, index: usize, token: Token, _skip_ws: bool) {
-        let nidx = self.token_next(index+1, true);
+    pub fn insert_after(&mut self, index: usize, token: Token, skip_ws: bool) {
+        let nidx = self.token_next(index+1, skip_ws);
         if let Some(idx) = nidx {
             self.tokens.insert(idx, token)
         } else {
             self.tokens.push(token)
         }
+    }
+
+    // return true if any space removed
+    pub fn insert_newline_after(&mut self, index: usize, token: Token, skip_ws: bool) -> bool {
+        let nidx = self.token_next(index+1, skip_ws);
+        let mut whitespace_removed = false;
+        if let Some(idx) = nidx {
+            let ptoken = self.token_idx(Some(idx-1));
+            if ptoken.map(|t| t.is_whitespace()).unwrap_or(false) {
+                self.tokens[idx-1] = token;
+                whitespace_removed = true;
+            } else {
+                self.tokens.insert(idx, token)
+            }
+        } else {
+            self.tokens.push(token)
+        };
+        whitespace_removed
     }
 
     pub fn get_case(&self, skip_ws: bool) -> Vec<(Vec<usize>, Vec<usize>)> {

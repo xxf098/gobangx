@@ -309,7 +309,7 @@ impl ReindentFilter {
         token_list.insert_before(0, self.nl(0));
         let ttypes = vec![TokenType::Parenthesis];
         let mut tidx = token_list.token_next_by(&ttypes, None, 0);
-        // let first_idx = tidx;
+        let first_idx = tidx;
         while let Some(idx) = tidx {
             let patterns = (TokenType::Punctuation, vec![","]);
             let pidx = token_list.token_next_by(&vec![], Some(&patterns), idx);
@@ -318,9 +318,10 @@ impl ReindentFilter {
                     let offset = self.get_offset("");
                     token_list.insert_before(idx1, self.nl(offset as isize));
                 } else {
-                    let offset = self.get_offset("");
+                    let extra = token_list.take_value(first_idx.unwrap());
+                    let offset = self.get_offset(&extra);
                     let nl = self.nl(offset as isize);
-                    token_list.insert_after(idx1, nl, true);
+                    token_list.insert_newline_after(idx1, nl, true);
                 }
             }
             tidx = token_list.token_next_by(&ttypes, None, idx+1); 
