@@ -322,11 +322,12 @@ impl ReindentFilter {
             let patterns = (TokenType::Punctuation, vec![","]);
             let pidx = token_list.token_next_by(&vec![], Some(&patterns), idx);
             if let Some(idx1) = pidx {
+                let extra = token_list.take_value(first_idx.unwrap());
                 if self.comma_first {
-                    let offset = self.get_offset("");
+                    let offset = self.get_offset(&extra).saturating_sub(2);
                     token_list.insert_before(idx1, self.nl(offset as isize));
                 } else {
-                    let extra = token_list.take_value(first_idx.unwrap());
+                    // let extra = token_list.take_value(first_idx.unwrap());
                     let offset = self.get_offset(&extra);
                     let nl = self.nl(offset as isize);
                     token_list.insert_newline_after(idx1, nl, true);
