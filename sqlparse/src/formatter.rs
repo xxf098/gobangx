@@ -1,7 +1,7 @@
 use super::engine::FilterStack;
 use super::filters::{
     Filter, StmtFilter, TokenListFilter,
-    KeywordCaseFilter, IdentifierCaseFilter, StripWhitespaceFilter, ReindentFilter,
+    KeywordCaseFilter, IdentifierCaseFilter, StripWhitespaceFilter, ReindentFilter, AlignedIndentFilter,
 };
 
 #[derive(Default)]
@@ -37,7 +37,10 @@ impl<'a> FormatOption<'a> {
     }
 }
 
-pub fn validate_options(_options: &mut FormatOption) {
+pub fn validate_options(options: &mut FormatOption) {
+    if options.reindent_aligned {
+        options.strip_whitespace = true
+    }
 }
 
 
@@ -66,6 +69,13 @@ pub fn build_filter_stack(stack: &mut FilterStack, options: &mut FormatOption) {
             options.comma_first,
             options.indent_after_first, 
             options.indent_columns);
+        let filter = Box::new(filter) as Box<dyn TokenListFilter>;
+        stack.tlistprocess.push(filter);
+    }
+
+    if options.reindent_aligned {
+        options.grouping = true;
+        let filter = AlignedIndentFilter::new(options.indent_char, "\n");
         let filter = Box::new(filter) as Box<dyn TokenListFilter>;
         stack.tlistprocess.push(filter);
     }
