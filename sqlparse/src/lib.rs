@@ -244,7 +244,7 @@ mod tests {
     }
 
     #[test]
-    fn test_insert_values() {
+    fn test_reindent_insert_values() {
         let sql = "insert into foo values (1, 2)";
         let mut formatter = formatter::FormatOption::default_reindent();
         let formatted_sql = format(sql, &mut formatter);
@@ -264,7 +264,7 @@ mod tests {
     }
 
     #[test]
-    fn test_insert_values1() {
+    fn test_reindent_insert_values1() {
         let sql = "insert into foo(a, b) values (1, 2), (3, 4), (5, 6)";
         let mut formatter = formatter::FormatOption::default_reindent();
         let formatted_sql = format(sql, &mut formatter);
@@ -329,7 +329,7 @@ mod tests {
     }
 
     #[test]
-    fn test_identifier_list_with_wrap_after() {
+    fn test_reindent_identifier_list_with_wrap_after() {
         let sql = "select foo, bar, baz from table1, table2 where 1 = 2";
         let mut formatter = formatter::FormatOption::default_reindent();
         formatter.wrap_after = 14;
@@ -343,7 +343,7 @@ mod tests {
     }
 
     #[test]
-    fn test_identifier_list_comment_first() {
+    fn test_reindent_identifier_list_comment_first() {
         let sql = "select foo, bar, baz from table where foo in (1, 2,3)";
         let mut formatter = formatter::FormatOption::default_reindent();
         formatter.comma_first = true;
@@ -361,7 +361,7 @@ mod tests {
     }
 
     #[test]
-    fn test_identifier_list_with_functions() {
+    fn test_reindent_identifier_list_with_functions() {
         let sql = "select 'abc' as foo, coalesce(col1, col2)||col3 as bar, col3 from my_table";
         let mut formatter = formatter::FormatOption::default_reindent();
         let formatted_sql = format(sql, &mut formatter);
