@@ -252,6 +252,29 @@ mod tests {
             "insert into foo",
             "values (1, 2)",
         ].join("\n"));
+
+        let sql = "insert into foo values (1, 2), (3, 4), (5, 6)";
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "insert into foo",
+            "values (1, 2),",
+            "       (3, 4),",
+            "       (5, 6)",
+        ].join("\n"));
+    }
+
+    #[test]
+    fn test_insert_values1() {
+        let sql = "insert into foo(a, b) values (1, 2), (3, 4), (5, 6)";
+        let mut formatter = formatter::FormatOption::default_reindent();
+        let formatted_sql = format(sql, &mut formatter);
+        assert_eq!(formatted_sql, vec![
+            "insert into foo(a, b)",
+            "values (1, 2),",
+            "       (3, 4),",
+            "       (5, 6)",
+        ].join("\n"));
+
     }
 
     #[test]

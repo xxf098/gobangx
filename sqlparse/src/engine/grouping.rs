@@ -469,7 +469,7 @@ impl TokenList {
             let nidx = self.token_next(idx+1, true);
             let next = self.token_idx(nidx);
             if next.map(|n| n.typ == TokenType::Parenthesis).unwrap_or(false) {
-                self.group_tokens(TokenType::Function, idx, nidx.unwrap(), false)
+                self.group_tokens(TokenType::Function, idx, nidx.unwrap()+1, false)
             }
             tidx =  self.token_next_by(&ttypes, None, idx+1);
         }

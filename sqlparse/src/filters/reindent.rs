@@ -127,6 +127,7 @@ impl ReindentFilter {
             TokenType::Values => self.process_values(token_list),
             TokenType::Case => self.process_case(token_list, parents),
             TokenType::IdentifierList => self.process_identifierlist(token_list, parents),
+            TokenType::Function => self.process_function(token_list, parents),
             _ => self.process_default(token_list, true, parents),
         }
     }
@@ -165,6 +166,13 @@ impl ReindentFilter {
         self.process_default(token_list, tidx.is_none(), parents);
         self.offset -= offset;
         self.indent -= indent;
+    }
+
+    fn process_function(&mut self, token_list: &mut TokenList, mut parents: Vec<TokenType>) {
+        self.last_func_len = token_list.tokens[0].value.len();
+        parents.push(TokenType::Function);
+        self.process_default(token_list, true, parents);
+        self.last_func_len = 0;
     }
 
     fn process_identifierlist(&mut self, token_list: &mut TokenList, mut parents: Vec<TokenType>) {
