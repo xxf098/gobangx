@@ -1,9 +1,6 @@
-use super::TokenListFilter;
+use super::{TokenListFilter, next_token};
 use crate::lexer::{Token, TokenList};
 use crate::tokens::TokenType;
-
-const SPLIT_WORDS: [&str; 12] = ["FROM", "AND", "OR", "GROUP BY", 
-    "ORDER BY", "UNION", "VALUES", "SET", "BETWEEN", "EXCEPT", "HAVING", "LIMIT"];
 
 pub struct ReindentFilter {
     n: String, // newline
@@ -67,22 +64,22 @@ impl ReindentFilter {
         Token::new(TokenType::Whitespace, &white)
     }
 
-    fn next_token(&self, token_list: &TokenList, idx: usize) -> Option<usize> {
-        let mut tidx = token_list.token_next_by_fn(|t| t.typ == TokenType::Keyword && 
-            (SPLIT_WORDS.iter().find(|w| **w == t.normalized).is_some() || t.normalized.ends_with("STRAIGHT_JOIN") || t.normalized.ends_with("JOIN")), idx);
-        let token = token_list.token_idx(tidx);
-        if token.map(|t| t.normalized == "BETWEEN").unwrap_or(false) {
-            tidx = self.next_token(token_list, tidx.unwrap()+1);
-            let token = token_list.token_idx(tidx);
-            if token.map(|t| t.normalized == "AND").unwrap_or(false) {
-                tidx = self.next_token(token_list, tidx.unwrap()+1);
-            } 
-        }
-        tidx
-    }
+    // fn next_token(&self, token_list: &TokenList, idx: usize) -> Option<usize> {
+    //     let mut tidx = token_list.token_next_by_fn(|t| t.typ == TokenType::Keyword && 
+    //         (SPLIT_WORDS.iter().find(|w| **w == t.normalized).is_some() || t.normalized.ends_with("STRAIGHT_JOIN") || t.normalized.ends_with("JOIN")), idx);
+    //     let token = token_list.token_idx(tidx);
+    //     if token.map(|t| t.normalized == "BETWEEN").unwrap_or(false) {
+    //         tidx = self.next_token(token_list, tidx.unwrap()+1);
+    //         let token = token_list.token_idx(tidx);
+    //         if token.map(|t| t.normalized == "AND").unwrap_or(false) {
+    //             tidx = self.next_token(token_list, tidx.unwrap()+1);
+    //         } 
+    //     }
+    //     tidx
+    // }
 
     fn split_kwds(&self, token_list: &mut TokenList) {
-        let mut tidx = self.next_token(token_list, 0);
+        let mut tidx = next_token(token_list, 0);
         while let Some(mut idx) = tidx {
             let pidx = token_list.token_prev(idx, false);
             let prev = token_list.token_idx(pidx);
@@ -96,7 +93,7 @@ impl ReindentFilter {
                 token_list.insert_before(idx, self.nl(0));
                 idx += 1;
             }
-            tidx = self.next_token(token_list, idx+1)
+            tidx = next_token(token_list, idx+1)
         }
     }
 
