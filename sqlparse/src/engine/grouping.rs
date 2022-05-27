@@ -67,7 +67,8 @@ impl TokenList {
         pos.map(|p| p+start)
     }
 
-    fn token_matching_fn(&self, f: fn(&Token) -> bool, start: usize, end: usize, reverse: bool) -> Option<usize> {
+    //  fn token_matching_fn(&self, f: fn(&Token) -> bool, start: usize, end: usize, reverse: bool) -> Option<usize> {
+    fn token_matching_fn<F>(&self, f: F, start: usize, end: usize, reverse: bool) -> Option<usize> where F: Fn(&Token) -> bool {
         if reverse {
             self.tokens[start..end].iter().rposition(|token| f(token)).map(|p| p+start)
         } else {
@@ -79,7 +80,7 @@ impl TokenList {
         self.token_matching(types, pattern, start, self.tokens.len())
     }
 
-    pub fn token_next_by_fn(&self, f: fn(&Token) -> bool,start: usize) -> Option<usize> {
+    pub fn token_next_by_fn<F>(&self, f: F, start: usize) -> Option<usize> where F: Fn(&Token) -> bool {
         self.token_matching_fn(f, start, self.tokens.len(), false)
     }
 
@@ -89,6 +90,7 @@ impl TokenList {
         // return self.token_matching_fn(|t| !t.is_whitespace(), idx, self.len(), false);
     }
 
+    // default skip_ws = true
     pub fn token_prev(&self, idx: usize, skip_ws: bool) -> Option<usize> {
         if idx > self.len() || idx == 0 { None } 
         else if skip_ws { self.token_matching_fn(|t| !t.is_whitespace(), 0, idx, true) }

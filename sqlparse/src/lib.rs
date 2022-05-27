@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let sql = "select * from users where id > 1;";
+        let sql = "select * from users where id > 1 order by id;";
         let tokens = parse(sql);
         for token in tokens {
             println!("{:?}", token);
