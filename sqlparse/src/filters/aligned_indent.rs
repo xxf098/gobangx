@@ -56,8 +56,22 @@ impl AlignedIndentFilter {
         }
     }
 
-    fn process_internal(&mut self, token_list: &mut TokenList) {
-        self.process_default(token_list)
+    fn process_internal(&mut self, token_list: &mut TokenList, token_type: &TokenType) {
+        match token_type {
+            TokenType::IdentifierList => self.process_identifierlist(token_list),
+            _ => self.process_default(token_list),
+        }
+    }
+
+    fn process_identifierlist(&mut self, token_list: &mut TokenList) {
+        let identifiers = token_list.get_identifiers();
+        let mut insert_count = 0;
+        for identifier in identifiers.iter().skip(1) {
+            if !token_list.insert_newline_before(identifier+insert_count,self.nl(1)) {
+                insert_count += 1;
+            }
+        }
+        self.process_default(token_list);
     }
 
     fn process_default(&mut self, token_list: &mut TokenList) {
@@ -69,7 +83,7 @@ impl AlignedIndentFilter {
                 let prev_sql = self.prev_sql.trim_end().to_lowercase();
                 let offset = if prev_sql.ends_with("order by") || prev_sql.ends_with("group by") { 3 } else { 0 };
                 self.offset += offset;
-                self.process_internal(&mut token.children);
+                self.process_internal(&mut token.children, &token.typ);
                 token.update_value();
                 self.offset -= offset;
             } else {
