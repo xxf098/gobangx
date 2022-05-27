@@ -32,9 +32,10 @@ impl AlignedIndentFilter {
         }
     }
 
-    fn nl(&self, offset: usize) -> Token {
+    fn nl(&self, offset: isize) -> Token {
         let indent = self.indent * (2 + self.max_kwd_len);
-        let i = self.max_kwd_len + offset + indent + self.offset;
+        let i = (self.max_kwd_len + indent + self.offset) as isize + offset;
+        let i = if i > 0 { i as usize } else { 0 };
         let white = format!("{}{}", self.n, self.chr.repeat(i));
         Token::new(TokenType::Whitespace, &white)
     }
@@ -45,11 +46,12 @@ impl AlignedIndentFilter {
             let token = token_list.token_idx(Some(idx)).unwrap();
             let token_indent = if token.is_keyword() && 
                 (token.normalized.ends_with("JOIN") ||  token.normalized.ends_with("BY")) {
-                token.normalized.split_whitespace().next().map(|s| s.len()).unwrap()
+                token.normalized.split_whitespace().next().map(|s| s.len()).unwrap() as isize
             } else {
-                token.value.len()
+                0 - token.value.len() as isize
             };
-            token_list.insert_before(idx, self.nl(token_indent));
+            let nl = self.nl(token_indent);
+            token_list.insert_before(idx, nl);
             tidx = next_token_align(token_list, idx+2)
         }
     }

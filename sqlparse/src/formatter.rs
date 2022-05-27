@@ -35,12 +35,20 @@ impl<'a> FormatOption<'a> {
         options.indent_char = " ";
         options
     }
+
+    pub fn default_reindent_aligned() -> Self {
+        let mut options = Self::default();
+        options.reindent_aligned = true;
+        // options.indent_char = " ";
+        options
+    }
 }
 
 pub fn validate_options(options: &mut FormatOption) {
     if options.reindent_aligned {
         options.strip_whitespace = true
     }
+    options.indent_char = " ";
 }
 
 
