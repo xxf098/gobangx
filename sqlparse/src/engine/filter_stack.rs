@@ -42,10 +42,10 @@ impl FilterStack {
         if grouping {
             tokens = super::grouping::group(tokens);
         }
+        self.stmtprocess.iter().for_each(|filter| filter.process(&mut tokens));
         // for token in tokens.iter() {
         //     println!("{:?}", token);
         // }
-        self.stmtprocess.iter().for_each(|filter| filter.process(&mut tokens));
         let mut token_list = TokenList{ tokens: tokens };
         self.tlistprocess.iter_mut().for_each(|filter| filter.process(&mut token_list));
         tokens = std::mem::replace(&mut token_list.tokens, vec![]);

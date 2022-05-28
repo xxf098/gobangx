@@ -46,13 +46,17 @@ impl AlignedIndentFilter {
             let token = token_list.token_idx(Some(idx)).unwrap();
             let token_indent = if token.is_keyword() && 
                 (token.normalized.ends_with("JOIN") ||  token.normalized.ends_with("BY")) {
-                token.normalized.split_whitespace().next().map(|s| s.len()).unwrap() as isize
+                token.normalized.split_whitespace().next().map(|s| s.len()).unwrap()
             } else {
-                0 - token.value.len() as isize
+                token.value.len()
             };
-            let nl = self.nl(token_indent);
-            token_list.insert_before(idx, nl);
-            tidx = next_token_align(token_list, idx+2)
+            let nl = self.nl(0 - token_indent as isize);
+            let forward = if token_list.insert_newline_before(idx, nl) { 1 } else { 2 };
+            tidx = next_token_align(token_list, idx+forward)
+        }
+        // remove the last space
+        if token_list.tokens[token_list.len()-1].is_whitespace() {
+            token_list.tokens.remove(token_list.len()-1);
         }
     }
 
@@ -90,7 +94,8 @@ impl AlignedIndentFilter {
     fn process_default(&mut self, token_list: &mut TokenList) {
         self.split_kwds(token_list);
         // prev
-        for token in token_list.tokens.iter_mut() {
+        let mut remove_indexes = vec![]; // handle newline in first position
+        for (i, token) in token_list.tokens.iter_mut().enumerate() {
             if token.is_group() {
                 // update offset
                 let prev_sql = self.prev_sql.trim_end().to_lowercase();
@@ -98,10 +103,14 @@ impl AlignedIndentFilter {
                 self.offset += offset;
                 self.process_internal(&mut token.children, &token.typ);
                 token.update_value();
+                if token.value.starts_with("\n") && i > 0 {
+                    remove_indexes.push(i-1);
+                }
                 self.offset -= offset;
             } else {
                 self.prev_sql.push_str(&token.value)
             }
         }
+        remove_indexes.iter().enumerate().for_each(|(i, idx)| {token_list.tokens.remove(idx-i);});
     }
 }

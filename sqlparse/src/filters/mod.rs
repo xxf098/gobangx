@@ -39,8 +39,10 @@ fn next_token_align(token_list: &TokenList, idx: usize) -> Option<usize> {
 }
 
 fn next_token_internal(token_list: &TokenList, idx: usize, split_words: &[&str]) -> Option<usize> {
-    let mut tidx = token_list.token_next_by_fn(|t| t.typ == TokenType::Keyword && 
-        (split_words.iter().find(|w| **w == t.normalized).is_some() || t.normalized.ends_with("STRAIGHT_JOIN") || t.normalized.ends_with("JOIN")), idx);
+    let mut tidx = token_list.token_next_by_fn(|t| match t.typ {
+        TokenType::Keyword => split_words.iter().find(|w| **w == t.normalized).is_some() || t.normalized.ends_with("STRAIGHT_JOIN") || t.normalized.ends_with("JOIN"),
+        _ => false
+    } , idx);
     let token = token_list.token_idx(tidx);
     if token.map(|t| t.normalized == "BETWEEN").unwrap_or(false) {
         tidx = next_token_internal(token_list, tidx.unwrap()+1, split_words);
