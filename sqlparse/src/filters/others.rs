@@ -8,6 +8,7 @@ impl StripWhitespaceFilter {
 
     fn stripws(tokens: &mut Vec<Token>) {
         StripWhitespaceFilter::stripws_default(tokens);
+        StripWhitespaceFilter::stripws_newline(tokens);
     }
 
     fn stripws_default(tokens: &mut Vec<Token>) {
@@ -19,6 +20,27 @@ impl StripWhitespaceFilter {
             }
             last_was_ws = token.is_whitespace();
             is_first_char = false;
+        }
+    }
+
+    // remove whitespace after newline
+    fn stripws_newline(tokens: &mut Vec<Token>) {
+        let mut idx = 0;
+        while idx < tokens.len() {
+            let token = &tokens[idx];
+            if token.typ != TokenType::Newline {
+                idx += 1;
+                continue
+            }
+            let next_idx = idx+1;
+            while next_idx < tokens.len() {
+                let token_next = &tokens[next_idx];
+                if !token_next.is_whitespace() {
+                    break
+                }
+                tokens.remove(next_idx);
+            }
+            idx += 1;
         }
     }
 
