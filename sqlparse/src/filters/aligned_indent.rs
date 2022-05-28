@@ -59,7 +59,20 @@ impl AlignedIndentFilter {
     fn process_internal(&mut self, token_list: &mut TokenList, token_type: &TokenType) {
         match token_type {
             TokenType::IdentifierList => self.process_identifierlist(token_list),
+            TokenType::Parenthesis => self.process_parenthesis(token_list),
             _ => self.process_default(token_list),
+        }
+    }
+
+    fn process_parenthesis(&mut self, token_list: &mut TokenList) {
+        let patterns = (TokenType::KeywordDML, vec!["SELECT"]);
+        let tidx = token_list.token_next_by(&vec![], Some(&patterns), 0);
+        if tidx.is_some() {
+            self.indent += 1;
+            token_list.insert_newline_after(0, self.nl(-6), true);
+            self.process_default(token_list);
+            self.indent -= 1;
+            token_list.insert_newline_before(token_list.len()-1, self.nl(1));
         }
     }
 
