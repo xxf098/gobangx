@@ -22,7 +22,7 @@ impl Token {
 
     pub fn new(typ: TokenType, value: &str) -> Self {
         let token_list = TokenList::new(vec![]);
-        let normalized = if typ == TokenType::Keyword { value.to_uppercase() } else { value.to_string() };
+        let normalized = if Token::is_keyword_internal(&typ) { value.to_uppercase() } else { value.to_string() };
         Self { typ, value: value.to_string(), children: token_list, normalized }
     }
 
