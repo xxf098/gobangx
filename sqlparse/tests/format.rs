@@ -94,3 +94,36 @@ fn test_aligned_case_statement() {
         "   and b between 3 and 4",        
     ].join("\n"));
 }
+
+#[test]
+fn test_aligned_case_statement_with_between() {
+    let sql = r#"
+    select a,
+    case when a = 0
+    then 1
+    when bb = 1 then 1
+    when c = 2 then 2
+    when d between 3 and 5 then 3
+    else 0 end as d,
+    extra_col
+    from table
+    where c is true
+    and b between 3 and 4    
+    "#;
+    let mut formatter = FormatOption::default();
+    formatter.reindent_aligned = true;
+    let formatted_sql = format(sql, &mut formatter);
+    assert_eq!(formatted_sql, vec![
+        "select a,",
+        "       case when a = 0             then 1",
+        "            when bb = 1            then 1",
+        "            when c = 2             then 2",
+        "            when d between 3 and 5 then 3",
+        "            else 0",
+        "             end as d,",
+        "       extra_col",
+        "  from table",
+        " where c is true",
+        "   and b between 3 and 4",        
+    ].join("\n"));
+}
