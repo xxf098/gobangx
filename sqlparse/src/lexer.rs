@@ -20,9 +20,9 @@ pub struct TokenList {
 
 impl Token {
 
-    pub fn new(typ: TokenType, value: &str) -> Self {
+    pub fn new<T: AsRef<str>+ToString>(typ: TokenType, value: T) -> Self {
         let token_list = TokenList::new(vec![]);
-        let normalized = if Token::is_keyword_internal(&typ) { value.to_uppercase() } else { value.to_string() };
+        let normalized = if Token::is_keyword_internal(&typ) { value.as_ref().to_uppercase() } else { value.to_string() };
         Self { typ, value: value.to_string(), children: token_list, normalized }
     }
 

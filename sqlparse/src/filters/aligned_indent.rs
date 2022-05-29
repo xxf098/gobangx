@@ -37,7 +37,7 @@ impl AlignedIndentFilter {
         let i = (self.max_kwd_len + indent + self.offset) as isize + offset;
         let i = if i > 0 { i as usize } else { 0 };
         let white = format!("{}{}", self.n, self.chr.repeat(i));
-        Token::new(TokenType::Whitespace, &white)
+        Token::new(TokenType::Whitespace, white)
     }
 
     fn split_kwds(&self, token_list: &mut TokenList) {
@@ -121,7 +121,7 @@ impl AlignedIndentFilter {
             if cond.len() > 0 {
                 let n = max_cond_width.saturating_sub(condition_width[idx]);
                 let white = self.chr.repeat(n);
-                let ws = Token::new(TokenType::Whitespace, &white);
+                let ws = Token::new(TokenType::Whitespace, white);
                 let last = cond.last().unwrap() + insert_count;
                 if !token_list.insert_newline_after(last, ws, true) {
                     insert_count += 1;

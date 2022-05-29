@@ -61,7 +61,7 @@ impl ReindentFilter {
     fn nl(&self, offset: isize) -> Token {
         let i = 0.max(self.leading_ws() as isize +offset) as usize;
         let white = format!("{}{}", self.n, self.chr.repeat(i));
-        Token::new(TokenType::Whitespace, &white)
+        Token::new(TokenType::Whitespace, white)
     }
 
     // fn next_token(&self, token_list: &TokenList, idx: usize) -> Option<usize> {
