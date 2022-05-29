@@ -159,3 +159,33 @@ fn test_aligned_group_by() {
         "          1"            
     ].join("\n"));      
 }
+
+
+#[test]
+fn test_aligned_group_by_subquery() {
+    let sql = r#"
+    select *, sum_b + 2 as mod_sum
+    from (
+      select a, sum(b) as sum_b
+      from table
+      group by a,z)
+    order by 1,2    
+    "#;
+    let mut formatter = FormatOption::default();
+    formatter.reindent_aligned = true;
+    let formatted_sql = format(sql, &mut formatter);
+    // println!("{}", formatted_sql);
+    assert_eq!(formatted_sql, vec![
+        "select *,",
+        "       sum_b + 2 as mod_sum",
+        "  from (",
+        "        select a,",
+        "               sum(b) as sum_b",
+        "          from table",
+        "         group by a,",
+        "                  z",
+        "       )",
+        " order by 1,",
+        "          2",
+    ].join("\n"));      
+}

@@ -73,6 +73,10 @@ impl AlignedIndentFilter {
         let patterns = (TokenType::KeywordDML, vec!["SELECT"]);
         let tidx = token_list.token_next_by(&vec![], Some(&patterns), 0);
         if tidx.is_some() {
+            // remove space
+            if token_list.token_idx(Some(1)).map(|t| t.is_whitespace()).unwrap_or(false) {
+                token_list.tokens.remove(1);
+            }
             self.indent += 1;
             token_list.insert_newline_after(0, self.nl(-6), true);
             self.process_default(token_list);
