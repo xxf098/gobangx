@@ -32,3 +32,33 @@ fn test_aligned_basic() {
         " limit 10"
     ].join("\n"));
 }
+
+#[test]
+fn test_aligned_joins() {
+    let sql = r#"
+    select * from a
+    join b on a.one = b.one
+    left join c on c.two = a.two and c.three = a.three
+    full outer join d on d.three = a.three
+    cross join e on e.four = a.four
+    join f using (one, two, three)    
+    "#;
+    let mut formatter = FormatOption::default();
+    formatter.reindent_aligned = true;
+    let formatted_sql = format(sql, &mut formatter);
+    println!("{}", formatted_sql);
+    assert_eq!(formatted_sql, vec![
+        "select *",
+        "  from a",
+        "  join b",
+        "    on a.one = b.one",
+        "  left join c",
+        "    on c.two = a.two",
+        "   and c.three = a.three",
+        "  full outer join d",
+        "    on d.three = a.three",
+        " cross join e",
+        "    on e.four = a.four",
+        "  join f using (one, two, three)"
+    ].join("\n"));
+}
