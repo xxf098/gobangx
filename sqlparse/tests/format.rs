@@ -46,7 +46,7 @@ fn test_aligned_joins() {
     let mut formatter = FormatOption::default();
     formatter.reindent_aligned = true;
     let formatted_sql = format(sql, &mut formatter);
-    println!("{}", formatted_sql);
+    // println!("{}", formatted_sql);
     assert_eq!(formatted_sql, vec![
         "select *",
         "  from a",
@@ -60,5 +60,37 @@ fn test_aligned_joins() {
         " cross join e",
         "    on e.four = a.four",
         "  join f using (one, two, three)"
+    ].join("\n"));
+}
+
+#[test]
+fn test_aligned_case_statement() {
+    let sql = r#"
+    select a,
+    case when a = 0
+    then 1
+    when bb = 1 then 1
+    when c = 2 then 2
+    else 0 end as d,
+    extra_col
+    from table
+    where c is true
+    and b between 3 and 4    
+    "#;
+    let mut formatter = FormatOption::default();
+    formatter.reindent_aligned = true;
+    let formatted_sql = format(sql, &mut formatter);
+    // println!("{}", formatted_sql);
+    assert_eq!(formatted_sql, vec![
+        "select a,",
+        "       case when a = 0  then 1",
+        "            when bb = 1 then 1",
+        "            when c = 2  then 2",
+        "            else 0",
+        "             end as d,",
+        "       extra_col",
+        "  from table",
+        " where c is true",
+        "   and b between 3 and 4",        
     ].join("\n"));
 }

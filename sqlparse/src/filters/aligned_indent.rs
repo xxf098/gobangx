@@ -101,10 +101,12 @@ impl AlignedIndentFilter {
             cases.push((vec![], vec![end_idx]));
         }
 
-        let mut condition_width = cases.iter()
-                .map(|c| c.0.iter().map(|idx| token_list.tokens[*idx].value.as_str()).collect::<Vec<_>>().join(" ").len());
-        let first_cond_width = condition_width.next().unwrap_or(0);
-        let max_cond_width = condition_width.max().unwrap_or(0).max(first_cond_width);
+        let condition_width = cases.iter()
+                .map(|c| c.0.iter().map(|idx| token_list.tokens[*idx].value.as_str()).collect::<Vec<_>>().join(" ").len())
+                .collect::<Vec<_>>();
+
+        // align THEN position
+        let max_cond_width = condition_width.clone().into_iter().max().unwrap_or(0)+1;
         
         let mut insert_count = 0;
         for (idx, (cond, value)) in cases.iter().enumerate() {
@@ -117,7 +119,7 @@ impl AlignedIndentFilter {
                 }
             }
             if cond.len() > 0 {
-                let n = max_cond_width.saturating_sub(first_cond_width);
+                let n = max_cond_width.saturating_sub(condition_width[idx]);
                 let white = self.chr.repeat(n);
                 let ws = Token::new(TokenType::Whitespace, &white);
                 let last = cond.last().unwrap() + insert_count;
