@@ -127,3 +127,35 @@ fn test_aligned_case_statement_with_between() {
         "   and b between 3 and 4",        
     ].join("\n"));
 }
+
+
+#[test]
+fn test_aligned_group_by() {
+    let sql = r#"
+    select a, b, c, sum(x) as sum_x, count(y) as cnt_y
+    from table
+    group by a,b,c
+    having sum(x) > 1
+    and count(y) > 5
+    order by 3,2,1    
+    "#;
+    let mut formatter = FormatOption::default();
+    formatter.reindent_aligned = true;
+    let formatted_sql = format(sql, &mut formatter);
+    assert_eq!(formatted_sql, vec![
+        "select a,",
+        "       b,",
+        "       c,",
+        "       sum(x) as sum_x,",
+        "       count(y) as cnt_y",
+        "  from table",
+        " group by a,",
+        "          b,",
+        "          c",
+        "having sum(x) > 1",
+        "   and count(y) > 5",
+        " order by 3,",
+        "          2,",
+        "          1"            
+    ].join("\n"));      
+}
