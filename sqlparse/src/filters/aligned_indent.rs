@@ -64,6 +64,7 @@ impl AlignedIndentFilter {
         match token_type {
             TokenType::IdentifierList => self.process_identifierlist(token_list),
             TokenType::Parenthesis => self.process_parenthesis(token_list),
+            TokenType::Case => self.process_case(token_list),
             _ => self.process_default(token_list),
         }
     }
@@ -89,6 +90,42 @@ impl AlignedIndentFilter {
             }
         }
         self.process_default(token_list);
+    }
+
+    fn process_case(&mut self, token_list: &mut TokenList) {
+        let offset_ = 10; // len('case ') + len('when ')
+        let mut cases = token_list.get_case(true);
+
+        let pattern = (TokenType::Keyword, vec!["END"]);
+        if let Some(end_idx) = token_list.token_next_by(&vec![], Some(&pattern), 0) {
+            cases.push((vec![], vec![end_idx]));
+        }
+
+        let mut condition_width = cases.iter()
+                .map(|c| c.0.iter().map(|idx| token_list.tokens[*idx].value.as_str()).collect::<Vec<_>>().join(" ").len());
+        let first_cond_width = condition_width.next().unwrap_or(0);
+        let max_cond_width = condition_width.max().unwrap_or(0).max(first_cond_width);
+        
+        let mut insert_count = 0;
+        for (idx, (cond, value)) in cases.iter().enumerate() {
+            let token_idx = if cond.len() > 0 {cond[0]} else {value[0]};
+            if idx > 0 {
+                let token_len = token_list.tokens[token_idx].value.len();
+                let offset = offset_ as isize - token_len as isize;
+                if !token_list.insert_newline_before(token_idx, self.nl(offset)) {
+                    insert_count += 1;
+                }
+            }
+            if cond.len() > 0 {
+                let n = max_cond_width.saturating_sub(first_cond_width);
+                let white = self.chr.repeat(n);
+                let ws = Token::new(TokenType::Whitespace, &white);
+                let last = cond.last().unwrap() + insert_count;
+                if !token_list.insert_newline_after(last, ws, true) {
+                    insert_count += 1;
+                }
+            }
+        }
     }
 
     fn process_default(&mut self, token_list: &mut TokenList) {
