@@ -697,7 +697,7 @@ mod tests {
         let tokens = tokenize(sql);
         let mut tokens = TokenList::new(tokens);
         tokens.group_identifier();
-        println!("{:?}", tokens.tokens);
+        // println!("{:?}", tokens.tokens);
     }
 
     #[test]
@@ -706,7 +706,7 @@ mod tests {
         let tokens = tokenize(sql);
         let mut tokens = TokenList::new(tokens);
         tokens.group_where();
-        println!("{:?}", tokens.tokens);
+        // println!("{:?}", tokens.tokens);
     }
 
     #[test]
@@ -715,7 +715,7 @@ mod tests {
         let tokens = tokenize(sql);
         let mut tokens = TokenList::new(tokens);
         tokens.group_where();
-        println!("{:?}", tokens.tokens);
+        // println!("{:?}", tokens.tokens);
     }
 
     #[test]
@@ -739,9 +739,9 @@ mod tests {
         token_list.group_identifier();
         token_list.group_comparison();
         // assert_eq!(token_list.tokens[8].typ, TokenType::Where);
-        for token in token_list.tokens {
-            println!("{:?}", token);
-        }
+        // for token in token_list.tokens {
+        //     println!("{:?}", token);
+        // }
     }
 
     #[test]
@@ -949,7 +949,7 @@ mod tests {
             let mut token_list = TokenList::from(sql);
             token_list.group();
             assert_eq!(token_list.tokens[2].typ, TokenType::Identifier);
-            println!("{:?}", token_list.tokens[2]);
+            // println!("{:?}", token_list.tokens[2]);
         }
     }
 

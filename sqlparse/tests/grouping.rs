@@ -102,3 +102,21 @@ fn test_grouping_simple_identifiers() {
         assert_eq!(token_list.tokens[0].typ, TokenType::Identifier);
     }
 }
+
+#[test]
+fn test_grouping_identifier_list() {
+    let sqls = vec![
+        "foo, bar",
+        "sum(a), sum(b)",
+        "sum(a) as x, b as y",
+        "sum(a)::integer, b",
+        "sum(a)/count(b) as x, y",
+        "sum(a)::integer as x, y",
+        "sum(a)::integer/count(b) as x, y",
+        ];
+    for sql in sqls {
+        let token_list = group_tokenlist(sql);
+        assert_eq!(token_list.tokens[0].typ, TokenType::IdentifierList);
+    }
+    
+}
