@@ -227,3 +227,21 @@ fn test_space_around_bool() {
     // println!("{}", formatted_sql);
     assert_eq!(formatted_sql, "select * from table where a && b or c || d");
 }
+
+#[test]
+fn test_space_around_nested() {
+    let sql = "select *, case when a-b then c end from table";
+    let mut formatter = FormatOption::default();
+    formatter.use_space_around_operators = true;
+    let formatted_sql = format(sql, &mut formatter);
+    assert_eq!(formatted_sql, "select *, case when a - b then c end from table");
+}
+
+#[test]
+fn test_space_around_wildcard_vs_mult() {
+    let sql = "select a*b-c from table";
+    let mut formatter = FormatOption::default();
+    formatter.use_space_around_operators = true;
+    let formatted_sql = format(sql, &mut formatter);
+    assert_eq!(formatted_sql, "select a * b - c from table");
+}
