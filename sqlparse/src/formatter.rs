@@ -1,7 +1,8 @@
 use super::engine::FilterStack;
 use super::filters::{
     Filter, StmtFilter, TokenListFilter,
-    KeywordCaseFilter, IdentifierCaseFilter, StripWhitespaceFilter, ReindentFilter, AlignedIndentFilter, StripBeforeNewline,
+    KeywordCaseFilter, IdentifierCaseFilter, StripWhitespaceFilter, StripBeforeNewline, SpacesAroundOperatorsFilter,
+    ReindentFilter, AlignedIndentFilter,
 };
 
 #[derive(Default)]
@@ -65,6 +66,11 @@ pub fn build_filter_stack(stack: &mut FilterStack, options: &mut FormatOption) {
         options.grouping = true;
         let filter = Box::new(StripWhitespaceFilter{}) as Box<dyn StmtFilter>;
         stack.stmtprocess.push(filter);
+    }
+    if options.use_space_around_operators {
+        options.grouping = true;
+        let filter = Box::new(SpacesAroundOperatorsFilter{}) as Box<dyn TokenListFilter>;
+        stack.tlistprocess.push(filter);
     }
     if options.reindent {
         options.grouping = true;

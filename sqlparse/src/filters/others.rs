@@ -1,6 +1,6 @@
-use super::StmtFilter;
-use crate::lexer::{Token};
-use crate::tokens::TokenType;
+use super::{StmtFilter, TokenListFilter};
+use crate::lexer::{Token, TokenList};
+use crate::tokens::{TokenType};
 
 pub struct StripWhitespaceFilter { }
 
@@ -70,6 +70,49 @@ impl StmtFilter for StripWhitespaceFilter {
             }
         }
         Self::stripws(tokens);
+    }
+}
+
+pub struct SpacesAroundOperatorsFilter{}
+
+impl SpacesAroundOperatorsFilter {
+
+    fn process_internal(&mut self, token_list: &mut TokenList) {
+        let types = vec![TokenType::Operator, TokenType::OperatorComparison];
+        let mut tidx = token_list.token_next_by(&types, None, 0);
+        while let Some(mut idx) = tidx {
+            let nidx = token_list.token_next(idx+1, false);
+            if let Some(token_next) = token_list.token_idx(nidx) {
+                if token_next.typ != TokenType::Whitespace {
+                    token_list.insert_after(idx, Token::new(TokenType::Whitespace, " "), true);
+                } 
+            }
+
+            let pidx = token_list.token_prev(idx, false);
+            if let Some(token_prev) = token_list.token_idx(pidx) {
+                if token_prev.typ != TokenType::Whitespace {
+                    token_list.insert_before(idx, Token::new(TokenType::Whitespace, " "));
+                }
+                idx += 1;
+            }
+            
+            tidx = token_list.token_next_by(&types, None, idx+1);
+        }
+    }
+}
+
+impl TokenListFilter for SpacesAroundOperatorsFilter {
+
+    fn process(&mut self, token_list: &mut TokenList) {
+        self.process_internal(token_list);
+        for token in token_list.tokens.iter_mut() {
+            if token.is_group() {
+                let before = token.children.len();
+                self.process(&mut token.children);
+                // println!("before {}, after {}", before, token.children.len());
+                token.update_value();
+            }
+        }
     }
 }
 

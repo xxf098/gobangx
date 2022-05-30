@@ -5,7 +5,7 @@ pub mod aligned_indent;
 
 use super::{Token, TokenList, TokenType};
 pub use tokens::{IdentifierCaseFilter, KeywordCaseFilter};
-pub use others::{StripWhitespaceFilter, StripBeforeNewline};
+pub use others::{StripWhitespaceFilter, StripBeforeNewline, SpacesAroundOperatorsFilter};
 pub use reindent::ReindentFilter;
 pub use aligned_indent::AlignedIndentFilter;
 

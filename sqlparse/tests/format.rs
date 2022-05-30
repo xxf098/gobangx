@@ -207,3 +207,13 @@ fn test_aligned_window_functions() {
     assert_eq!(formatted_sql.split("\n").count(), 4);
 
 }
+
+#[test]
+fn test_space_around_basic() {
+    let sql = "select a+b as d from table where (c-d)%2= 1 and e> 3.0/4 and z^2 <100;";
+    let mut formatter = FormatOption::default();
+    formatter.use_space_around_operators = true;
+    let formatted_sql = format(sql, &mut formatter);
+    // println!("{}", formatted_sql);
+    assert_eq!(formatted_sql, "select a + b as d from table where (c - d) % 2 = 1 and e > 3.0 / 4 and z ^ 2 < 100;");
+}
