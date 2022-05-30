@@ -9,6 +9,7 @@ mod filters;
 pub use tokens::TokenType;
 pub use lexer::{Token, TokenList};
 pub use formatter::{FormatOption, validate_options};
+pub use engine::grouping::group_tokenlist;
 
 pub struct Parser {
     stack: engine::FilterStack,

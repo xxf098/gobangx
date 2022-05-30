@@ -107,7 +107,7 @@ impl TokenListFilter for SpacesAroundOperatorsFilter {
         self.process_internal(token_list);
         for token in token_list.tokens.iter_mut() {
             if token.is_group() {
-                let before = token.children.len();
+                // let before = token.children.len();
                 self.process(&mut token.children);
                 // println!("before {}, after {}", before, token.children.len());
                 token.update_value();

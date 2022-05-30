@@ -13,7 +13,7 @@ pub fn group(tokens: Vec<Token>) -> Vec<Token> {
     token_list.tokens
 }
 
-fn _group_tokenlist(sql: &str) -> TokenList {
+pub fn group_tokenlist(sql: &str) -> TokenList {
     let mut token_list = TokenList::from(sql);
     token_list.group();
     token_list
@@ -953,7 +953,7 @@ mod tests {
     #[test]
     fn test_comparison_with_parenthesis() {
         let sql = "(3 + 4) = 7";
-        let token_list = _group_tokenlist(sql);
+        let token_list = group_tokenlist(sql);
         assert_eq!(token_list.len(), 1);
         assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
     }
@@ -961,7 +961,7 @@ mod tests {
     #[test]
     fn test_comparison_with_floats() {
         let sql = "foo = 25.5";
-        let token_list = _group_tokenlist(sql);
+        let token_list = group_tokenlist(sql);
         assert_eq!(token_list.len(), 1);
         assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
         assert_eq!(token_list.tokens[0].children.len(), 5);
@@ -970,31 +970,20 @@ mod tests {
     #[test]
     fn test_comparison_with_keywords() {
         let sql = "foo = NULL";
-        let token_list = _group_tokenlist(sql);
+        let token_list = group_tokenlist(sql);
         assert_eq!(token_list.len(), 1);
         assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
         assert_eq!(token_list.tokens[0].children.len(), 5);
         let sql = "foo = null";
-        let token_list = _group_tokenlist(sql);
+        let token_list = group_tokenlist(sql);
         assert_eq!(token_list.len(), 1);
         assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
-    }
-
-    #[test]
-    fn test_grouping_parenthesis() {
-        let sql = "select (select (x3) x2) and (y2) bar";
-        let token_list = _group_tokenlist(sql);
-        assert_eq!(token_list.len(), 7);
-        assert_eq!(token_list.token_idx(Some(2)).unwrap().typ, TokenType::Parenthesis);
-        assert_eq!(token_list.token_idx(Some(6)).unwrap().typ, TokenType::Identifier);
-        let sub_tokens = &token_list.token_idx(Some(2)).unwrap().children;
-        assert_eq!(sub_tokens.token_idx(Some(3)).unwrap().typ, TokenType::Parenthesis);
     }
 
     #[test]
     fn test_get_case() {
         let sql = "case when foo = 1 then 2 when foo = 3 then 4 else 5 end";
-        let token_list = _group_tokenlist(sql);
+        let token_list = group_tokenlist(sql);
         // println!("{:?}", token_list);
         let cases = token_list.tokens[0].children.get_case(false);
         assert_eq!(cases.len(), 4);
