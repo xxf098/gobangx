@@ -120,3 +120,13 @@ fn test_grouping_identifier_list() {
     }
     
 }
+
+#[test]
+fn test_grouping_identifier_wildcard() {
+    let sql = "a.*, b.id";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].typ, TokenType::IdentifierList);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens[0].typ, TokenType::Identifier);
+    assert_eq!(token_list.tokens[token_list.len()-1].typ, TokenType::Identifier);
+}
