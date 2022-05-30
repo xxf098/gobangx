@@ -217,3 +217,13 @@ fn test_space_around_basic() {
     // println!("{}", formatted_sql);
     assert_eq!(formatted_sql, "select a + b as d from table where (c - d) % 2 = 1 and e > 3.0 / 4 and z ^ 2 < 100;");
 }
+
+#[test]
+fn test_space_around_bool() {
+    let sql = "select * from table where a &&b or c||d";
+    let mut formatter = FormatOption::default();
+    formatter.use_space_around_operators = true;
+    let formatted_sql = format(sql, &mut formatter);
+    // println!("{}", formatted_sql);
+    assert_eq!(formatted_sql, "select * from table where a && b or c || d");
+}
