@@ -61,3 +61,34 @@ fn test_compare_expr() {
         assert_eq!(operation.len(), 5);
     }
 }
+
+
+#[test]
+fn test_grouping_identifiers() {
+    let sql = r#"select foo.bar from "myscheme"."table" where fail. order"#;
+    let token_list = group_tokenlist(sql);
+    // println!("{}", token_list);
+    assert_eq!(token_list.tokens[2].typ, TokenType::Identifier);
+    assert_eq!(token_list.tokens[6].typ, TokenType::Identifier);
+    assert_eq!(token_list.tokens[8].typ, TokenType::Where);
+    let sql = "select * from foo where foo.id = 1";
+    let token_list = group_tokenlist(sql);
+    let n = token_list.tokens.len();
+    let children = &token_list.tokens[n-1].children;
+    let t = &children.tokens[children.len()-1].children.tokens[0];
+    assert_eq!(t.typ, TokenType::Identifier);
+    let sql = r#"select * from (select "foo"."id" from foo)"#;
+    let token_list = group_tokenlist(sql);
+    let c = &token_list.tokens[token_list.len()-1].children;
+    assert_eq!(c.tokens[3].typ, TokenType::Identifier);
+
+    let sql = "select 1.0*(a+b) as col, sum(c)/sum(d) from myschema.mytable";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 7);
+    assert_eq!(token_list.tokens[2].typ, TokenType::IdentifierList);
+    assert_eq!(token_list.tokens[2].children.len(), 4);
+    let identifier_list = &token_list.tokens[2].children;
+    let identifiers = identifier_list.get_identifiers();
+    assert_eq!(identifiers.len(), 2);
+    assert_eq!(identifier_list.tokens[identifiers[0]].get_alias(), Some("col"));
+}
