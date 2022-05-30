@@ -92,3 +92,13 @@ fn test_grouping_identifiers() {
     assert_eq!(identifiers.len(), 2);
     assert_eq!(identifier_list.tokens[identifiers[0]].get_alias(), Some("col"));
 }
+
+
+#[test]
+fn test_grouping_simple_identifiers() {
+    let sqls = vec!["1 as f", "foo as f", "foo f", "1/2 as f", "1/2 f", "1<2 as f", "1<2 f"];
+    for sql in sqls {
+        let token_list = group_tokenlist(sql);
+        assert_eq!(token_list.tokens[0].typ, TokenType::Identifier);
+    }
+}
