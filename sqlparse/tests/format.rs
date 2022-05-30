@@ -174,7 +174,7 @@ fn test_aligned_group_by_subquery() {
     let mut formatter = FormatOption::default();
     formatter.reindent_aligned = true;
     let formatted_sql = format(sql, &mut formatter);
-    // println!("{}", formatted_sql);
+    // println!("{:?}", formatted_sql);
     assert_eq!(formatted_sql, vec![
         "select *,",
         "       sum_b + 2 as mod_sum",
@@ -188,4 +188,22 @@ fn test_aligned_group_by_subquery() {
         " order by 1,",
         "          2",
     ].join("\n"));      
+}
+
+#[test]
+fn test_aligned_window_functions() {
+    let sql = r#"
+    select a,
+    SUM(a) OVER (PARTITION BY b ORDER BY c ROWS
+    BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) as sum_a,
+    ROW_NUMBER() OVER
+    (PARTITION BY b, c ORDER BY d DESC) as row_num
+    from table    
+    "#;
+    let mut formatter = FormatOption::default();
+    formatter.reindent_aligned = true;
+    let formatted_sql = format(sql, &mut formatter);
+    // println!("{}", formatted_sql);
+    assert_eq!(formatted_sql.split("\n").count(), 4);
+
 }

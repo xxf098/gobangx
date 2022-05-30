@@ -61,7 +61,6 @@ impl StripWhitespaceFilter {
 
 impl StmtFilter for StripWhitespaceFilter {
 
-    // TODO: remove depth 
     fn process(&self, tokens: &mut Vec<Token>) {
         for token in tokens.iter_mut() {
             if token.is_group() {
@@ -74,3 +73,25 @@ impl StmtFilter for StripWhitespaceFilter {
     }
 }
 
+
+// trim space before newline
+pub struct StripBeforeNewline{}
+
+impl StmtFilter for StripBeforeNewline {
+
+    fn process(&self, tokens: &mut Vec<Token>) {
+        let mut remove_indexes = vec![];
+        let mut is_before_white = false;
+        for (i, token) in tokens.iter_mut().enumerate() {         
+            if token.is_group() {
+                self.process(&mut token.children.tokens);
+            }
+            if is_before_white && token.value.starts_with("\n") && i > 0 {
+                remove_indexes.push(i-1)
+            }
+            is_before_white = token.is_whitespace();
+        }
+        remove_indexes.iter().enumerate().for_each(|(i, idx)| {tokens.remove(idx-i);});
+    }
+
+} 

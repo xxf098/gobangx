@@ -337,24 +337,20 @@ impl ReindentFilter {
     fn process_default(&mut self, token_list: &mut TokenList, split: bool, parents: Vec<TokenType>) {
         if split { self.split_statements(token_list); }
         self.split_kwds(token_list);
-        let mut remove_indexes = vec![];
-        for (i, token) in token_list.tokens.iter_mut().enumerate() {
+        // let mut remove_indexes = vec![];
+        for token in token_list.tokens.iter_mut() {
             if token.is_group() {
                 self.process_internal(&mut token.children, &token.typ, parents.clone());
                 token.update_value();
                 
-                if token.value.starts_with("\n") && i > 0 {
-                    remove_indexes.push(i-1);
-                }
+                // if token.value.starts_with("\n") && i > 0 {
+                //     remove_indexes.push(i-1);
+                // }
             } else {
                 self.prev_sql.push_str(&token.value);
             }
-            // top level only
-            // if parents.len() == 0 {
-            //     self.prev_sql.push_str(&token.value);
-            // }
         }
-        remove_indexes.iter().enumerate().for_each(|(i, idx)| {token_list.tokens.remove(idx-i);});
+        // remove_indexes.iter().enumerate().for_each(|(i, idx)| {token_list.tokens.remove(idx-i);});
     }
 }
 

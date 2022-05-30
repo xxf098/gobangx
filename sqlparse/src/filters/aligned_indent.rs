@@ -137,8 +137,8 @@ impl AlignedIndentFilter {
     fn process_default(&mut self, token_list: &mut TokenList) {
         self.split_kwds(token_list);
         // prev
-        let mut remove_indexes = vec![]; // handle newline in first position
-        for (i, token) in token_list.tokens.iter_mut().enumerate() {
+        // let mut remove_indexes = vec![]; // handle newline in first position
+        for token in token_list.tokens.iter_mut() {
             if token.is_group() {
                 // update offset
                 let prev_sql = self.prev_sql.trim_end().to_lowercase();
@@ -146,14 +146,14 @@ impl AlignedIndentFilter {
                 self.offset += offset;
                 self.process_internal(&mut token.children, &token.typ);
                 token.update_value();
-                if token.value.starts_with("\n") && i > 0 {
-                    remove_indexes.push(i-1);
-                }
+                // if token.value.starts_with("\n") && i > 0 {
+                //     remove_indexes.push(i-1);
+                // }
                 self.offset -= offset;
             } else {
                 self.prev_sql.push_str(&token.value)
             }
         }
-        remove_indexes.iter().enumerate().for_each(|(i, idx)| {token_list.tokens.remove(idx-i);});
+        // remove_indexes.iter().enumerate().for_each(|(i, idx)| {token_list.tokens.remove(idx-i);});
     }
 }

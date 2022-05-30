@@ -1,7 +1,7 @@
 use super::engine::FilterStack;
 use super::filters::{
     Filter, StmtFilter, TokenListFilter,
-    KeywordCaseFilter, IdentifierCaseFilter, StripWhitespaceFilter, ReindentFilter, AlignedIndentFilter,
+    KeywordCaseFilter, IdentifierCaseFilter, StripWhitespaceFilter, ReindentFilter, AlignedIndentFilter, StripBeforeNewline,
 };
 
 #[derive(Default)]
@@ -87,4 +87,7 @@ pub fn build_filter_stack(stack: &mut FilterStack, options: &mut FormatOption) {
         let filter = Box::new(filter) as Box<dyn TokenListFilter>;
         stack.tlistprocess.push(filter);
     }
+
+    let filter = Box::new(StripBeforeNewline{}) as Box<dyn StmtFilter>;
+    stack.postprocess.push(filter);
 }
