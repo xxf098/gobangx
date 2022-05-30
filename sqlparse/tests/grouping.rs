@@ -36,7 +36,8 @@ fn test_grouping_typed_literal() {
 #[test]
 fn test_compare_expr() {
     let sqls = vec![
-        ("select a from b where c < d + e", TokenType::Identifier, TokenType::Identifier)
+        ("select a from b where c < d + e", TokenType::Identifier, TokenType::Identifier),
+        // ("select a from b where c < d + interval 1 day", TokenType::Identifier, TokenType::TypedLiteral)
     ];
     for (sql, a, b) in sqls {
         let token_list = group_tokenlist(sql);
@@ -50,5 +51,13 @@ fn test_compare_expr() {
         assert_eq!(where_token.tokens.len(), 3);
         let comparison = &where_token.tokens[2].children;
         assert_eq!(comparison.tokens[0].typ, TokenType::Identifier);
+        assert_eq!(comparison.tokens[2].typ, TokenType::OperatorComparison);
+        assert_eq!(comparison.tokens[4].typ, TokenType::Operation);
+        assert_eq!(comparison.len(), 5);
+        let operation = &comparison.tokens[4].children;
+        assert_eq!(operation.tokens[0].typ, a);
+        assert_eq!(operation.tokens[2].typ, TokenType::Operator);
+        assert_eq!(operation.tokens[4].typ, b);
+        assert_eq!(operation.len(), 5);
     }
 }

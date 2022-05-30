@@ -56,7 +56,8 @@ impl Token {
         *typ == TokenType::Keyword || 
         *typ == TokenType::KeywordDML || 
         *typ == TokenType::KeywordDDL || 
-        *typ == TokenType::KeywordCTE
+        *typ == TokenType::KeywordCTE ||
+        *typ == TokenType::NameBuiltin 
     }
 
     pub fn is_group(&self) -> bool {
