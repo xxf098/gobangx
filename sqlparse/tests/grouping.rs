@@ -35,5 +35,20 @@ fn test_grouping_typed_literal() {
 
 #[test]
 fn test_compare_expr() {
-    
+    let sqls = vec![
+        ("select a from b where c < d + e", TokenType::Identifier, TokenType::Identifier)
+    ];
+    for (sql, a, b) in sqls {
+        let token_list = group_tokenlist(sql);
+        // println!("{}", token_list);
+        assert_eq!(token_list.len(), 9);
+        assert_eq!(token_list.tokens[2].typ, TokenType::Identifier);
+        assert_eq!(token_list.tokens[6].typ, TokenType::Identifier);
+        assert_eq!(token_list.tokens[8].typ, TokenType::Where);
+        let where_token = &token_list.tokens[8].children;
+        assert_eq!(where_token.tokens[2].typ, TokenType::Comparison);
+        assert_eq!(where_token.tokens.len(), 3);
+        let comparison = &where_token.tokens[2].children;
+        assert_eq!(comparison.tokens[0].typ, TokenType::Identifier);
+    }
 }
