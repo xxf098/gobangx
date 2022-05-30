@@ -260,6 +260,8 @@ impl TokenList {
 
     }
 
+    // TODO:
+    // fn group_typed_literal(&mut self)
 
     fn group_identifier(&mut self) {
         // TODO: macro
@@ -906,17 +908,6 @@ mod tests {
         assert_eq!(inner.children.token_idx(Some(0)).unwrap().normalized, "BEGIN");
         let inner_len = inner.children.len();
         assert_eq!(inner.children.token_idx(Some(inner_len-1)).unwrap().normalized, "END");
-    }
-
-    #[test]
-    fn test_grouping_assignment() {
-        let sqls = vec!["foo := 1", "foo := 1;"];
-        for sql in sqls {
-            let mut token_list = TokenList::from(sql);
-            token_list.group();
-            assert_eq!(token_list.len(), 1);
-            assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Assignment);
-        }
     }
 
     #[test]
