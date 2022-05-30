@@ -29,7 +29,7 @@ fn test_grouping_typed_literal() {
     let sqls = vec!["x > DATE '2020-01-01'", "x > TIMESTAMP '2020-01-01 00:00:00'"];
     for sql in sqls {
         let token_list = group_tokenlist(sql);
-        println!("{}", token_list);
+        assert_eq!(token_list.tokens[0].children.token_idx(Some(4)).unwrap().typ, TokenType::TypedLiteral);
     }
 }
 

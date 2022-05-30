@@ -259,9 +259,40 @@ impl TokenList {
         group_internal(self, TokenType::Identifier, matcher, valid, valid, post, true, true)
 
     }
+    
+    fn group_typed_literal(&mut self) {
 
-    // TODO:
-    // fn group_typed_literal(&mut self)
+        fn matcher(token: &Token) -> bool {
+            token.typ == TokenType::NameBuiltin ||
+            (token.typ == TokenType::Keyword && token.normalized == "TIMESTAMP")
+        }
+
+        fn match_to_extend(token: &Token) -> bool {
+            token.typ == TokenType::TypedLiteral
+        }
+
+        fn valid_prev(token: Option<&Token>) -> bool {
+            token.is_some()
+        }
+
+        fn valid_next(token: Option<&Token>) -> bool {
+            token.map(|t| t.typ == TokenType::StringSingle).unwrap_or(false)
+        }
+
+        fn valid_final(token: Option<&Token>) -> bool {
+            token.map(|t| t.typ == TokenType::Keyword && match t.normalized.as_str() {
+                "DAY" | "HOUR" | "MINUTE" | "MONTH" | "SECOND" | "YEAR" => true,
+                _ => false}).unwrap_or(false)
+        }
+
+        fn post(_tlist: &mut TokenList, _pidx: usize, tidx: usize, nidx: usize) -> (usize, usize) {
+            (tidx, nidx)
+        }
+
+        group_internal(self, TokenType::TypedLiteral, matcher, valid_prev, valid_next, post, false, false);
+        group_internal(self, TokenType::TypedLiteral, match_to_extend, valid_prev, valid_final, post, true, false);
+
+    }
 
     fn group_identifier(&mut self) {
         // TODO: macro
@@ -529,6 +560,7 @@ impl TokenList {
         self.group_order();
         self.group_typecasts();
         self.group_tzcasts();
+        self.group_typed_literal();
         self.group_operator();
         self.group_comparison();
         self.group_as();
