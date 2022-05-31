@@ -250,3 +250,16 @@ fn test_grouping_identifier_list_with_order() {
     assert_eq!(token.typ, TokenType::Identifier);
     assert_eq!(token.value, "2 desc");
 }
+
+#[test]
+fn test_grouping_where() {
+    let sql = "select * from foo where bar = 1 order by id desc";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 12);
+
+    let sql = "select x from (select y from foo where bar = 1) z";
+    // let sql = "select y from foo where bar = 1";
+    let token_list = group_tokenlist(sql);
+    let token_list = &token_list.tokens[token_list.len()-1].children.tokens[0].children;
+    assert_eq!(token_list.tokens[token_list.len()-2].typ, TokenType::Where);
+}

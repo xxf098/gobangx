@@ -45,6 +45,16 @@ impl TokenList {
         Self { tokens: tokens }
     }
 
+    // print_tree
+    // start, end (end not include)
+    pub fn groupable_tokens(&self, token: &Token) -> (usize, usize) {
+        match token.typ {
+            TokenType::Parenthesis | TokenType::SquareBrackets => (1, self.len()-1),
+            TokenType::Punctuation if token.value == "(" => (1, self.len()-1),
+            _ => (0, self.len())
+        }
+    }
+
     pub fn len(&self) -> usize {
         self.tokens.len()
     }
@@ -336,13 +346,19 @@ impl TokenList {
         group_internal(self, TokenType::IdentifierList, matcher, valid, valid, post, true, true)
     }
 
+    // TODO: add macro
     fn group_where(&mut self) {
+        for token in self.tokens.iter_mut() {
+            if token.is_group() {
+                token.children.group_where();
+            }
+        }
         let where_open = (TokenType::Keyword, vec!["WHERE"]);
         let where_close = (TokenType::Keyword, vec!["ORDER BY", "GROUP BY", "LIMIT", "UNION", "UNION ALL", "EXCEPT", "HAVING", "RETURNING", "INTO"]);
         let mut tidx = self.token_next_by(&vec![], Some(&where_open), 0);
         while let Some(idx) = tidx {
             let edix = self.token_next_by(&vec![], Some(&where_close), idx+1);
-            let edix = edix.unwrap_or(self.tokens.len());
+            let edix = edix.unwrap_or(self.groupable_tokens(&self.tokens[0]).1);
             self.group_tokens(TokenType::Where, idx, edix, false);
             tidx = self.token_next_by(&vec![], Some(&where_open), idx);
         }
@@ -834,14 +850,6 @@ mod tests {
         let parent_name = id.get_parent_name();
         assert_eq!(real_name, Some("person"));
         assert_eq!(parent_name, None);
-    }
-
-    #[test]
-    fn test_grouping_where() {
-        let sql = "select * from foo where bar = 1 order by id desc";
-        let mut token_list = TokenList::from(sql);
-        token_list.group();
-        assert_eq!(token_list.len(), 12);
     }
 
     #[test]
