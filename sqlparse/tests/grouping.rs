@@ -184,3 +184,69 @@ fn test_grouping_identifier_function() {
     assert_eq!(token_list.tokens[0].children.tokens[0].typ, TokenType::Operation);
     assert_eq!(token_list.tokens[0].children.tokens[0].children.tokens[0].typ, TokenType::Function);
 }
+
+#[test]
+fn test_grouping_operation() {
+    let sqls = vec!["foo+100", "foo + 100", "foo*100"];
+    for sql in sqls {
+        let token_list = group_tokenlist(sql);
+        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Operation);
+    }
+}
+
+
+#[test]
+fn test_grouping_identifier_list1() {
+    let sql = "a, b, c";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].typ, TokenType::IdentifierList);
+    let sql = "(a, b, c)";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].children.tokens[1].typ, TokenType::IdentifierList);
+}
+
+
+#[test]
+fn test_grouping_identifier_list_subquery() {
+    let sql = "select * from (select a, b + c as d from table) sub";
+    let token_list = group_tokenlist(sql);
+    let subquery = &token_list.tokens[token_list.len()-1].children;
+    let token_list = &subquery.tokens[0].children;
+    let types = vec![TokenType::IdentifierList];
+    let idx = token_list.token_next_by(&types, None, 0);
+    assert!(idx.is_some());
+    let types = vec![TokenType::Identifier];
+    let idx = token_list.token_next_by(&types, None, idx.unwrap());
+    assert!(idx.is_none());
+}
+
+#[test]
+fn test_grouping_identifier_list_case() {
+    let sql = "a, case when 1 then 2 else 3 end as b, c";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].typ, TokenType::IdentifierList);
+    let sql = "(a, case when 1 then 2 else 3 end as b, c)";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].children.tokens[1].typ, TokenType::IdentifierList);
+}
+
+#[test]
+fn test_grouping_identifier_list_other() {
+    let sql = "select *, null, 1, 'foo', bar from mytable, x";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[2].typ, TokenType::IdentifierList);
+    assert_eq!(token_list.tokens[2].children.len(), 13);
+}
+
+// TODO:
+// test_grouping_identifier_list_with_inline_comments
+
+#[test]
+fn test_grouping_identifier_list_with_order() {
+    let sql = "1, 2 desc, 3";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].typ, TokenType::IdentifierList);
+    let token = &token_list.tokens[0].children.tokens[3];
+    assert_eq!(token.typ, TokenType::Identifier);
+    assert_eq!(token.value, "2 desc");
+}

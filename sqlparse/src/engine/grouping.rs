@@ -319,13 +319,13 @@ impl TokenList {
             let types = T_NUMERICAL.iter()
                 .chain(&T_STRING)
                 .chain(&T_NAME)
-                .chain(&[TokenType::Keyword, TokenType::Comment, TokenType::Wildcard, 
+                .chain(&[TokenType::Keyword, TokenType::KeywordOrder, TokenType::Comment, TokenType::Wildcard, 
                     TokenType::Function, TokenType::Case, TokenType::Identifier, 
                     TokenType::Comparison, TokenType::IdentifierList, TokenType::Operation])
                 .map(|t| t.clone())
                 .collect::<Vec<_>>();
         
-            let patterns = (TokenType::Keyword, vec!["null", "role"]);
+            let patterns = (TokenType::Keyword, vec!["NULL", "ROLE"]);
             return Token::imt(token, &types, Some(&patterns))
         }
 
@@ -517,7 +517,7 @@ impl TokenList {
         while let Some(idx) = tidx {
             let pidx = self.token_prev(idx, true);
             let prev = self.token_idx(pidx);
-            let ttypes = vec![TokenType::Identifier, TokenType::Number];
+            let ttypes = vec![TokenType::Identifier, TokenType::Number, TokenType::NumberInteger, TokenType::NumberFloat, TokenType::NumberHexadecimal];
             if Token::imt(prev, &ttypes, None) {
                 self.group_tokens(TokenType::Identifier, pidx.unwrap(), idx+1, false);
                 tidx = pidx;
@@ -834,16 +834,6 @@ mod tests {
         let parent_name = id.get_parent_name();
         assert_eq!(real_name, Some("person"));
         assert_eq!(parent_name, None);
-    }
-
-    #[test]
-    fn test_group_operator() {
-        let sqls = vec!["foo+100", "foo + 100", "foo*100"];
-        for sql in sqls {
-            let mut token_list = TokenList::from(sql);
-            token_list.group();
-            assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Operation);
-        }
     }
 
     #[test]
