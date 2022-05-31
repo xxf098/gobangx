@@ -7,6 +7,16 @@ const T_NUMERICAL: [TokenType; 3] = [TokenType::Number, TokenType::NumberInteger
 const T_STRING: [TokenType; 3] = [TokenType::String, TokenType::StringSingle, TokenType::StringSymbol];
 const T_NAME: [TokenType; 2] = [TokenType::Name, TokenType::NamePlaceholder];
 
+macro_rules! sub_group {
+    ($self:ident, $fn_name:ident) => {
+        for token in $self.tokens.iter_mut() {
+            if token.is_group() {
+                token.children.$fn_name();
+            }
+        }
+    };
+}
+
 pub fn group(tokens: Vec<Token>) -> Vec<Token> {
     let mut token_list = TokenList::new(tokens);
     token_list.group();
@@ -305,12 +315,12 @@ impl TokenList {
     }
 
     fn group_identifier(&mut self) {
-        // TODO: macro
-        for token in self.tokens.iter_mut() {
-            if token.children.len() > 0 {
-                token.children.group_identifier();
-            }
-        }
+        // for token in self.tokens.iter_mut() {
+        //     if token.is_group() {
+        //         token.children.group_identifier();
+        //     }
+        // }
+        sub_group!(self, group_identifier);
         let ttypes = vec![TokenType::StringSymbol, TokenType::Name];
         let mut tidx = self.token_next_by(&ttypes, None, 0);
         while let Some(idx) = tidx {
@@ -348,11 +358,12 @@ impl TokenList {
 
     // TODO: add macro
     fn group_where(&mut self) {
-        for token in self.tokens.iter_mut() {
-            if token.is_group() {
-                token.children.group_where();
-            }
-        }
+        // for token in self.tokens.iter_mut() {
+        //     if token.is_group() {
+        //         token.children.group_where();
+        //     }
+        // }
+        sub_group!(self, group_where);
         let where_open = (TokenType::Keyword, vec!["WHERE"]);
         let where_close = (TokenType::Keyword, vec!["ORDER BY", "GROUP BY", "LIMIT", "UNION", "UNION ALL", "EXCEPT", "HAVING", "RETURNING", "INTO"]);
         let mut tidx = self.token_next_by(&vec![], Some(&where_open), 0);
