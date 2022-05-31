@@ -29,8 +29,7 @@ impl Token {
     pub fn new_parent(typ: TokenType, children: Vec<Token>) -> Self {
         let value = Token::new_value(&children);
         let token_list = TokenList::new(children);
-        // let v = value.split_whitespace().collect::<Vec<_>>().join(" ");
-        let normalized = if Token::is_keyword_internal(&typ) { value.to_uppercase().split_whitespace().collect::<Vec<_>>().join(" ") } else { value.clone() };
+        let normalized = if Token::is_keyword_internal(&typ) { value.to_uppercase().split_whitespace().collect::<Vec<_>>().join(" ") } else { "".to_string() };
         Self { typ, value, children: token_list, normalized }
     }
 

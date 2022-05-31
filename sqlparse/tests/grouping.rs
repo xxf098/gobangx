@@ -293,3 +293,50 @@ fn test_into_kw_ends_where_clause() {
     assert_eq!(token_list.tokens[9].typ, TokenType::Keyword);
     assert_eq!(token_list.tokens[9].value, "into");
 }
+
+#[test]
+fn test_grouping_typecast() {
+    let sqls = vec![
+        ("select foo::integer from bar", "integer"),
+        ("select (current_database())::information_schema.sql_identifier", "information_schema.sql_identifier"),
+        ];
+    for (sql, value) in sqls {
+        let token_list = group_tokenlist(sql);
+        let token_list = &token_list.tokens[2].children;
+        assert_eq!(token_list.tokens[token_list.len()-1].value, value);
+    }
+}
+
+#[test]
+fn test_grouping_alias() {
+    let sql = "select foo as bar from mytable";
+    let token_list = group_tokenlist(sql);
+    let token_list = &token_list.tokens[2].children;
+    assert_eq!(token_list.tokens[0].value, "foo");
+    assert_eq!(token_list.tokens[token_list.len()-1].value, "bar");
+
+    let sql = "select foo from mytable t1";
+    let token_list = group_tokenlist(sql);
+    let token_list = &token_list.tokens[6].children;
+    assert_eq!(token_list.tokens[0].value, "mytable");
+    assert_eq!(token_list.tokens[token_list.len()-1].value, "t1");
+
+    let sql = "select foo::integer as bar from mytable";
+    let token_list = group_tokenlist(sql);
+    let token_list = &token_list.tokens[2].children;
+    assert_eq!(token_list.tokens[token_list.len()-1].value, "bar");
+
+    let sql = "SELECT DISTINCT (current_database())::information_schema.sql_identifier AS view";
+    let token_list = group_tokenlist(sql);
+    let token_list = &token_list.tokens[4].children;
+    assert_eq!(token_list.tokens[token_list.len()-1].value, "view");
+}
+
+#[test]
+fn test_grouping_alias_case() {
+    let sql = "CASE WHEN 1 THEN 2 ELSE 3 END foo";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens[token_list.len()-1].value, "foo");
+}
