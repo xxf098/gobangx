@@ -76,8 +76,8 @@ pub fn sql_regex() -> Vec<RegexToken> {
 
         new_rt(r"(?i)(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name), // max name length is 64
         new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
-        // FIXME: backword match
-        RegexToken::new(r"(?i:\.)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1),
+        // FIXME: backword match  .name
+        RegexToken::new(r"(?i:\.)(?i)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1),
         new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
 
         new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal),
