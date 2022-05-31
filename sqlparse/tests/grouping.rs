@@ -137,3 +137,50 @@ fn test_grouping_identifier_name_wildcard() {
     let token_list = group_tokenlist(sql);
     assert_eq!(token_list.tokens[0].children.len(), 3);
 }
+
+
+#[test]
+fn test_grouping_identifier_invalid_in_middle() {
+    let sql = "SELECT foo. FROM foo";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[2].typ, TokenType::Identifier);
+    assert_eq!(token_list.tokens[2].children.tokens[1].typ, TokenType::Punctuation);
+    assert_eq!(token_list.tokens[3].typ, TokenType::Whitespace);
+    assert_eq!(token_list.tokens[2].value, "foo.");
+}
+
+
+#[test]
+fn test_grouping_identifer_as() {
+    let sqls = vec!["foo as (select *)", "foo as(select *)"];
+    for sql in sqls {
+        let token_list = group_tokenlist(sql);
+        // println!("{}", token_list);
+        assert_eq!(token_list.tokens[0].typ, TokenType::Identifier);
+        let token = &token_list.tokens[0].children.tokens[2];
+        assert_eq!(token.typ, TokenType::Keyword);
+        assert_eq!(token.normalized, "AS");
+    }
+}
+
+// #[test]
+// fn test_grouping_identifier_as_invalid() {
+//     let sql = "foo as select *";
+//     let token_list = group_tokenlist(sql);
+//     println!("{}", token_list);
+// }
+
+#[test]
+fn test_grouping_identifier_function() {
+    let sql = "foo() as bar";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Identifier);
+    assert_eq!(token_list.tokens[0].children.tokens[0].typ, TokenType::Function);
+
+    let sql = "foo()||col2 bar";
+    let token_list = group_tokenlist(sql);
+    // println!("{}", token_list);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Identifier);
+    assert_eq!(token_list.tokens[0].children.tokens[0].typ, TokenType::Operation);
+    assert_eq!(token_list.tokens[0].children.tokens[0].children.tokens[0].typ, TokenType::Function);
+}

@@ -50,6 +50,7 @@ impl Suggest {
     pub fn suggest_type(&self, full_text: &str, text_before_cursor: &str) -> Vec<SuggestType> {
         let word_before_cursor = last_word(text_before_cursor, "many_punctuations");
         let mut identifier: Option<&Token> = None;
+        // FIXME: clone
         let mut tokens = vec![];
         
         let parsed: Vec<Token> =  if !word_before_cursor.is_empty() {
