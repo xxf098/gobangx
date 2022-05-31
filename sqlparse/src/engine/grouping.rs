@@ -864,44 +864,6 @@ mod tests {
     }
 
     #[test]
-    fn test_grouping_function() {
-        let sql = "foo()";
-        let mut token_list = TokenList::from(sql);
-        token_list.group();
-        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Function);
-        let sql = "foo(null, bar)";
-        let mut token_list = TokenList::from(sql);
-        token_list.group();
-        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Function);
-    }
-
-
-    #[test]
-    fn test_grouping_comparison_exclude() {
-        let sql = "(=)";
-        let mut token_list = TokenList::from(sql);
-        token_list.group();
-        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Parenthesis);
-        let sql = "(a=111)";
-        let mut token_list = TokenList::from(sql);
-        token_list.group();
-        assert_eq!(token_list.tokens[0].children.token_idx(Some(1)).unwrap().typ, TokenType::Comparison);
-        let sql = "(a>=123)";
-        let mut token_list = TokenList::from(sql);
-        token_list.group();
-        assert_eq!(token_list.tokens[0].children.token_idx(Some(1)).unwrap().typ, TokenType::Comparison);
-    }
-
-    #[test]
-    fn test_grouping_subquery_no_parens() {
-        let sql = "CASE WHEN 1 THEN select 2 where foo = 1 end";
-        let mut token_list = TokenList::from(sql);
-        token_list.group();
-        assert_eq!(token_list.len(), 1);
-        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Case);
-    }
-
-    #[test]
     fn test_forloops() {
         let sqls = vec!["for foo in bar LOOP foobar END LOOP", "FOREACH foo in bar LOOP foobar END LOOP"];
         for sql in sqls.into_iter() {
@@ -949,17 +911,6 @@ mod tests {
         assert_eq!(inner.children.token_idx(Some(0)).unwrap().normalized, "BEGIN");
         let inner_len = inner.children.len();
         assert_eq!(inner.children.token_idx(Some(inner_len-1)).unwrap().normalized, "END");
-    }
-
-    #[test]
-    fn test_grouping_typecast() {
-        let sqls = vec!["select foo::integer from bar", "select (current_database())::information_schema.sql_identifier"];
-        for sql in sqls {
-            let mut token_list = TokenList::from(sql);
-            token_list.group();
-            assert_eq!(token_list.tokens[2].typ, TokenType::Identifier);
-            // println!("{:?}", token_list.tokens[2]);
-        }
     }
 
     #[test]

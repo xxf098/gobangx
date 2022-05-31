@@ -340,3 +340,50 @@ fn test_grouping_alias_case() {
     let token_list = &token_list.tokens[0].children;
     assert_eq!(token_list.tokens[token_list.len()-1].value, "foo");
 }
+
+#[test]
+fn test_grouping_subquery_no_parens() {
+    let sql = "CASE WHEN 1 THEN select 2 where foo = 1 end";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Case);
+}
+
+#[test]
+fn test_grouping_idlist_function() {
+    let sql = "foo(1) x, bar";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].typ, TokenType::IdentifierList);
+}
+
+#[test]
+fn test_grouping_comparison_exclude() {
+    let sql = "(=)";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Parenthesis);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens[1].typ, TokenType::OperatorComparison);
+
+    let sql = "(a=1)";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Parenthesis);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens[1].typ, TokenType::Comparison);
+
+    let sql = "(a>=1)";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Parenthesis);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens[1].typ, TokenType::Comparison);
+}
+
+
+#[test]
+fn test_grouping_function() {
+    let sql = "foo()";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Function);
+    let sql = "foo(null, bar)";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Function);
+}
