@@ -130,3 +130,10 @@ fn test_grouping_identifier_wildcard() {
     assert_eq!(token_list.tokens[0].typ, TokenType::Identifier);
     assert_eq!(token_list.tokens[token_list.len()-1].typ, TokenType::Identifier);
 }
+
+#[test]
+fn test_grouping_identifier_name_wildcard() {
+    let sql = "a.*";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].children.len(), 3);
+}
