@@ -263,3 +263,33 @@ fn test_grouping_where() {
     let token_list = &token_list.tokens[token_list.len()-1].children.tokens[0].children;
     assert_eq!(token_list.tokens[token_list.len()-2].typ, TokenType::Where);
 }
+
+#[test]
+fn test_grouping_where_union() {
+    let sql = "select 1 where 1 = 2 union select 2";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[5].value, "union");
+    let sql = "select 1 where 1 = 2 union all select 2";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[5].value, "union all");
+}
+
+
+#[test]
+fn test_returning_kw_ends_where_clause() {
+    let sql = "delete from foo where x > y returning z";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[6].typ, TokenType::Where);
+    assert_eq!(token_list.tokens[7].typ, TokenType::Keyword);
+    assert_eq!(token_list.tokens[7].value, "returning");
+}
+
+
+#[test]
+fn test_into_kw_ends_where_clause() {
+    let sql = "select * from foo where a = 1 into baz";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[8].typ, TokenType::Where);
+    assert_eq!(token_list.tokens[9].typ, TokenType::Keyword);
+    assert_eq!(token_list.tokens[9].value, "into");
+}
