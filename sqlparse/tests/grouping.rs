@@ -588,7 +588,16 @@ fn test_grouping_begin() {
 }
 
 #[test]
-fn test_nested_begin() {
+fn test_grouping_keyword_followed_by_parenthesis() {
+    let sql = "USING(somecol";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 3);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Keyword);
+    assert_eq!(token_list.tokens[1].typ, TokenType::Punctuation);
+}
+
+#[test]
+fn test_grouping_nested_begin() {
     let sql = "BEGIN foo BEGIN bar END END";
     let token_list = group_tokenlist(sql);
     assert_eq!(token_list.len(), 1);
@@ -599,4 +608,61 @@ fn test_nested_begin() {
     assert_eq!(inner.children.token_idx(Some(0)).unwrap().normalized, "BEGIN");
     let inner_len = inner.children.len();
     assert_eq!(inner.children.token_idx(Some(inner_len-1)).unwrap().normalized, "END");
+}
+
+#[test]
+fn test_grouping_aliased_column_without_as() {
+    let sql = "foo bar";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens[0].value, "foo");
+    assert_eq!(token_list.tokens.last().unwrap().value, "bar");
+
+    let sql = "foo.bar baz";
+    let token_list = group_tokenlist(sql);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens.last().unwrap().value, "baz");
+}
+
+#[test]
+fn test_grouping_qualified_function() {
+    let sql = "foo()";
+    let token_list = group_tokenlist(sql);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens[0].value, "foo");
+}
+
+#[test]
+fn test_grouping_aliased_function_without_as() {
+    let sql = "foo() bar";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens.last().unwrap().value, "bar");
+
+    let sql = "foo.bar() baz";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens.last().unwrap().value, "baz");
+}
+
+#[test]
+fn test_grouping_aliased_literal_without_as() {
+    let sql = "1 foo";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens.last().unwrap().value, "foo");
+}
+
+#[test]
+fn test_grouping_as_cte() {
+    let sql = "foo AS WITH apple AS 1, banana AS 2";
+    let token_list = group_tokenlist(sql);
+    let token_list = &token_list.tokens[0].children.tokens[0].children;
+    assert!(token_list.len() > 4);
+    assert_eq!(token_list.tokens[2].value, "AS");
+    assert_eq!(token_list.tokens[4].value, "WITH");
 }

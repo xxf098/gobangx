@@ -856,14 +856,6 @@ mod tests {
     }
 
     #[test]
-    fn test_aliased_literal_without_as() {
-        let sql = "1 foo";
-        let mut token_list = TokenList::from(sql);
-        token_list.group();
-        assert_eq!(token_list.len(), 1);
-    }  
-
-    #[test]
     fn test_get_case() {
         let sql = "case when foo = 1 then 2 when foo = 3 then 4 else 5 end";
         let token_list = group_tokenlist(sql);
