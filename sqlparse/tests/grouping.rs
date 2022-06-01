@@ -458,3 +458,145 @@ fn test_grouping_identifier_consumes_ordering() {
     assert_eq!(token_list.tokens[ids[0]].value, "c1 desc");
     assert_eq!(token_list.tokens[ids[1]].value, "c2");
 }
+
+#[test]
+fn test_grouping_comparison_with_keywords() {
+    let sql = "foo = NULL";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
+    assert_eq!(token_list.tokens[0].children.len(), 5);
+    let sql = "foo = null";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
+}
+
+#[test]
+fn test_grouping_comparison_with_floats() {
+    let sql = "foo = 25.5";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
+    assert_eq!(token_list.tokens[0].children.len(), 5);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens[0].value, "foo");
+    assert_eq!(token_list.tokens[token_list.len()-1].value, "25.5");
+}
+
+
+#[test]
+fn test_grouping_comparison_with_parenthesis() {
+    let sql = "(3 + 4) = 7";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens[0].typ, TokenType::Parenthesis);
+    assert_eq!(token_list.tokens[token_list.len()-1].typ, TokenType::NumberInteger);
+}
+
+#[test]
+fn test_grouping_comparison_with_strings() {
+    let sqls = vec!["foo = bar", "foo != bar", "foo > bar", "foo > bar", "foo <= bar", "foo >= bar", "foo ~ bar",
+    "foo ~~ bar", "foo !~~ bar", "foo LIKE bar", "foo NOT LIKE bar", "foo ILIKE bar", "foo NOT ILIKE bar"];
+    for sql in sqls {
+        let token_list = group_tokenlist(sql);
+        assert_eq!(token_list.len(), 1);
+        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
+        let token_list = &token_list.tokens[0].children;
+        assert_eq!(token_list.tokens[token_list.len()-1].value, "bar");
+    }
+}
+
+// TODO:
+// test_like_and_ilike_comparison
+
+#[test]
+fn test_grouping_comparison_with_functions() {
+    let sql = "foo = DATE(bar.baz)";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Comparison);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.len(), 5);
+    assert_eq!(token_list.tokens[0].value, "foo");
+    assert_eq!(token_list.tokens[token_list.len()-1].value, "DATE(bar.baz)");
+
+    let sql = "DATE(foo.bar) = DATE(bar.baz)";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Comparison);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.len(), 5);
+    assert_eq!(token_list.tokens[0].value, "DATE(foo.bar)");
+    assert_eq!(token_list.tokens[token_list.len()-1].value, "DATE(bar.baz)");
+
+    let sql = "DATE(foo.bar) = bar.baz";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Comparison);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.len(), 5);
+    assert_eq!(token_list.tokens[0].value, "DATE(foo.bar)");
+    assert_eq!(token_list.tokens[token_list.len()-1].value, "bar.baz");
+}
+
+#[test]
+fn test_grouping_comparison_with_typed_literal() {
+    let sql = "foo = DATE 'bar.baz'";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Comparison);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.len(), 5);
+    assert_eq!(token_list.tokens[0].value, "foo");
+    assert_eq!(token_list.tokens[token_list.len()-1].typ, TokenType::TypedLiteral);
+    assert_eq!(token_list.tokens[token_list.len()-1].value, "DATE 'bar.baz'");
+}
+
+#[test]
+fn test_grouping_forloops() {
+    let sqls = vec!["for foo in bar LOOP foobar END LOOP", "FOREACH foo in bar LOOP foobar END LOOP"];
+    for sql in sqls.into_iter() {
+        let token_list = group_tokenlist(sql);
+        assert_eq!(token_list.len(), 1);
+        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::For);
+    }
+}
+
+#[test]
+fn test_grouping_nested_for() {
+    let sql = "FOR foo LOOP FOR bar LOOP END LOOP END LOOP";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    let children_len = token_list.tokens[0].children.len();
+    assert_eq!(token_list.tokens[0].children.token_idx(Some(0)).unwrap().normalized, "FOR");
+    assert_eq!(token_list.tokens[0].children.token_idx(Some(children_len-1)).unwrap().normalized, "END LOOP");
+    let inner = token_list.tokens[0].children.token_idx(Some(6)).unwrap();
+    assert_eq!(inner.children.token_idx(Some(0)).unwrap().normalized, "FOR");
+    let inner_len = inner.children.len();
+    assert_eq!(inner.children.token_idx(Some(inner_len-1)).unwrap().normalized, "END LOOP");
+}
+
+#[test]
+fn test_grouping_begin() {
+    let sql = "BEGIN foo END";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Begin);
+}
+
+#[test]
+fn test_nested_begin() {
+    let sql = "BEGIN foo BEGIN bar END END";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    let children_len = token_list.tokens[0].children.len();
+    assert_eq!(token_list.tokens[0].children.token_idx(Some(0)).unwrap().normalized, "BEGIN");
+    assert_eq!(token_list.tokens[0].children.token_idx(Some(children_len-1)).unwrap().normalized, "END");
+    let inner = token_list.tokens[0].children.token_idx(Some(4)).unwrap();
+    assert_eq!(inner.children.token_idx(Some(0)).unwrap().normalized, "BEGIN");
+    let inner_len = inner.children.len();
+    assert_eq!(inner.children.token_idx(Some(inner_len-1)).unwrap().normalized, "END");
+}

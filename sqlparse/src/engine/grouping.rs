@@ -720,15 +720,6 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_group_identifier() {
-        let sql = "select * from users;";
-        let tokens = tokenize(sql);
-        let mut tokens = TokenList::new(tokens);
-        tokens.group_identifier();
-        // println!("{:?}", tokens.tokens);
-    }
-
-    #[test]
     fn test_group_where() {
         let sql = "select * from users where id > 10 limit 10;";
         let tokens = tokenize(sql);
@@ -865,104 +856,12 @@ mod tests {
     }
 
     #[test]
-    fn test_forloops() {
-        let sqls = vec!["for foo in bar LOOP foobar END LOOP", "FOREACH foo in bar LOOP foobar END LOOP"];
-        for sql in sqls.into_iter() {
-            let mut token_list = TokenList::from(sql);
-            token_list.group();
-            assert_eq!(token_list.len(), 1);
-            assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::For);
-        }
-    }
-
-    #[test]
-    fn test_nested_for() {
-        let sql = "FOR foo LOOP FOR bar LOOP END LOOP END LOOP";
-        let mut token_list = TokenList::from(sql);
-        token_list.group();
-        assert_eq!(token_list.len(), 1);
-        let children_len = token_list.tokens[0].children.len();
-        assert_eq!(token_list.tokens[0].children.token_idx(Some(0)).unwrap().normalized, "FOR");
-        assert_eq!(token_list.tokens[0].children.token_idx(Some(children_len-1)).unwrap().normalized, "END LOOP");
-        let inner = token_list.tokens[0].children.token_idx(Some(6)).unwrap();
-        assert_eq!(inner.children.token_idx(Some(0)).unwrap().normalized, "FOR");
-        let inner_len = inner.children.len();
-        assert_eq!(inner.children.token_idx(Some(inner_len-1)).unwrap().normalized, "END LOOP");
-    }
-
-    #[test]
-    fn test_begin() {
-        let sql = "BEGIN foo END";
-        let mut token_list = TokenList::from(sql);
-        token_list.group();
-        assert_eq!(token_list.len(), 1);
-        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Begin);
-    }
-
-    #[test]
-    fn test_nested_begin() {
-        let sql = "BEGIN foo BEGIN bar END END";
-        let mut token_list = TokenList::from(sql);
-        token_list.group();
-        assert_eq!(token_list.len(), 1);
-        let children_len = token_list.tokens[0].children.len();
-        assert_eq!(token_list.tokens[0].children.token_idx(Some(0)).unwrap().normalized, "BEGIN");
-        assert_eq!(token_list.tokens[0].children.token_idx(Some(children_len-1)).unwrap().normalized, "END");
-        let inner = token_list.tokens[0].children.token_idx(Some(4)).unwrap();
-        assert_eq!(inner.children.token_idx(Some(0)).unwrap().normalized, "BEGIN");
-        let inner_len = inner.children.len();
-        assert_eq!(inner.children.token_idx(Some(inner_len-1)).unwrap().normalized, "END");
-    }
-
-    #[test]
     fn test_aliased_literal_without_as() {
         let sql = "1 foo";
         let mut token_list = TokenList::from(sql);
         token_list.group();
         assert_eq!(token_list.len(), 1);
-    }
-
-    #[test]
-    fn test_comparison_with_strings() {
-        let sqls = vec!["foo = bar", "foo != bar", "foo > bar", "foo > bar", "foo <= bar", "foo >= bar", "foo ~ bar",
-        "foo ~~ bar", "foo !~~ bar", "foo LIKE bar", "foo NOT LIKE bar", "foo ILIKE bar", "foo NOT ILIKE bar"];
-        for sql in sqls {
-            let mut token_list = TokenList::from(sql);
-            token_list.group();
-            assert_eq!(token_list.len(), 1);
-            assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
-        }
-    }
-
-    #[test]
-    fn test_comparison_with_parenthesis() {
-        let sql = "(3 + 4) = 7";
-        let token_list = group_tokenlist(sql);
-        assert_eq!(token_list.len(), 1);
-        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
-    }
-
-    #[test]
-    fn test_comparison_with_floats() {
-        let sql = "foo = 25.5";
-        let token_list = group_tokenlist(sql);
-        assert_eq!(token_list.len(), 1);
-        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
-        assert_eq!(token_list.tokens[0].children.len(), 5);
-    }
-
-    #[test]
-    fn test_comparison_with_keywords() {
-        let sql = "foo = NULL";
-        let token_list = group_tokenlist(sql);
-        assert_eq!(token_list.len(), 1);
-        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
-        assert_eq!(token_list.tokens[0].children.len(), 5);
-        let sql = "foo = null";
-        let token_list = group_tokenlist(sql);
-        assert_eq!(token_list.len(), 1);
-        assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Comparison);
-    }
+    }  
 
     #[test]
     fn test_get_case() {
