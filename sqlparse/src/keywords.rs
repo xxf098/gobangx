@@ -70,7 +70,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
         // (r'(?<!\w)[$:?]\w+', tokens.Name.Placeholder),
 
         new_rt(r"\\\w+", TokenType::Command),
-        new_rt(r"(?i)NOT\s+IN\b", TokenType::OperatorComparison),
+        new_rt(r"(?i)(NOT\s+)?IN\b", TokenType::OperatorComparison),
 
         new_rt(r"(?i)(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword),
 

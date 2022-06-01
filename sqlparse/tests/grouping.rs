@@ -358,6 +358,7 @@ fn test_grouping_idlist_function() {
 
 #[test]
 fn test_grouping_comparison_exclude() {
+    // TODO: FIXME
     let sql = "(=)";
     let token_list = group_tokenlist(sql);
     assert_eq!(token_list.tokens[0].typ, TokenType::Parenthesis);
@@ -386,4 +387,74 @@ fn test_grouping_function() {
     let sql = "foo(null, bar)";
     let token_list = group_tokenlist(sql);
     assert_eq!(token_list.token_idx(Some(0)).unwrap().typ, TokenType::Function);
+}
+
+#[test]
+fn test_grouping_function_not_in() {
+    let sql = "in(1, 2)";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 2);
+    assert_eq!(token_list.tokens[0].typ, TokenType::OperatorComparison);
+    assert_eq!(token_list.tokens[1].typ, TokenType::Parenthesis);
+}
+
+#[test]
+fn test_grouping_in_comparison() {
+    let sql = "a in (1, 2)";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.len(), 5);
+    assert_eq!(token_list.tokens[0].value, "a");
+    assert_eq!(token_list.tokens[token_list.len()-1].value, "(1, 2)");
+}
+
+
+#[test]
+fn test_grouping_varchar() {
+    let sql = r#""text" Varchar(50) NOT NULL"#;
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[2].typ, TokenType::Function);
+}
+
+#[test]
+fn test_grouping_identifier_with_operators() {
+    let sql = "foo||bar";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Operation);
+
+    let sql = "foo || bar";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Operation);
+}
+
+#[test]
+fn test_grouping_identifier_with_op_trailing_ws() {
+    let sql = "foo || bar ";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 2);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Operation);
+    assert_eq!(token_list.tokens[1].typ, TokenType::Whitespace);
+}
+
+#[test]
+fn test_grouping_identifier_with_string_literals() {
+    let sql = "foo + 'bar'";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 1);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Operation);
+}
+
+#[test]
+fn test_grouping_identifier_consumes_ordering() {
+    let sql = "select * from foo order by c1 desc, c2, c3";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[token_list.len()-1].typ, TokenType::IdentifierList);
+    let token_list = &token_list.tokens[token_list.len()-1].children;
+    let ids = token_list.get_identifiers();
+    assert_eq!(ids.len(), 3);
+    assert_eq!(token_list.tokens[ids[0]].value, "c1 desc");
+    assert_eq!(token_list.tokens[ids[1]].value, "c2");
 }

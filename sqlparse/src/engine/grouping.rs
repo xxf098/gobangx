@@ -697,6 +697,7 @@ fn group_internal(
             if matcher(token) {
                 let nidx = tlist.token_next(idx+1, true);
                 let next_ = tlist.token_idx(nidx);
+                // println!("T: {:?} P: {:?} N: {:?}", token, prev_, next_);
                 if pidx.is_some() && prev_.is_some() && valid_prev(prev_.as_ref()) && valid_next(next_) {
                     let (from_idx, to_idx) = post(tlist, pidx.unwrap(), idx, nidx.unwrap());
                     tlist.group_tokens(group_type.clone(), from_idx, to_idx+1, extend);
