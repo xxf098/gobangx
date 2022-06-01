@@ -67,7 +67,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
 
         new_rt(r"\?", TokenType::NamePlaceholder),
         new_rt(r"%(\(\w+\))?s", TokenType::NamePlaceholder),
-        // (r'(?<!\w)[$:?]\w+', tokens.Name.Placeholder),
+        new_rt(r"^[$:?]\w+", TokenType::NamePlaceholder),
 
         new_rt(r"\\\w+", TokenType::Command),
         new_rt(r"(?i)(NOT\s+)?IN\b", TokenType::OperatorComparison),
