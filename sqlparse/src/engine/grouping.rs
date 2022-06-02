@@ -60,7 +60,7 @@ impl TokenList {
     pub fn groupable_tokens(&self, token: &Token) -> (usize, usize) {
         match token.typ {
             TokenType::Parenthesis | TokenType::SquareBrackets => (1, self.len()-1),
-            TokenType::Punctuation if token.value == "(" => (1, self.len()-1),
+            TokenType::Punctuation if token.value == "(" || token.value == "[" => (1, self.len()-1),
             _ => (0, self.len())
         }
     }
@@ -222,6 +222,10 @@ impl TokenList {
     //  Whitespaces and punctuations are not included
     pub fn get_identifiers(&self) -> Vec<usize> {
         self.tokens.iter().enumerate().filter(|(_, t)| !(t.is_whitespace() || t.value == ",")).map(|(i, _)| i).collect::<Vec<_>>()
+    }
+
+    fn group_brackets(&mut self) {
+        group_matching(self, &TokenType::SquareBrackets, &["["], "]");
     }
 
     fn group_parenthesis(&mut self) {
@@ -574,6 +578,7 @@ impl TokenList {
     fn group(&mut self) {
 
         // group_matching
+        self.group_brackets();
         self.group_parenthesis();
         self.group_case();
         self.group_if();
