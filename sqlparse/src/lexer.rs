@@ -150,7 +150,9 @@ pub fn tokenize_internal(sql: &str, regs: &[RegexToken]) -> Vec<Token> {
         for rt in regs {
             let i = index.saturating_sub(rt.backward);
             let t = &sql[i..];
-         
+            if rt.probe.is_some() && !t.contains(rt.probe.unwrap()) {
+                continue
+            }
             let opt = match rt.capture {
                 Some(i) => rt.reg.captures(t).map(|c| c.get(i)).flatten(),
                 None => rt.reg.find(t)
