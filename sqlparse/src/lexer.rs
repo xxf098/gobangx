@@ -150,18 +150,28 @@ pub fn tokenize_internal(sql: &str, regs: &[RegexToken]) -> Vec<Token> {
         for rt in regs {
             let i = index.saturating_sub(rt.backward);
             let t = &sql[i..];
-            if rt.probe.is_some() && !t.contains(rt.probe.unwrap()) {
+            if rt.needle.is_some() && !t.to_lowercase().contains(rt.needle.unwrap()) {
                 continue
             }
+            // let now = std::time::Instant::now();
             let opt = match rt.capture {
-                Some(i) => rt.reg.captures(t).map(|c| c.get(i)).flatten(),
-                None => rt.reg.find(t)
+                Some(i) => rt.reg.captures(t).map(|c| c.get(i)).flatten().map(|m| m.range()),
+                None => if rt.shortest { rt.reg.shortest_match(t).map(|pos| std::ops::Range { start: 0, end: pos }) } 
+                    else { rt.reg.find(t).map(|m| m.range()) },
             };
-            if opt.is_none() || opt.unwrap().start() != rt.backward {
+            // let elapsed = now.elapsed().as_micros();
+            // if elapsed > 100 {
+            //     println!("elapsed: {} {}", elapsed, rt.reg.as_str());
+            // }
+            if opt.is_none() {
+                continue
+            }
+            let r = opt.unwrap();
+            if r.start != rt.backward {
                 continue
             }
             // println!("matched {}", rt.reg.as_str());
-            let v = opt.unwrap().as_str();
+            let v = &t[r.start..r.end];
             forawrd = v.len();
             let typ = match rt.typ {
                 TokenType::KeywordRaw => is_keyword(v),

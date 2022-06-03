@@ -8,11 +8,13 @@ pub struct RegexToken {
     pub typ: TokenType,
     pub capture: Option<usize>,
     pub backward: usize, // backward offset, match .Name
+    pub needle: Option<&'static str>,
+    pub shortest: bool,
 }
 
 impl RegexToken {
     
-    fn new(s: &str, typ: TokenType, capture: Option<usize>, backward: usize) -> Self {
+    fn new(s: &str, typ: TokenType, capture: Option<usize>, backward: usize, shortest: bool) -> Self {
         // let reg = if ignore_case { RegexBuilder::new(s).case_insensitive(true).build().unwrap() } else { Regex::new(s).unwrap() };
         let reg = Regex::new(s).unwrap();
         Self{
@@ -20,6 +22,21 @@ impl RegexToken {
             typ,
             capture,
             backward,
+            needle: None,
+            shortest: shortest,
+        }
+    }
+
+    fn new_nd(s: &str, typ: TokenType, capture: Option<usize>, backward: usize, needle: &'static str, shortest: bool) -> Self {
+        // let reg = if ignore_case { RegexBuilder::new(s).case_insensitive(true).build().unwrap() } else { Regex::new(s).unwrap() };
+        let reg = Regex::new(s).unwrap();
+        Self{
+            reg, 
+            typ,
+            capture,
+            backward,
+            needle: Some(needle),
+            shortest: shortest,
         }
     }
 
@@ -29,21 +46,39 @@ impl RegexToken {
             typ,
             capture: None,
             backward: 0,
+            needle: None,
+            shortest: false,
         }
     }
 }
 
 #[inline]
 fn new_rt(s: &str, typ: TokenType) -> RegexToken{
-    RegexToken::new(s, typ, None, 0)
+    RegexToken::new(s, typ, None, 0, false)
 }
 
 #[inline]
-fn new_cap(s: &str, typ: TokenType, i: usize) -> RegexToken{
-    RegexToken::new(s, typ, Some(i), 0)
+fn new_nd(s: &str, typ: TokenType, probe: &'static str) -> RegexToken{
+    RegexToken::new_nd(s, typ, None, 0, probe, false)
 }
 
-// TODO: R
+#[inline]
+fn new_sh(s: &str, typ: TokenType, needle: &'static str) -> RegexToken{
+    RegexToken::new_nd(s, typ, None, 0, needle, true)
+}
+
+#[inline]
+fn new_shr(s: &str, typ: TokenType) -> RegexToken{
+    RegexToken::new(s, typ, None, 0, true)
+}
+
+
+#[inline]
+fn new_cap(s: &str, typ: TokenType, i: usize, probe: &'static str) -> RegexToken{
+    RegexToken::new_nd(s, typ, Some(i), 0, probe, false)
+}
+
+// TODO: start with ^
 pub fn sql_regex() -> Vec<RegexToken> {
     // let literal = create_string_regex(vec!["''", r#""""#, "``"]).unwrap();
     vec![
@@ -72,17 +107,17 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r"\\\w+", TokenType::Command),
         new_rt(r"(?i)(NOT\s+)?IN\b", TokenType::OperatorComparison),
 
-        new_rt(r"(?i)(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword),
+        new_shr(r"(?i)^(CASE|IN|VALUES|USING|FROM|AS)\b", TokenType::Keyword),
 
         new_rt(r"(?i)(@|##|#)[A-ZÀ-Ü]\w+", TokenType::Name), // max name length is 64
-        new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1),
+        new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\s*\.)", TokenType::Name, 1, "."),
         // FIXME: backword match  .name
-        RegexToken::new(r"(?i:\.)(?i)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1),
-        new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1),
+        RegexToken::new(r"(?i:\.)(?i)([A-ZÀ-Ü]\w*)", TokenType::Name, Some(1), 1, false),
+        new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1, "("),
 
         new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal),
         new_rt(r"-?\d+(\.\d+)?E-?\d+", TokenType::NumberFloat),
-        new_rt(r"-?(\d+(\.\d*)|\.\d+)", TokenType::NumberFloat),
+        new_nd(r"-?(\d+(\.\d*)|\.\d+)", TokenType::NumberFloat, "."),
         new_rt(r"(-\s*)?[0-9]+", TokenType::NumberInteger),
 
         new_rt(r"'(''|\\\\|\\'|[^'])*'", TokenType::StringSingle),
@@ -90,20 +125,20 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_rt(r#"(""|".*?[^\\]")"#, TokenType::StringSymbol),
         // new_rt(r#"(?:[^\w\])])(\[[^\]\[]+\])"#, TokenType::Name),
 
-        new_rt(r"(?i)((LEFT\s+|RIGHT\s+|FULL\s+)?(INNER\s+|OUTER\s+|STRAIGHT\s+)?|(CROSS\s+|NATURAL\s+)?)?JOIN\b", TokenType::Keyword),
+        new_nd(r"(?i)((LEFT\s+|RIGHT\s+|FULL\s+)?(INNER\s+|OUTER\s+|STRAIGHT\s+)?|(CROSS\s+|NATURAL\s+)?)?JOIN\b", TokenType::Keyword, "join"),
         new_rt(r"(?i)END(\s+IF|\s+LOOP|\s+WHILE)?\b", TokenType::Keyword),
         new_rt(r"(?i)NOT\s+NULL\b", TokenType::Keyword),
         new_rt(r"(?i)NULLS\s+(FIRST|LAST)\b", TokenType::Keyword),
         new_rt(r"(?i)UNION\s+ALL\b", TokenType::Keyword),
         new_rt(r"(?i)CREATE(\s+OR\s+REPLACE)?\b", TokenType::KeywordDDL),
         new_rt(r"(?i)DOUBLE\s+PRECISION\b", TokenType::NameBuiltin),
-        new_rt(r"(?i)GROUP\s+BY\b", TokenType::Keyword),
-        new_rt(r"(?i)ORDER\s+BY\b", TokenType::Keyword),
-        new_rt(r"(?i)HANDLER\s+FOR\b", TokenType::Keyword),
+        new_sh(r"(?i)^(GROUP\s+BY\b)", TokenType::Keyword, " by"),
+        new_sh(r"(?i)^(ORDER\s+BY\b)", TokenType::Keyword, " by"),
+        new_rt(r"(?i)^(HANDLER\s+FOR\b)", TokenType::Keyword),
         new_rt(r"(?i)(LATERAL\s+VIEW\s+)(EXPLODE|INLINE|PARSE_URL_TUPLE|POSEXPLODE|STACK)\b", TokenType::Keyword),
         new_rt(r"(?i)(AT|WITH')\s+TIME\s+ZONE\s+'[^']+'", TokenType::KeywordTZCast),
         new_rt(r"(?i)(NOT\s+)?(LIKE|ILIKE|RLIKE)\b", TokenType::OperatorComparison),
-        new_rt(r"(?i)[0-9_A-ZÀ-Ü][_$#\w]{0,26}", TokenType::KeywordRaw), // min length keyword: as, max length keyword: TRANSACTIONS_ROLLED_BACK TODO: move to special case
+        new_rt(r"(?i)[0-9_A-ZÀ-Ü][_$#\w]{0,26}", TokenType::KeywordRaw), // min length keyword: as, max length keyword: TRANSACTIONS_ROLLED_BACK TODO: move to special case match with trie
         new_rt(r"[;:()\[\],\.]", TokenType::Punctuation),
         new_rt(r"[<>=~!]+", TokenType::OperatorComparison),
         new_rt(r"[+/@#%^&|^-]+", TokenType::Operator)
@@ -188,7 +223,23 @@ mod tests {
     fn test_non_capturing_group() {
         let reg = Regex::new(r"([A-ZÀ-Ü]\w*)(?:\()").unwrap();
         let c = reg.captures("MAX(price)").unwrap();
-        assert_eq!(c.get(1).map(|m| m.as_str()), Some("MAX"))
+        assert_eq!(c.get(1).map(|m| m.as_str()), Some("MAX"));
+        let r = reg.find("MAX(price)").unwrap();
+        println!("find {:?} {}", r, r.as_str());
+       
+        let reg = Regex::new(r"(?i)([A-ZÀ-Ü]\w*)(?:\s*\.)").unwrap();
+        let r = reg.find("tab.col").unwrap();
+        println!("{:?} {}", r, r.as_str());
+    }
+
+    #[test]
+    fn test_shortest_match() {
+        let reg = Regex::new(r"(?i)ORDER\s+BY\b").unwrap();
+        let sql = "order by id";
+        let result = reg.shortest_match(sql);
+        let pos = result.unwrap();
+        let s = &sql[0..pos];
+        assert_eq!(s, "order by");
     }
 
     #[test]
