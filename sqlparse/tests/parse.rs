@@ -166,3 +166,36 @@ fn test_parse_single_quotes_with_linebreaks() {
     assert_eq!(token_list.tokens[0].typ, TokenType::StringSingle);
 }
 
+// test_parse_sqlite_identifiers
+
+// test_parse_simple_1d_array_index
+
+// test_single_line_comments
+
+#[test]
+fn test_parse_names_and_special_names() {
+    let sqls = vec!["foo", "@foo", "#foo", "##foo"];
+    for sql in sqls {
+        let token_list = group_tokenlist(sql);
+        assert_eq!(token_list.len(), 1);
+        assert_eq!(token_list.tokens[0].typ, TokenType::Identifier);
+    }
+}
+
+
+#[test]
+fn test_parse_wildcard_multiplication() {
+    let sql = "select * from dual";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[2].typ, TokenType::Wildcard);
+
+    let sql = "select a0.* from dual a0";
+    let token_list = group_tokenlist(sql);
+    let token_list = &token_list.tokens[2].children;
+    assert_eq!(token_list.tokens[2].typ, TokenType::Wildcard);
+
+    let sql = "select 1 * 2 from dual";
+    let token_list = group_tokenlist(sql);
+    let token_list = &token_list.tokens[2].children;
+    assert_eq!(token_list.tokens[2].typ, TokenType::Operator);
+}

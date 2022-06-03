@@ -331,7 +331,9 @@ impl TokenList {
             self.group_tokens(TokenType::Identifier, idx, idx +1, false);
             tidx = self.token_next_by(&ttypes, None, idx+1);
         }
-    }   
+    }
+
+    // group_arrays
 
     fn group_identifier_list(&mut self) {
 
