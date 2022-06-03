@@ -116,7 +116,7 @@ pub fn sql_regex() -> Vec<RegexToken> {
         new_cap(r"(?i)([A-ZÀ-Ü]\w*)(?:\()", TokenType::Name, 1, "("),
 
         new_rt(r"-?0x[\dA-F]+", TokenType::NumberHexadecimal),
-        new_rt(r"-?\d+(\.\d+)?E-?\d+", TokenType::NumberFloat),
+        new_rt(r"-?\d+(\.\d+)?[Ee]-?\d+", TokenType::NumberFloat),
         new_nd(r"-?(\d+(\.\d*)|\.\d+)", TokenType::NumberFloat, "."),
         new_rt(r"(-\s*)?[0-9]+", TokenType::NumberInteger),
 
