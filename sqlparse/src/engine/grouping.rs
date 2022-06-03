@@ -96,6 +96,14 @@ impl TokenList {
         }
     }
 
+    fn token_not_matching_fn<F>(&self, f: F, start: usize, end: usize, reverse: bool) -> Option<usize> where F: Fn(&Token) -> bool {
+        if reverse {
+            self.tokens[start..end].iter().rposition(|token| !f(token)).map(|p| p+start)
+        } else {
+            self.tokens[start..end].iter().position(|token| !f(token)).map(|p| p+start)
+        }
+    }
+
     pub fn token_next_by(&self, types: &[TokenType], pattern: Option<&(TokenType, Vec<&str>)>,start: usize) -> Option<usize> {
         self.token_matching(types, pattern, start, self.tokens.len())
     }
@@ -362,13 +370,24 @@ impl TokenList {
         group_internal(self, TokenType::IdentifierList, matcher, valid, valid, post, true, true)
     }
 
+    fn group_comments(&mut self) {
+        let types = vec![TokenType::CommentMultiline, TokenType::CommentSingle];
+        let mut tidx = self.token_next_by(&types, None, 0);
+        while let Some(idx) = tidx {
+            let eidx = self.token_not_matching_fn(|t| {
+                // let types = vec![TokenType::CommentMultiline, TokenType::CommentSingle];
+                Token::imt(Some(t), &types, None) || t.typ == TokenType::Whitespace
+            }, idx, self.len(), false);
+            if let Some(end) = eidx {
+                self.group_tokens(TokenType::Comment, idx, end, false);
+            }
+            tidx = self.token_next_by(&types, None, idx+1);
+            
+        }
+    }
+
     // TODO: add macro
     fn group_where(&mut self) {
-        // for token in self.tokens.iter_mut() {
-        //     if token.is_group() {
-        //         token.children.group_where();
-        //     }
-        // }
         sub_group!(self, group_where);
         let where_open = (TokenType::Keyword, vec!["WHERE"]);
         let where_close = (TokenType::Keyword, vec!["ORDER BY", "GROUP BY", "LIMIT", "UNION", "UNION ALL", "EXCEPT", "HAVING", "RETURNING", "INTO"]);
@@ -579,6 +598,7 @@ impl TokenList {
 
     fn group(&mut self) {
 
+        self.group_comments();
         // group_matching
         self.group_brackets();
         self.group_parenthesis();
@@ -689,12 +709,13 @@ fn group_internal(
                 continue
             }
            
-            if tlist.tokens[idx].is_whitespace() {
+            let token = &mut tlist.tokens[idx];
+            if token.is_whitespace() {
                 idx += 1;
                 continue
             }
             
-            let token = &mut tlist.tokens[idx];
+            // let token = &mut tlist.tokens[idx];
             if recurse && token.is_group() && token.typ != group_type {
                 group_internal(&mut token.children, group_type.clone(), matcher, valid_prev, valid_next, post, extend, recurse);
                 std::mem::drop(token)
