@@ -13,6 +13,13 @@ fn test_grouping_parenthesis() {
 
 }
 
+#[test]
+fn test_grouping_comments() {
+    let sql = "/*\n * foo\n */   \n  bar";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].typ, TokenType::Comment);
+}
+
 
 #[test]
 fn test_grouping_assignment() {
@@ -238,8 +245,15 @@ fn test_grouping_identifier_list_other() {
     assert_eq!(token_list.tokens[2].children.len(), 13);
 }
 
-// TODO:
-// test_grouping_identifier_list_with_inline_comments
+#[test]
+fn test_grouping_identifier_list_with_inline_comments() {
+    let sql = "foo /* a comment */, bar";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.tokens[0].typ, TokenType::IdentifierList);
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens[0].typ, TokenType::Identifier);
+    assert_eq!(token_list.tokens[3].typ, TokenType::Identifier);
+}
 
 #[test]
 fn test_grouping_identifier_list_with_order() {

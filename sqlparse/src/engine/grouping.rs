@@ -133,7 +133,7 @@ impl TokenList {
         self.tokens.extend(tokens)
     }
 
-    // extend: flatten tokens
+    // extend: flatten tokens | push new tokens to prev group
     fn group_tokens(&mut self, group_type: TokenType, start: usize, end: usize, extend: bool) {
         if extend && self.tokens[start].typ == group_type {
             let start_idx = start;
@@ -578,6 +578,21 @@ impl TokenList {
         }
     }
 
+    fn align_comments(&mut self) {
+        let types = vec![TokenType::Comment];
+        let mut tidx = self.token_next_by(&types, None, 0);
+        while let Some(mut idx) = tidx {
+            let pidx = self.token_prev(idx, true);
+            let prev = self.token_idx(pidx);
+            if prev.map(|p| p.is_group()).unwrap_or(false) {
+                let typ = prev.map(|p| p.typ.clone()).unwrap();
+                self.group_tokens(typ, pidx.unwrap(), idx+1, true);
+                idx = pidx.unwrap();
+            }
+            tidx = self.token_next_by(&types, None, idx+1);
+        }
+    }
+
     // insert into table_name values()
     fn group_values(&mut self) {
         let values = (TokenType::Keyword, vec!["VALUES"]);
@@ -621,6 +636,7 @@ impl TokenList {
         self.group_aliased();
         self.group_assignment();
 
+        self.align_comments();
         self.group_identifier_list();
         self.group_values();
     }
