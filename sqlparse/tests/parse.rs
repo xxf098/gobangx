@@ -170,7 +170,13 @@ fn test_parse_single_quotes_with_linebreaks() {
 
 // test_parse_simple_1d_array_index
 
-// test_single_line_comments
+#[test]
+fn test_single_line_comments() {
+    let sql = "select 1 -- foo";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 5);
+    assert_eq!(token_list.tokens[4].typ, TokenType::CommentSingle);
+}
 
 #[test]
 fn test_parse_names_and_special_names() {
