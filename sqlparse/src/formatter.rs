@@ -46,6 +46,9 @@ impl<'a> FormatOption<'a> {
 }
 
 pub fn validate_options(options: &mut FormatOption) {
+    if options.reindent {
+        options.strip_whitespace = true;
+    }
     if options.reindent_aligned {
         options.strip_whitespace = true
     }

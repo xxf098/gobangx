@@ -46,3 +46,41 @@ fn test_reg35() {
         "limit 1",
     ].join("\n"));
 }
+
+#[test]
+fn test_reg39() {
+    let sql = "select user.id from user";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 7);
+    assert_eq!(token_list.tokens[2].typ, TokenType::Identifier);
+    let token_list = &token_list.tokens[2].children;
+    assert_eq!(token_list.tokens[0].value, "user");
+    assert_eq!(token_list.tokens[1].typ, TokenType::Punctuation);
+    assert_eq!(token_list.tokens[2].value, "id");
+}
+
+
+#[test]
+fn test_reg40() {
+    let sql = "SELECT id, name FROM (SELECT id, name FROM bar) as foo";
+    let token_list = group_tokenlist(sql);
+    // println!("{}", token_list);
+    assert_eq!(token_list.len(), 7);
+    assert_eq!(token_list.tokens[2].typ, TokenType::IdentifierList);
+    assert_eq!(token_list.tokens.last().unwrap().typ, TokenType::Identifier);
+    let token_list = &token_list.tokens.last().unwrap().children;
+    let token_list = &token_list.tokens[0].children;
+    assert_eq!(token_list.tokens[3].typ, TokenType::IdentifierList);
+
+    let sql = "SELECT id ==  name FROM (SELECT id, name FROM bar)";
+    let mut formatter = FormatOption::default_reindent();
+    let formatted_sql = format(sql, &mut formatter);
+    println!("{}", formatted_sql);
+    assert_eq!(formatted_sql, vec![
+        "SELECT id == name",
+        "FROM",
+        "  (SELECT id,",
+        "          name",
+        "   FROM bar)",
+    ].join("\n"));
+}
