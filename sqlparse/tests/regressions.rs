@@ -171,3 +171,63 @@ fn test_reg_null_with_as() {
         "FROM t1",
     ].join("\n")); 
 }
+
+#[test]
+fn test_reg213_leadingws() {
+    let sql = " select * from foo";
+    let mut formatter = FormatOption::default();
+    formatter.strip_whitespace = true;
+    let formatted_sql = format(sql, &mut formatter);
+    assert_eq!(formatted_sql, "select * from foo");
+}
+
+
+#[test]
+fn test_reg207_runaway_format() {
+    let sql = "select 1 from (select 1 as one, 2 as two, 3 from dual) t0";
+    let mut formatter = FormatOption::default_reindent();
+    let formatted_sql = format(sql, &mut formatter);
+    assert_eq!(formatted_sql, vec![
+        "select 1",
+        "from",
+        "  (select 1 as one,",
+        "          2 as two,",
+        "          3",
+        "   from dual) t0",
+    ].join("\n")); 
+}
+
+// TODO: test_token_next_doesnt_ignore_skip_cm
+
+#[test]
+fn test_reg322_concurrently_is_keyword() {
+    let sql = "CREATE INDEX CONCURRENTLY myindex ON mytable(col1);";
+    let token_list = group_tokenlist(sql);
+    assert_eq!(token_list.len(), 12);
+    assert_eq!(token_list.tokens[0].typ, TokenType::KeywordDDL);
+    assert_eq!(token_list.tokens[2].typ, TokenType::Keyword);
+    assert_eq!(token_list.tokens[4].typ, TokenType::Keyword);
+    assert_eq!(token_list.tokens[4].value, "CONCURRENTLY");
+    assert_eq!(token_list.tokens[6].typ, TokenType::Identifier);
+    assert_eq!(token_list.tokens[6].value, "myindex");
+}
+
+// TODO: test_issue484_comments_and_newlines
+
+// FIXME: test_reg489_tzcasts
+
+#[test]
+fn test_reg_as_in_parentheses_indents() {
+    let sql = "(as foo)";
+    let mut formatter = FormatOption::default_reindent();
+    let formatted_sql = format(sql, &mut formatter);
+    assert_eq!(formatted_sql, "(as foo)");
+}
+
+#[test]
+fn test_reg_format_invalid_where_clause() {
+    let sql = "where, foo";
+    let mut formatter = FormatOption::default_reindent();
+    let formatted_sql = format(sql, &mut formatter);
+    assert_eq!(formatted_sql, "where, foo");
+}
