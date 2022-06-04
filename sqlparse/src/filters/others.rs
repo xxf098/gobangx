@@ -130,11 +130,21 @@ impl StmtFilter for StripBeforeNewline {
                 self.process(&mut token.children.tokens);
             }
             if is_before_white && token.value.starts_with("\n") && i > 0 {
-                remove_indexes.push(i-1)
+                remove_indexes.push(i-1);
             }
-            is_before_white = token.is_whitespace();
+            is_before_white = if token.is_group() {
+                // check last token of group is whitespace
+                if let Some(t) = token.children.tokens.last() { t.is_whitespace() } else { false }
+             } else { token.is_whitespace() };
         }
-        remove_indexes.iter().enumerate().for_each(|(i, idx)| {tokens.remove(idx-i);});
+        remove_indexes.iter().enumerate().for_each(|(i, idx)| {
+            let token = &mut tokens[idx-i];
+            let l = token.children.len();
+            if l > 0 {
+                token.children.tokens.remove(l-1);
+                token.update_value();
+            } else { tokens.remove(idx-i); }
+        });
     }
 
 } 
