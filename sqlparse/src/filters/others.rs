@@ -137,13 +137,17 @@ impl StmtFilter for StripBeforeNewline {
                 if let Some(t) = token.children.tokens.last() { t.is_whitespace() } else { false }
              } else { token.is_whitespace() };
         }
-        remove_indexes.iter().enumerate().for_each(|(i, idx)| {
-            let token = &mut tokens[idx-i];
+        let mut remove_count = 0;
+        remove_indexes.iter().for_each(|idx| {
+            let token = &mut tokens[idx-remove_count];
             let l = token.children.len();
             if l > 0 {
                 token.children.tokens.remove(l-1);
                 token.update_value();
-            } else { tokens.remove(idx-i); }
+            } else { 
+                tokens.remove(idx-remove_count);
+                remove_count += 1;
+            }
         });
     }
 
