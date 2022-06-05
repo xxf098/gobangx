@@ -162,11 +162,13 @@ pub fn tokenize_internal(sql: &str, regs: &[RegexToken], trie: &Trie) -> Vec<Tok
                 None => if rt.shortest { rt.reg.shortest_match(t).map(|pos| std::ops::Range { start: 0, end: pos }) }
                     else if rt.typ == TokenType::KeywordRaw {
                         let upper = t.to_uppercase();
-                        if let Some((pos, typ)) = trie.match_token(&upper) { 
+                        if let Some((pos, typ)) = trie.match_token(&upper) {
+                            // println!("typ: {:?} v: {} t: {}", typ, &t[0..pos], t);
                             if let Some(t) = typ { token_type = t; }
                             Some(std::ops::Range{ start: 0, end: pos })
                         } else {
-                            token_type = TokenType::Name; 
+                            // println!("t: {}", t);
+                            token_type = TokenType::Name;
                             rt.reg.find(t).map(|m| m.range())
                         }
                     } else {

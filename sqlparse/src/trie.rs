@@ -94,25 +94,51 @@ impl Trie {
         let mut current = &self.root;
         for (level, c) in chars.enumerate() {
             if !current.children.contains_key(&c) {
-                if level < 3 { return None; } // min keyword length is 2
+                if level < 3 { return match_name(sql) } // min keyword length is 2
                 // https://www.regular-expressions.info/wordboundaries.html
                 let is_end = match c {
                     ' ' | ';' | ':' | '\n' | '\r' | '(' | ')' => true,
                     _ => false,
                 };
-                return if is_end { Some((level, current.typ.clone())) } else { None }
+                return if is_end { Some((level, current.typ.clone())) } else { match_name(sql) }
             }
             current = current.children.get(&c).unwrap();
         }
-        if current.is_last { Some((sql.len(), current.typ.clone())) } else { None }
+        if current.is_last { Some((sql.len(), current.typ.clone())) } else { match_name(sql) }
     }
 
+}
+
+fn match_name(sql: &str) -> Option<(usize, Option<TokenType>)> {
+    // match 0-9A-Z_ AND end with space ;
+    let chars = sql.chars();
+    let mut last_level = 0;
+    let mut last_char = ';';
+    for (level, c) in chars.enumerate() {
+       let is_word_character = (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+       last_level = level;
+       last_char = c;
+       if !is_word_character { break; }
+    }
+    // println!("t: {}, last_level {}, last_char {}", sql, last_level, last_char);
+    if last_level > 0 && (last_char == ' ' || last_char == ';' || last_char == ',' || last_char == ')' || last_char == '\n') { 
+        Some((last_level, Some(TokenType::Name))) } else { None }
 }
 
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_char() {
+        let c = '0';
+        assert!(c >= '0');
+        let c = '2';
+        assert!(c >= '0' && c <= '9');
+        let c = ';';
+        assert_eq!(c >= '0' && c <= '9', false);
+    }
 
     #[test]
     fn test_trie() {
@@ -160,6 +186,10 @@ mod tests {
         let (pos, typ) = t.match_token(sql).unwrap();
         assert_eq!(&sql[0..pos], "SELECT");
         assert_eq!(typ.unwrap(), TokenType::KeywordDML);
+        let sql = "FROM foo.bar";
+        let (pos, typ) = t.match_token(sql).unwrap();
+        assert_eq!(&sql[0..pos], "FROM");
+        assert_eq!(typ.unwrap(), TokenType::Keyword);
     }
 
     #[test]
