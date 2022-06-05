@@ -115,7 +115,7 @@ fn match_name(sql: &str) -> Option<(usize, Option<TokenType>)> {
     let mut last_level = 0;
     let mut last_char = ';';
     for (level, c) in chars.enumerate() {
-       let is_word_character = (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '_';
+       let is_word_character = (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_';
        last_level = level;
        last_char = c;
        if !is_word_character { break; }

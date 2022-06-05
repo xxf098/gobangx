@@ -1,6 +1,6 @@
 use super::keywords::{sql_regex, is_keyword, init_trie, RegexToken};
 use super::tokens::TokenType;
-use super::trie::Trie;
+use super::trie::{Trie};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
