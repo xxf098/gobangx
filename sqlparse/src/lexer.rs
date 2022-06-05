@@ -156,14 +156,22 @@ pub fn tokenize_internal(sql: &str, regs: &[RegexToken], trie: &Trie) -> Vec<Tok
                 continue
             }
             // let now = std::time::Instant::now();
+            let mut token_type = rt.typ.clone();
             let opt = match rt.capture {
                 Some(i) => rt.reg.captures(t).map(|c| c.get(i)).flatten().map(|m| m.range()),
                 None => if rt.shortest { rt.reg.shortest_match(t).map(|pos| std::ops::Range { start: 0, end: pos }) }
                     else if rt.typ == TokenType::KeywordRaw {
                         let upper = t.to_uppercase();
-                        if let Some(pos) = trie.match_keyword(&upper) { Some(std::ops::Range{ start: 0, end: pos }) } else { rt.reg.find(t).map(|m| m.range()) }
-                        // rt.reg.find(t).map(|m| m.range())
-                    } else { rt.reg.find(t).map(|m| m.range()) },
+                        if let Some((pos, typ)) = trie.match_token(&upper) { 
+                            if let Some(t) = typ { token_type = t; }
+                            Some(std::ops::Range{ start: 0, end: pos })
+                        } else {
+                            token_type = TokenType::Name; 
+                            rt.reg.find(t).map(|m| m.range())
+                        }
+                    } else {
+                        rt.reg.find(t).map(|m| m.range())
+                    },
             };
             // let elapsed = now.elapsed().as_micros();
             // if elapsed > 100 {
@@ -181,7 +189,7 @@ pub fn tokenize_internal(sql: &str, regs: &[RegexToken], trie: &Trie) -> Vec<Tok
             forawrd = v.len();
             let typ = match rt.typ {
                 TokenType::KeywordRaw => is_keyword(v),
-                _ => rt.typ.clone()
+                _ => token_type
             };
             let t = Token::new(typ, v);
             tokens.push(t);
