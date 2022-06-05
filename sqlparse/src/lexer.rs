@@ -1,5 +1,6 @@
-use super::keywords::{sql_regex, is_keyword, RegexToken};
+use super::keywords::{sql_regex, is_keyword, init_trie, RegexToken};
 use super::tokens::TokenType;
+use super::trie::Trie;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Token {
@@ -138,10 +139,11 @@ pub(crate) fn remove_quotes(mut s: &str) -> &str {
 
 pub fn tokenize(sql: &str) -> Vec<Token> {
     let regs = sql_regex();
-    tokenize_internal(sql, &regs)
+    let trie = init_trie();
+    tokenize_internal(sql, &regs, &trie)
 }
 
-pub fn tokenize_internal(sql: &str, regs: &[RegexToken]) -> Vec<Token> {
+pub fn tokenize_internal(sql: &str, regs: &[RegexToken], trie: &Trie) -> Vec<Token> {
     let mut tokens = vec![];
     let mut index = 0;
     let sql_len = sql.len();
@@ -156,8 +158,12 @@ pub fn tokenize_internal(sql: &str, regs: &[RegexToken]) -> Vec<Token> {
             // let now = std::time::Instant::now();
             let opt = match rt.capture {
                 Some(i) => rt.reg.captures(t).map(|c| c.get(i)).flatten().map(|m| m.range()),
-                None => if rt.shortest { rt.reg.shortest_match(t).map(|pos| std::ops::Range { start: 0, end: pos }) } 
-                    else { rt.reg.find(t).map(|m| m.range()) },
+                None => if rt.shortest { rt.reg.shortest_match(t).map(|pos| std::ops::Range { start: 0, end: pos }) }
+                    else if rt.typ == TokenType::KeywordRaw {
+                        let upper = t.to_uppercase();
+                        if let Some(pos) = trie.match_keyword(&upper) { Some(std::ops::Range{ start: 0, end: pos }) } else { rt.reg.find(t).map(|m| m.range()) }
+                        // rt.reg.find(t).map(|m| m.range())
+                    } else { rt.reg.find(t).map(|m| m.range()) },
             };
             // let elapsed = now.elapsed().as_micros();
             // if elapsed > 100 {

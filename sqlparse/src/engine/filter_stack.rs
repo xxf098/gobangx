@@ -1,10 +1,12 @@
 use crate::lexer::{Token, TokenList, tokenize_internal};
-use crate::keywords::{RegexToken, sql_regex};
+use crate::keywords::{RegexToken, sql_regex, init_trie};
 use crate::filters::{Filter, StmtFilter, TokenListFilter};
+use crate::trie::Trie;
 
 // 'a
 pub struct FilterStack {
     regs: Vec<RegexToken>,
+    trie: Trie,
     pub preprocess: Vec<Box<dyn Filter>>,
     pub stmtprocess: Vec<Box<dyn StmtFilter>>,
     pub tlistprocess: Vec<Box<dyn TokenListFilter>>,
@@ -16,7 +18,8 @@ impl FilterStack {
 
     pub fn new() -> Self {
         Self { 
-            regs: sql_regex(), 
+            regs: sql_regex(),
+            trie: init_trie(),
             preprocess: vec![],
             stmtprocess: vec![],
             postprocess: vec![],
@@ -26,7 +29,7 @@ impl FilterStack {
 
     // TODO: support more than one sql
     pub fn run(&self, sql: &str, grouping: bool) -> Vec<Token> {
-        let mut tokens = tokenize_internal(sql, &self.regs);
+        let mut tokens = tokenize_internal(sql, &self.regs, &self.trie);
         if grouping {
             tokens = super::grouping::group(tokens);
         }
@@ -35,7 +38,7 @@ impl FilterStack {
 
     // format sql
     pub fn format(&mut self, sql: &str, grouping: bool) -> Vec<Token> {
-        let mut tokens = tokenize_internal(sql, &self.regs);
+        let mut tokens = tokenize_internal(sql, &self.regs, &self.trie);
         for token in tokens.iter_mut() {
             self.preprocess.iter().for_each(|filter| filter.process(token));
         }

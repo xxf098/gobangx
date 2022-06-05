@@ -4,6 +4,7 @@ mod keywords;
 mod tokens;
 mod formatter;
 mod filters;
+mod trie;
 
 
 pub use tokens::TokenType;
