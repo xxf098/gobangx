@@ -13,7 +13,6 @@ exclude = ["resources/"]
 [workspace]
 members=[
     "database-tree",
-    "sqlparse",
 ]
 
 [dependencies]
@@ -31,7 +30,7 @@ toml = "0.5"
 strum = "0.24"
 strum_macros = "0.24"
 database-tree = { path = "./database-tree", version = "0.1.0-alpha.5" }
-sqlparse = { path = "./sqlparse", version = "0.1.0" }
+sqlparse = { path = "../sqlparse", version = "0.1.1" }
 easy-cast = "0.4"
 async-trait = "0.1.52"
 itertools = "0.10.3"
