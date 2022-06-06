@@ -13,6 +13,8 @@ pub enum SuggestType {
     Function(String),
     Alias(Vec<String>),
     Show,
+    Change,
+    User
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -104,6 +106,12 @@ impl Suggest {
             },
             "as" => vec![], // suggest nothing for an alias
             "show" => vec![SuggestType::Show],
+            "to" => {
+                let p = self.parser.parse_no_grouping(text_before_cursor);
+                let first = &p[0].value.to_lowercase(); 
+                if first == "change" {  vec![SuggestType::Change] } else { vec![SuggestType::User] }
+            },
+            "user" | "for" => vec![SuggestType::User],
             "select" | "where" | "having" => {
                 let parent = identifier.map(|id| id.get_parent_name()).flatten();
                 let tables = extract_tables(full_text, &self.parser);
