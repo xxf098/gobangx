@@ -14,7 +14,8 @@ pub enum SuggestType {
     Alias(Vec<String>),
     Show,
     Change,
-    User
+    User,
+    TableFormat,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -181,6 +182,7 @@ impl Suggest {
                 }
             }
             "use" | "database" | "template" | "connect" => vec![SuggestType::Database],
+            "tableformat" => vec![SuggestType::TableFormat],
             v if v.ends_with(",") || is_operand(v) || ["=", "and", "or"].contains(&v) => {
                 let (prev_keyword, text_before_cursor) = find_prev_keyword(text_before_cursor, &self.parser);
                 if let Some(prev_keyword) = prev_keyword {
