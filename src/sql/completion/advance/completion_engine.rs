@@ -116,8 +116,15 @@ impl Suggest {
                 let parent = identifier.map(|id| id.get_parent_name()).flatten();
                 let tables = extract_tables(full_text, &self.parser);
                 let mut suggestions = vec![];
-                if let Some(_p) = parent {
-                    // TODO:
+                if let Some(p) = parent {
+                    let tables = tables.into_iter().filter(|t| t.identifies(p)).collect::<Vec<_>>();
+                    let s = vec![
+                        SuggestType::Column(tables),
+                        SuggestType::Table(p.to_string()),
+                        SuggestType::View(p.to_string()),
+                        SuggestType::Function(p.to_string()),
+                    ];
+                    suggestions.extend(s);
                 } else {
                     let alias = tables.iter().map(|t| t.alias.clone().unwrap_or(t.table.clone())).collect::<Vec<_>>();
                     let s = vec![
