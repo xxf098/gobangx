@@ -134,6 +134,22 @@ impl Suggest {
             "copy" | "from" | "update" | "into" | "describe" | "truncate" | "desc" | "explain" => {
                 suggest_schema(identifier, &token_v)
             },
+            // ALTER TABLE <tablname>
+            "table" | "view" | "function" => {
+                let parent = identifier.map(|id| id.get_parent_name()).flatten();
+                let mut suggest_types = vec![];
+                let mut schema_name = "".to_string();
+                if let Some(schema) = parent { schema_name = schema.to_string(); } else {
+                    suggest_types.push(SuggestType::Schema(None)); }
+                let suggest_type = match token_v.as_ref() {
+                    "table" => SuggestType::Table(schema_name),
+                    "view" => SuggestType::View(schema_name),
+                    "function" => SuggestType::Function(schema_name),
+                    _ => unreachable!()
+                };
+                suggest_types.push(suggest_type);
+                suggest_types
+            }
             "on" => {
                 let tables = extract_tables(full_text, &self.parser);
                 let parent = identifier.map(|i| i.get_parent_name()).flatten();
