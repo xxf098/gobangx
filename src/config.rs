@@ -1,5 +1,5 @@
 use crate::log::LogLevel;
-use crate::Key;
+use crate::event::Key;
 use crate::cli::CliConfig;
 use serde::{Deserialize, Deserializer};
 use std::fmt;
