@@ -18,6 +18,13 @@ pub enum SuggestType {
     TableFormat,
 }
 
+impl SuggestType {
+
+    pub fn column(schema: Option<&str>, table: &str, alias: Option<&str>) -> SuggestType {
+        SuggestType::Column(vec![SuggestTable::new(schema, table, alias)])
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct SuggestTable {
     pub schema: Option<String>,
