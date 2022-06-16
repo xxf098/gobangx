@@ -25,12 +25,25 @@ mod tests {
     }
 
     #[test]
+    fn test_select_suggests_cols_with_qualified_table_scope() {
+        let suggest = Suggest::default();
+        let sql = "SELECT  FROM sch.tabl";
+        let types = suggest.suggest_type(sql, "SELECT ");
+        assert_eq!(types.len(), 4);
+        assert_eq!(types[0], SuggestType::column(Some("sch"), "tabl", None));
+        assert_eq!(types[1], SuggestType::Function("".to_string()));
+        assert_eq!(types[2], SuggestType::Alias(vec!["tabl".to_string()]));
+        assert_eq!(types[3], SuggestType::Keyword);
+    }
+
+    #[test]
     fn test_suggest_where_suggests_columns_functions() {
         let suggest = Suggest::default();
         let sqls = vec![
             "SELECT * FROM tabl WHERE ",
             // "SELECT * FROM tabl WHERE ("
         ];
+        // FIXME: 
         for sql in sqls {
             let types = suggest.suggest_type(sql, sql);
             // println!("{:?}", types);
