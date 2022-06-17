@@ -86,28 +86,71 @@ impl Suggest {
         let last_token = statement.token_idx(last_token_idx);
    
     
-        let suggests = self.suggest_based_on_last_token(last_token, text_before_cursor, full_text, identifier);
+        let suggests = self.suggest_based_on_last_token(last_token, None, text_before_cursor, full_text, identifier);
         suggests
     }
 
-    pub fn suggest_based_on_last_token(&self, token: Option<&Token>, text_before_cursor: &str, full_text: &str, identifier: Option<&Token>) -> Vec<SuggestType> {
-        if token.is_none() {
+    pub fn suggest_based_on_last_token(&self, token: Option<&Token>, token_str: Option<&str>, text_before_cursor: &str, full_text: &str, identifier: Option<&Token>) -> Vec<SuggestType> {
+        if token.is_none() && token_str.is_none() {
             return vec![SuggestType::Keyword, SuggestType::Special]
         }
-        let token = token.unwrap();
-        let mut token_v = "".to_string();
-        if token.typ == TokenType::Comparison {
-            let t = token.children.token_idx(Some(token.children.len()-1));
-            token_v = t.unwrap().value.to_lowercase();
-        } else if token.typ == TokenType::Where {
-            let (prev_keyword, text_before_cursor) = find_prev_keyword(text_before_cursor, &self.parser);
-            if !prev_keyword.as_ref().map(|t| t.typ == TokenType::Where).unwrap_or(false) {
-                return self.suggest_based_on_last_token(prev_keyword.as_ref(), &text_before_cursor, full_text, identifier);
+        let mut token_v = token_str.map(|s| s.to_string()).unwrap_or("".to_string());
+        if let Some(token) = token {
+            if token.typ == TokenType::Comparison {
+                let t = token.children.token_idx(Some(token.children.len()-1));
+                token_v = t.unwrap().value.to_lowercase();
+            } else if token.typ == TokenType::Where {
+                let (prev_keyword, text_before_cursor) = find_prev_keyword(text_before_cursor, &self.parser);
+                if !prev_keyword.as_ref().map(|t| t.typ == TokenType::Where).unwrap_or(false) {
+                    return self.suggest_based_on_last_token(prev_keyword.as_ref(), None, &text_before_cursor, full_text, identifier);
+                }
+            } else {
+                token_v = token.value.to_lowercase();
             }
-        } else {
-            token_v = token.value.to_lowercase();
         }
         match token_v.as_ref() {
+            v if v.ends_with("(") => {
+                let p = self.parser.parse(text_before_cursor);
+                // Get the token before the parens
+                let p = TokenList::new(p);
+                // Four possibilities:
+                if p.token_idx(Some(p.len()-1)).map(|t| t.typ == TokenType::Where).unwrap_or(false) {
+                    let token = p.token_idx(Some(p.len()-1));
+                    let column_suggestions = self.suggest_based_on_last_token(None, Some("where"), text_before_cursor, full_text, identifier);
+                    // Check for a subquery expression 
+                    let where_tokenlist = &token.unwrap().children;
+                    let pidx = where_tokenlist.token_prev(where_tokenlist.len()-1, true);
+                    let mut ptoken = where_tokenlist.token_idx(pidx);
+                    if ptoken.map(|t| t.typ == TokenType::Comparison).unwrap_or(false) {
+                        // e.g. "SELECT foo FROM bar WHERE foo = ANY("
+                        let children = &ptoken.unwrap().children;
+                        ptoken = children.token_idx(Some(children.len()-1));
+                    }
+                    if ptoken.map(|t| t.value.to_lowercase() == "exists").unwrap_or(false) {
+                        return vec![SuggestType::Keyword]
+                    } else {
+                        return column_suggestions
+                    }
+                }
+                let idx = p.token_prev(p.len()-1, true);
+                let ptoken = p.token_idx(idx);
+                if ptoken.map(|t| t.value.to_lowercase() == "using").unwrap_or(false) {
+                    // tbl1 INNER JOIN tbl2 USING (col1, col2)
+                    let tables = extract_tables(full_text, &self.parser);
+                    // suggest columns that are present in more than one table
+                    // FIXME: drop_unique
+                    return vec![SuggestType::Column(tables)]
+                } else if p.token_idx(Some(0)).map(|t| t.value.to_lowercase() == "select").unwrap_or(false) {
+                    // If the lparen is preceeded by a space chances are we're about to do a sub-select.
+                    if last_word(text_before_cursor, "all_punctuations").starts_with("(") {
+                        return vec![SuggestType::Keyword]
+                    }
+                } else if p.token_idx(Some(0)).map(|t| t.value.to_lowercase() == "show").unwrap_or(false) {
+                    return vec![SuggestType::Show]
+                }
+                let tables = extract_tables(full_text, &self.parser);
+                vec![SuggestType::Column(tables)]
+            },
             "set" | "order by" | "distinct" => {
                 let tables = extract_tables(full_text, &self.parser);
                 vec![SuggestType::Column(tables)]
@@ -145,7 +188,7 @@ impl Suggest {
                 }
                 suggestions
             },
-            v if v.ends_with("join") && token.is_keyword() => suggest_schema(identifier, &token_v),
+            v if v.ends_with("join") && token.map(|t| t.is_keyword()).unwrap_or(false) => suggest_schema(identifier, &token_v),
             "copy" | "from" | "update" | "into" | "describe" | "truncate" | "desc" | "explain" => {
                 suggest_schema(identifier, &token_v)
             },
@@ -193,7 +236,7 @@ impl Suggest {
             v if v.ends_with(",") || is_operand(v) || ["=", "and", "or"].contains(&v) => {
                 let (prev_keyword, text_before_cursor) = find_prev_keyword(text_before_cursor, &self.parser);
                 if let Some(prev_keyword) = prev_keyword {
-                    self.suggest_based_on_last_token(Some(&prev_keyword), &text_before_cursor, &text_before_cursor, identifier)
+                    self.suggest_based_on_last_token(Some(&prev_keyword), None, &text_before_cursor, &text_before_cursor, identifier)
                 } else {
                     vec![]
                 }

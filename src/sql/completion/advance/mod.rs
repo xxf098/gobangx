@@ -53,4 +53,15 @@ mod tests {
             assert_eq!(types[3], SuggestType::Keyword);
         }
     }
+
+    #[test]
+    fn test_where_in_suggests_columns() {
+        let suggest = Suggest::default();
+        let sql = "SELECT * FROM tabl WHERE foo IN (";
+        let types = suggest.suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::column(None, "tabl", None));
+        assert_eq!(types[1], SuggestType::Function("".to_string()));
+        assert_eq!(types[2], SuggestType::Alias(vec!["tabl".to_string()]));
+        assert_eq!(types[3], SuggestType::Keyword);
+    }
 }
