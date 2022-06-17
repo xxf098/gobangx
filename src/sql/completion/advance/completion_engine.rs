@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+use std::cell::RefCell;
 use super::{last_word, find_prev_keyword, extract_tables};
 use sqlparse::{ Token, TokenType, TokenList, Parser };
 
@@ -51,10 +53,22 @@ impl SuggestTable {
 
 #[derive(Default)]
 pub struct Suggest {
-    parser: Parser
+    parser: Parser,
+    cache: RefCell<HashMap<String, Vec<Token>>>,
 }
 
 impl Suggest {
+
+    fn parse(&self, sql: &str) -> Vec<Token> {
+        let mut cache = self.cache.borrow_mut();
+        if let Some(tokens) = cache.get(sql) {
+            tokens.clone()
+        } else {
+            let tokens = self.parser.parse(sql);
+            cache.insert(sql.to_string(), tokens.clone());
+            tokens
+        }
+    }
     
     // TODO: support multiple statement
     pub fn suggest_type(&self, full_text: &str, text_before_cursor: &str) -> Vec<SuggestType> {
@@ -65,18 +79,18 @@ impl Suggest {
         
         let parsed: Vec<Token> =  if !word_before_cursor.is_empty() {
             if word_before_cursor.ends_with("(") {
-                self.parser.parse(text_before_cursor)
+                self.parse(text_before_cursor)
             } else {
-                tokens = self.parser.parse(word_before_cursor);
+                tokens = self.parse(word_before_cursor);
                 let p = &tokens[0];
                 let l = text_before_cursor.len() - word_before_cursor.len();
                 if p.children.len() > 0 && p.children.token_idx(Some(0)).map(|t| t.typ == TokenType::Identifier).unwrap_or(false) {
                     identifier = p.children.token_idx(Some(0))
                 }
-                self.parser.parse(&text_before_cursor[..l])
+                self.parse(&text_before_cursor[..l])
             }
         } else {
-            self.parser.parse(text_before_cursor)
+            self.parse(text_before_cursor)
         };
 
     
@@ -110,7 +124,7 @@ impl Suggest {
         }
         match token_v.as_ref() {
             v if v.ends_with("(") => {
-                let p = self.parser.parse(text_before_cursor);
+                let p = self.parse(text_before_cursor);
                 // Get the token before the parens
                 let p = TokenList::new(p);
                 // Four possibilities:

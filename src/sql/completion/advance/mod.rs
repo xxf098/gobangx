@@ -58,7 +58,10 @@ mod tests {
     fn test_where_in_suggests_columns() {
         let suggest = Suggest::default();
         let sql = "SELECT * FROM tabl WHERE foo IN (";
+        let now = std::time::Instant::now();
         let types = suggest.suggest_type(sql, sql);
+        let elapsed = now.elapsed();
+        println!("elapsed: {}ms", elapsed.as_millis());
         assert_eq!(types[0], SuggestType::column(None, "tabl", None));
         assert_eq!(types[1], SuggestType::Function("".to_string()));
         assert_eq!(types[2], SuggestType::Alias(vec!["tabl".to_string()]));
