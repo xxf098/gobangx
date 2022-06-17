@@ -41,9 +41,16 @@ mod tests {
         let suggest = Suggest::default();
         let sqls = vec![
             "SELECT * FROM tabl WHERE ",
-            // "SELECT * FROM tabl WHERE ("
+            "SELECT * FROM tabl WHERE (",
+            "SELECT * FROM tabl WHERE foo = ",
+            "SELECT * FROM tabl WHERE bar OR ",
+            "SELECT * FROM tabl WHERE foo = 1 AND ",
+            "SELECT * FROM tabl WHERE (bar > 10 AND ",
+            "SELECT * FROM tabl WHERE (bar AND (baz OR (qux AND (",
+            "SELECT * FROM tabl WHERE 10 < ",
+            "SELECT * FROM tabl WHERE foo BETWEEN ",
+            "SELECT * FROM tabl WHERE foo BETWEEN foo AND "
         ];
-        // FIXME: 
         for sql in sqls {
             let types = suggest.suggest_type(sql, sql);
             // println!("{:?}", types);
