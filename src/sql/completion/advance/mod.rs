@@ -109,5 +109,39 @@ mod tests {
         let types = suggest_type("SELECT MAX(col1 +  FROM tbl", "SELECT MAX(col1 + ");
         assert_eq!(types[0], SuggestType::column(None, "tbl", None));
     }
+
+    #[test]
+    fn test_operand_inside_function_suggests_cols2() {
+        let types = suggest_type("SELECT MAX(col1 + col2 +  FROM tbl", "SELECT MAX(col1 + col2 + ");
+        assert_eq!(types[0], SuggestType::column(None, "tbl", None));
+    }
+
+    #[test]
+    fn test_select_suggests_cols_and_funcs() {
+        let types = suggest_type("SELECT ", "SELECT ");
+        assert_eq!(types[0], SuggestType::Column(vec![]));
+        assert_eq!(types[1], SuggestType::Function("".to_string()));
+        assert_eq!(types[2], SuggestType::Alias(vec![]));
+        assert_eq!(types[3], SuggestType::Keyword);
+    }
     
+    #[test]
+    fn test_expression_suggests_tables_views_and_schemas() {
+        let sqls = vec![
+            "SELECT * FROM ",
+            "INSERT INTO ",
+            "COPY ",
+            "UPDATE ",
+            "DESCRIBE ",
+            "DESC ",
+            "EXPLAIN ",
+            "SELECT * FROM foo JOIN ",
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::Schema(None));
+            assert_eq!(types[1], SuggestType::Table("".to_string()));
+            assert_eq!(types[2], SuggestType::View("".to_string()));
+        }
+    }
 }
