@@ -173,4 +173,16 @@ mod tests {
         assert_eq!(suggestion.table, "person".to_string());
         assert_eq!(suggestion.alias, None);
     }
+
+    #[test]
+    fn test_extract_tables1() {
+        let sql = "SELECT MAX(col1 +  FROM tbl'";
+        let p = Parser::default();
+        let suggestions = extract_tables(sql, &p);
+        assert_eq!(suggestions.len(), 1);
+        let suggestion = &suggestions[0];
+        assert_eq!(suggestion.schema, None);
+        assert_eq!(suggestion.table, "tbl".to_string());
+        assert_eq!(suggestion.alias, None);
+    }
 }

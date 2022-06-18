@@ -107,7 +107,7 @@ mod tests {
     #[test]
     fn test_operand_inside_function_suggests_cols1() {
         let types = suggest_type("SELECT MAX(col1 +  FROM tbl", "SELECT MAX(col1 + ");
-        println!("{:?}", types);
+        assert_eq!(types[0], SuggestType::column(None, "tbl", None));
     }
-
+    
 }
