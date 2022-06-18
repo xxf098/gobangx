@@ -38,12 +38,13 @@ impl<T: Completion> CompletionComponent<T> {
                 .map(|w| w.to_string())
                 .collect()
         };
+        let w = word.into();
         Self {
             key_config,
             settings,
             state: ListState::default(),
-            word: word.into(),
-            full_text: "".to_string(),
+            word: w.clone(),
+            full_text: w,
             completion: T::new(DatabaseType::MySql, candidates),
             visible: false, 
         }
