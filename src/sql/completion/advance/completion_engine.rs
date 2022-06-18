@@ -10,7 +10,7 @@ pub enum SuggestType {
     Database,
     Schema(Option<String>), // database name
     Table(String), // schema name
-    View(String),
+    View(String), // schema name
     Column(Vec<SuggestTable>),
     Function(String),
     Alias(Vec<String>),
@@ -85,7 +85,7 @@ impl Suggest {
                 let p = &tokens[0];
                 let l = text_before_cursor.len() - word_before_cursor.len();
                 if p.children.len() > 0 && p.children.token_idx(Some(0)).map(|t| t.typ == TokenType::Identifier).unwrap_or(false) {
-                    identifier = p.children.token_idx(Some(0))
+                    identifier = Some(p);
                 }
                 self.parse(&text_before_cursor[..l])
             }

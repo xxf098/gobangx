@@ -144,4 +144,24 @@ mod tests {
             assert_eq!(types[2], SuggestType::View("".to_string()));
         }
     }
+
+    #[test]
+    fn test_expression_suggests_qualified_tables_views_and_schemas() {
+        let sqls = vec![
+            "SELECT * FROM sch.",
+            "INSERT INTO sch.",
+            "COPY sch.",
+            "UPDATE sch.",
+            "DESCRIBE sch.",
+            "DESC sch.",
+            "EXPLAIN sch.",
+            "SELECT * FROM foo JOIN sch.",
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::Table("sch".to_string()));
+            assert_eq!(types[1], SuggestType::View("sch".to_string()));
+        }
+      
+    }
 }
