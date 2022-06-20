@@ -179,4 +179,61 @@ mod tests {
         let types = suggest_type(sql, sql);
         assert_eq!(types[0], SuggestType::Table("sch".to_string()));
     }
+
+    #[test]
+    fn test_distinct_suggests_cols() {
+        let sql = "SELECT DISTINCT ";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::Column(vec![]));
+    }
+
+    #[test]
+    fn test_col_comma_suggests_cols() {
+        let sql = "SELECT a, b, FROM tbl";
+        let text_before = "SELECT a, b,";
+        let types = suggest_type(sql, text_before);
+        assert_eq!(types[0], SuggestType::column(None, "tbl", None));
+        assert_eq!(types[1], SuggestType::Function("".to_string()));
+        assert_eq!(types[2], SuggestType::Alias(vec!["tbl".to_string()]));
+        assert_eq!(types[3], SuggestType::Keyword);
+    }
+
+    #[test]
+    fn test_table_comma_suggests_tables_and_schemas() {
+        let sql = "SELECT a, b FROM tbl1, ";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::Schema(None));
+        assert_eq!(types[1], SuggestType::Table("".to_string()));
+        assert_eq!(types[2], SuggestType::View("".to_string()));
+    }
+
+    #[test]
+    fn test_into_suggests_tables_and_schemas() {
+        let sql = "INSERT INTO ";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::Schema(None));
+        assert_eq!(types[1], SuggestType::Table("".to_string()));
+        assert_eq!(types[2], SuggestType::View("".to_string()));
+    }
+
+    #[test]
+    fn test_insert_into_lparen_suggests_cols() {
+        let sql = "INSERT INTO abc (";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::column(None, "abc", None));
+    }
+
+    #[test]
+    fn test_insert_into_lparen_partial_text_suggests_cols() {
+        let sql = "INSERT INTO abc (i";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::column(None, "abc", None));
+    }
+
+    #[test]
+    fn test_insert_into_lparen_comma_suggests_cols() {
+        let sql = "INSERT INTO abc (id,";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::column(None, "abc", None));
+    }
 }
