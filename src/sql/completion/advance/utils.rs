@@ -100,7 +100,14 @@ fn extract_table_identifiers(tokens: Vec<Token>) -> Vec<SuggestTable> {
     let mut tables = vec![];
     for item in tokens {
         if item.typ == TokenType::IdentifierList {
-            // TODO: 
+            let identifiers = item.children.get_identifiers();
+            for id in identifiers {
+                let t = item.children.token_idx(Some(id)).unwrap();
+                let schema_name = t.get_parent_name();
+                if let Some(real_name) = t.get_real_name() {
+                    tables.push(SuggestTable::new(schema_name, real_name, t.get_alias()));
+                }
+            }
             continue
         } else if item.typ == TokenType::Identifier {
             let real_name = item.get_real_name();
@@ -184,5 +191,14 @@ mod tests {
         assert_eq!(suggestion.schema, None);
         assert_eq!(suggestion.table, "tbl".to_string());
         assert_eq!(suggestion.alias, None);
+    }
+
+    #[test]
+    fn test_extract_tables_alias() {
+        let sql = "SELECT t1. FROM tabl1 t1, tabl2 t2";
+        let p = Parser::default();
+        let suggestions = extract_tables(sql, &p);
+        assert_eq!(suggestions[0], SuggestTable::new(None, "tabl1", Some("t1")));
+        assert_eq!(suggestions[1], SuggestTable::new(None, "tabl2", Some("t2")));
     }
 }
