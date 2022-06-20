@@ -263,7 +263,9 @@ mod tests {
         let sql = "SELECT t1. FROM tabl1 t1, tabl2 t2";
         let text_before = "SELECT t1.";
         let types = suggest_type(sql, text_before);
-        println!("{:?}", types);
-        // FIXME
+        assert_eq!(types[0], SuggestType::column(None, "tabl1", Some("t1")));
+        assert_eq!(types[1], SuggestType::Table("t1".to_string()));
+        assert_eq!(types[2], SuggestType::View("t1".to_string()));
+        assert_eq!(types[3], SuggestType::Function("t1".to_string()));
     }
 }
