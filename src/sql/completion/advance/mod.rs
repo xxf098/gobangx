@@ -164,4 +164,19 @@ mod tests {
         }
       
     }
+
+    #[test]
+    fn test_truncate_suggests_tables_and_schemas() {
+        let sql = "TRUNCATE ";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::Schema(None));
+        assert_eq!(types[1], SuggestType::Table("".to_string()));
+    }
+
+    #[test]
+    fn test_truncate_suggests_qualified_tables() {
+        let sql = "TRUNCATE sch.";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::Table("sch".to_string()));
+    }
 }
