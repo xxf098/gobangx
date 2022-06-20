@@ -236,4 +236,34 @@ mod tests {
         let types = suggest_type(sql, sql);
         assert_eq!(types[0], SuggestType::column(None, "abc", None));
     }
+
+    #[test]
+    fn test_partially_typed_col_name_suggests_col_names() {
+        let sql = "SELECT * FROM tabl WHERE col_n";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::column(None, "tabl", None));
+        assert_eq!(types[1], SuggestType::Function("".to_string()));
+        assert_eq!(types[2], SuggestType::Alias(vec!["tabl".to_string()]));
+        assert_eq!(types[3], SuggestType::Keyword);
+    }
+
+    #[test]
+    fn test_dot_suggests_cols_of_a_table_or_schema_qualified_table() {
+        let sql = "SELECT tabl. FROM tabl";
+        let text_before = "SELECT tabl.";
+        let types = suggest_type(sql, text_before);
+        assert_eq!(types[0], SuggestType::column(None, "tabl", None));
+        assert_eq!(types[1], SuggestType::Table("tabl".to_string()));
+        assert_eq!(types[2], SuggestType::View("tabl".to_string()));
+        assert_eq!(types[3], SuggestType::Function("tabl".to_string()));
+    }
+
+    #[test]
+    fn test_dot_suggests_cols_of_an_alias() {
+        let sql = "SELECT t1. FROM tabl1 t1, tabl2 t2";
+        let text_before = "SELECT t1.";
+        let types = suggest_type(sql, text_before);
+        println!("{:?}", types);
+        // FIXME
+    }
 }
