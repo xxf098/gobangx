@@ -268,4 +268,50 @@ mod tests {
         assert_eq!(types[2], SuggestType::View("t1".to_string()));
         assert_eq!(types[3], SuggestType::Function("t1".to_string()));
     }
+
+    #[test]
+    fn test_dot_col_comma_suggests_cols_or_schema_qualified_table() {
+        let sql = "SELECT t1.a, t2. FROM tabl1 t1, tabl2 t2";
+        let text_before = "SELECT t1.a, t2.";
+        let types = suggest_type(sql, text_before);
+        assert_eq!(types[0], SuggestType::column(None, "tabl2", Some("t2")));
+        assert_eq!(types[1], SuggestType::Table("t2".to_string()));
+        assert_eq!(types[2], SuggestType::View("t2".to_string()));
+        assert_eq!(types[3], SuggestType::Function("t2".to_string()));
+    }
+
+    #[test]
+    fn test_sub_select_suggests_keyword() {
+        let sqls = vec![
+            "SELECT * FROM (",
+            "SELECT * FROM foo WHERE EXISTS (",
+            "SELECT * FROM foo WHERE bar AND NOT EXISTS (",
+            "SELECT 1 AS",
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::Keyword);        
+        }
+    }
+
+    #[test]
+    fn test_sub_select_partial_text_suggests_keyword() {
+        let sqls = vec![
+            "SELECT * FROM (S",
+            "SELECT * FROM foo WHERE EXISTS (S",
+            "SELECT * FROM foo WHERE bar AND NOT EXISTS (S",
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::Keyword); 
+        }
+    }
+
+    #[test]
+    fn test_outer_table_reference_in_exists_subquery_suggests_columns() {
+        let sql = "SELECT * FROM foo f WHERE EXISTS (SELECT 1 FROM bar WHERE f.";
+        let types = suggest_type(sql, sql);
+        println!("{:?}", types);
+    }
+
 }
