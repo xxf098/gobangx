@@ -79,7 +79,7 @@ fn extract_from_part(parsed: Vec<Token>, stop_at_punctuation: bool) -> Vec<Token
             } else if item.typ == TokenType::Keyword && item.normalized == "ON" {
                 tbl_prefix_seen = false;
                 continue
-            } else if item.is_keyword() && item.normalized != "FROM" && !item.normalized.ends_with("JOIN") {
+            } else if item.typ == TokenType::Keyword && item.normalized != "FROM" && !item.normalized.ends_with("JOIN") {
                 break
             } else {
                 tokens.push(item);
@@ -200,5 +200,13 @@ mod tests {
         let suggestions = extract_tables(sql, &p);
         assert_eq!(suggestions[0], SuggestTable::new(None, "tabl1", Some("t1")));
         assert_eq!(suggestions[1], SuggestTable::new(None, "tabl2", Some("t2")));
+    }
+
+    #[test]
+    fn test_extract_tables_sub_query() {
+        let sql = "SELECT * FROM (SELECT  FROM abc";
+        let p = Parser::default();
+        let suggestions = extract_tables(sql, &p);
+        assert_eq!(suggestions[0], SuggestTable::new(None, "abc", None));
     }
 }
