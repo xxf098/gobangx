@@ -359,6 +359,32 @@ mod tests {
         let sql = "SELECT * FROM (SELECT t. FROM tabl t";
         let text_before = "SELECT * FROM (SELECT t.";
         let types = suggest_type(sql, text_before);
+        assert_eq!(types[0], SuggestType::column(None, "tabl", Some("t")));
+        assert_eq!(types[1], SuggestType::Table("t".to_string()));
+        assert_eq!(types[2], SuggestType::View("t".to_string()));
+        assert_eq!(types[3], SuggestType::Function("t".to_string()));
+    }
+
+    #[test]
+    fn test_join_suggests_tables_and_schemas() {
+        let sql = "SELECT * FROM abc INNER JOIN";
+        let types = suggest_type(sql, sql);
         println!("{:?}", types);
+        // FIXME
+    }
+
+    #[test]
+    fn test_join_alias_dot_suggests_cols1() {
+        let sqls = vec![
+            "SELECT * FROM abc a JOIN def d ON a.",
+            "SELECT * FROM abc a JOIN def d ON a.id = d.id AND a.",
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::column(None, "abc", Some("a")));
+            assert_eq!(types[1], SuggestType::Table("a".to_string()));
+            assert_eq!(types[2], SuggestType::View("a".to_string()));
+            assert_eq!(types[3], SuggestType::Function("a".to_string()));
+        }
     }
 }
