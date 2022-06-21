@@ -311,7 +311,54 @@ mod tests {
     fn test_outer_table_reference_in_exists_subquery_suggests_columns() {
         let sql = "SELECT * FROM foo f WHERE EXISTS (SELECT 1 FROM bar WHERE f.";
         let types = suggest_type(sql, sql);
-        println!("{:?}", types);
+        assert_eq!(types[0], SuggestType::column(None, "foo", Some("f")));
+        assert_eq!(types[1], SuggestType::Table("f".to_string()));
+        assert_eq!(types[2], SuggestType::View("f".to_string()));
+        assert_eq!(types[3], SuggestType::Function("f".to_string()));
     }
 
+    #[test]
+    fn test_sub_select_table_name_completion() {
+        let sqls = vec![
+            "SELECT * FROM (SELECT * FROM ",
+            "SELECT * FROM foo WHERE EXISTS (SELECT * FROM ",
+            "SELECT * FROM foo WHERE bar AND NOT EXISTS (SELECT * FROM "
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::Schema(None));
+            assert_eq!(types[1], SuggestType::Table("".to_string()));
+            assert_eq!(types[2], SuggestType::View("".to_string()));          
+        }
+    }
+
+    #[test]
+    fn test_sub_select_col_name_completion() {
+        let sql = "SELECT * FROM (SELECT  FROM abc";
+        let text_before = "SELECT * FROM (SELECT ";
+        let types = suggest_type(sql, text_before);
+        assert_eq!(types[0], SuggestType::column(None, "abc", None));
+        assert_eq!(types[1], SuggestType::Function("".to_string()));
+        assert_eq!(types[2], SuggestType::Alias(vec!["abc".to_string()]));
+        assert_eq!(types[3], SuggestType::Keyword); 
+    }
+
+    #[test]
+    fn test_sub_select_multiple_col_name_completion() {
+        let sql = "SELECT * FROM (SELECT a, FROM abc";
+        let text_before = "SELECT * FROM (SELECT a, ";
+        let types = suggest_type(sql, text_before);
+        assert_eq!(types[0], SuggestType::Column(vec![SuggestTable::new(None, "a", None), SuggestTable::new(None, "abc", None)]));
+        assert_eq!(types[1], SuggestType::Function("".to_string()));
+        assert_eq!(types[2], SuggestType::Alias(vec!["a".to_string(),"abc".to_string()]));
+        assert_eq!(types[3], SuggestType::Keyword); 
+    }
+
+    #[test]
+    fn test_sub_select_dot_col_name_completion() {
+        let sql = "SELECT * FROM (SELECT t. FROM tabl t";
+        let text_before = "SELECT * FROM (SELECT t.";
+        let types = suggest_type(sql, text_before);
+        println!("{:?}", types);
+    }
 }
