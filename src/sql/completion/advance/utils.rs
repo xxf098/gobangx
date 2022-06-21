@@ -118,7 +118,7 @@ fn extract_table_identifiers(tokens: Vec<Token>) -> Vec<SuggestTable> {
             } else {
                 let name = item.get_name();
                 let alias = item.get_alias().or(item.get_name());
-                tables.push(SuggestTable::new(None, name.unwrap(), alias))
+                tables.push(SuggestTable::new(None, name.unwrap_or(""), alias))
             }
         } else if item.typ == TokenType::Function {
             continue
