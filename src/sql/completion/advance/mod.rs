@@ -411,7 +411,51 @@ mod tests {
             ];
         for sql in sqls {
             let types = suggest_type(sql, sql);
-            assert_eq!(types[0], SuggestType::Alias(vec!["a".to_string(), "b".to_string()]));          
+            assert_eq!(types[0], SuggestType::Alias(vec!["a".to_string(), "b".to_string()]));
         }
     }
+
+    #[test]
+    fn test_on_suggests_tables() {
+        let sqls = vec![
+            "select abc.x, bcd.y from abc join bcd on ",
+            "select abc.x, bcd.y from abc join bcd on abc.id = bcd.id AND ",
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::Alias(vec!["abc".to_string(), "bcd".to_string()]));
+        }
+    }
+
+    #[test]
+    fn test_on_suggests_aliases_right_side() {
+        let sqls = vec![
+            "select a.x, b.y from abc a join bcd b on a.id = ",
+            "select a.x, b.y from abc a join bcd b on a.id = b.id AND a.id2 = ",
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::Alias(vec!["a".to_string(), "b".to_string()]));
+        }
+    }
+
+    #[test]
+    fn test_on_suggests_tables_right_side() {
+        let sqls = vec![
+            "select abc.x, bcd.y from abc join bcd on ",
+            "select abc.x, bcd.y from abc join bcd on abc.id = bcd.id and ",
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::Alias(vec!["abc".to_string(), "bcd".to_string()]));   
+        }
+    }
+
+    #[test]
+    fn test_join_using_suggests_common_columns() {
+        let sql = "select * from abc inner join def using (";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::DropUniqueColumn(vec![SuggestTable::new(None, "abc", None), SuggestTable::new(None, "def", None)]));
+    }
+
 }

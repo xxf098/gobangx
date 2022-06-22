@@ -12,6 +12,7 @@ pub enum SuggestType {
     Table(String), // schema name
     View(String), // schema name
     Column(Vec<SuggestTable>),
+    DropUniqueColumn(Vec<SuggestTable>), // like column, but for join SQL
     Function(String),
     Alias(Vec<String>),
     Show,
@@ -153,7 +154,7 @@ impl Suggest {
                     let tables = extract_tables(full_text, &self.parser);
                     // suggest columns that are present in more than one table
                     // FIXME: drop_unique
-                    return vec![SuggestType::Column(tables)]
+                    return vec![SuggestType::DropUniqueColumn(tables)]
                 } else if p.token_idx(Some(0)).map(|t| t.value.to_lowercase() == "select").unwrap_or(false) {
                     // If the lparen is preceeded by a space chances are we're about to do a sub-select.
                     if last_word(text_before_cursor, "all_punctuations").starts_with("(") {
