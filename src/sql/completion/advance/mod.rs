@@ -492,6 +492,38 @@ mod tests {
         assert_eq!(types[0], SuggestType::Database);
     }
 
+    #[test]
+    fn test_specials_included_for_initial_completion() {
+        let sqls = vec!["", "    ", "\t \t"];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::Keyword);
+            assert_eq!(types[1], SuggestType::Special);
+        }
+    }
+
+    #[test]
+    fn test_specials_not_included_after_initial_token() {
+        let sql = "create table foo (dt d";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::Keyword);
+    }
+
+    #[test]
+    fn test_drop_schema_qualified_table_suggests_only_tables() {
+        let sql = "DROP TABLE schema_name.table_name";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::Table("schema_name".to_string()));
+    }
+
+    #[test]
+    fn test_cross_join() {
+        let sql = "select * from v1 cross join v2 JOIN v1.id, ";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::Schema(None));
+        assert_eq!(types[1], SuggestType::Table("".to_string()));
+        assert_eq!(types[2], SuggestType::View("".to_string()));
+    }
 
 
 }
