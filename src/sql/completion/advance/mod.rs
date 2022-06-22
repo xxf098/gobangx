@@ -387,4 +387,31 @@ mod tests {
             assert_eq!(types[3], SuggestType::Function("a".to_string()));
         }
     }
+
+    #[test]
+    fn test_join_alias_dot_suggests_cols2() {
+        let sqls = vec![
+            "SELECT * FROM abc a JOIN def d ON a.id = d.",
+            "SELECT * FROM abc a JOIN def d ON a.id = d.id AND a.id2 = d.",
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::column(None, "def", Some("d")));
+            assert_eq!(types[1], SuggestType::Table("d".to_string()));
+            assert_eq!(types[2], SuggestType::View("d".to_string()));
+            assert_eq!(types[3], SuggestType::Function("d".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_on_suggests_aliases() {
+        let sqls = vec![
+            "select a.x, b.y from abc a join bcd b on ",
+            "select a.x, b.y from abc a join bcd b on a.id = b.id OR "
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::Alias(vec!["a".to_string(), "b".to_string()]));          
+        }
+    }
 }
