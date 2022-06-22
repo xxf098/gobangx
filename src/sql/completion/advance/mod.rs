@@ -458,4 +458,40 @@ mod tests {
         assert_eq!(types[0], SuggestType::DropUniqueColumn(vec![SuggestTable::new(None, "abc", None), SuggestTable::new(None, "def", None)]));
     }
 
+    #[test]
+    fn test_two_join_alias_dot_suggests_cols1() {
+        let sqls = vec![
+            "SELECT * FROM abc a JOIN def d ON a.id = d.id JOIN ghi g ON g.",
+            "SELECT * FROM abc a JOIN def d ON a.id = d.id AND a.id2 = d.id2 JOIN ghi g ON d.id = g.id AND g.",
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types[0], SuggestType::column(None, "ghi", Some("g")));
+            assert_eq!(types[1], SuggestType::Table("g".to_string()));
+            assert_eq!(types[2], SuggestType::View("g".to_string()));
+            assert_eq!(types[3], SuggestType::Function("g".to_string()));
+        }
+    }
+
+    #[test]
+    fn test_2_statements_2nd_current() {
+        let sql = "select * from a; select * from ";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::Schema(None));
+        assert_eq!(types[1], SuggestType::Table("".to_string()));
+        assert_eq!(types[2], SuggestType::View("".to_string()));
+        // FIXME:
+    }
+
+    // TODO:
+
+    #[test]
+    fn test_create_db_with_template() {
+        let sql = "create database foo with template ";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::Database);
+    }
+
+
+
 }
