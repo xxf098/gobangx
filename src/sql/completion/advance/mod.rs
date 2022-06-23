@@ -17,6 +17,11 @@ mod tests {
         suggest.suggest_type(full_text, text_before_cursor)
     }
 
+    fn suggest_type_multi(full_text: &str, text_before_cursor: &str) -> Vec<SuggestType>  {
+        let mut suggest = Suggest::default();
+        suggest._suggest_type_multi(full_text, text_before_cursor)
+    }
+
     #[test]
     fn test_select_suggests_cols_with_visible_table_scope() {
         let suggest = Suggest::default();
@@ -480,7 +485,20 @@ mod tests {
         assert_eq!(types[0], SuggestType::Schema(None));
         assert_eq!(types[1], SuggestType::Table("".to_string()));
         assert_eq!(types[2], SuggestType::View("".to_string()));
-        // FIXME:
+
+        let sql = "select * from a; select  from b";
+        let text_before = "select * from a; select ";
+        let types = suggest_type_multi(sql, text_before);
+        assert_eq!(types[0], SuggestType::column(None, "b", None));
+        assert_eq!(types[1], SuggestType::Function("".to_string()));
+        assert_eq!(types[2], SuggestType::Alias(vec!["b".to_string()]));
+        assert_eq!(types[3], SuggestType::Keyword);
+
+        let sql = "select * from; select * from ";
+        let types = suggest_type_multi(sql, sql);
+        assert_eq!(types[0], SuggestType::Schema(None));
+        assert_eq!(types[1], SuggestType::Table("".to_string()));
+        assert_eq!(types[2], SuggestType::View("".to_string()));
     }
 
     // TODO:

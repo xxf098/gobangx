@@ -103,6 +103,56 @@ impl Suggest {
         suggests
     }
 
+    pub fn _suggest_type_multi<'a>(&mut self, mut full_text: &'a str, mut text_before_cursor: &'a str) -> Vec<SuggestType> {
+        let word_before_cursor = last_word(text_before_cursor, "many_punctuations");
+        let mut identifier: Option<&Token> = None;
+        // FIXME: clone
+        let tokens;
+        
+        let parsed: Vec<Vec<Token>> = if !word_before_cursor.is_empty() {
+            if word_before_cursor.ends_with("(") {
+                self.parser.parse_multi(text_before_cursor)
+            } else {
+                tokens = self.parse(word_before_cursor);
+                let p = &tokens[0];
+                let l = text_before_cursor.len() - word_before_cursor.len();
+                if p.children.len() > 0 && p.children.token_idx(Some(0)).map(|t| t.typ == TokenType::Identifier).unwrap_or(false) {
+                    identifier = Some(p);
+                }
+                self.parser.parse_multi(&text_before_cursor[..l])
+            }
+        } else {
+            self.parser.parse_multi(text_before_cursor)
+        };
+
+        let mut statement = TokenList::new(vec![]);
+        if parsed.len() > 1 {
+            let current_pos = text_before_cursor.len();
+            let mut stmt_start;
+            let mut stmt_end = 0;
+
+            for p in parsed.into_iter() {
+                let stmt_len: usize = p.iter().map(|t| t.value.len()).sum();
+                stmt_start = stmt_end;
+                stmt_end = stmt_end + stmt_len;
+                if stmt_end >= current_pos {
+                    text_before_cursor = &full_text[stmt_start..current_pos];
+                    full_text = &full_text[stmt_start..];
+                    statement = TokenList::new(p);
+                    break
+                }
+            }
+        } else if parsed.len() == 1  {
+            statement = TokenList::new(parsed.into_iter().next().unwrap());
+        }
+
+        let last_token_idx = statement.token_prev(statement.len(), true);
+        let last_token = statement.token_idx(last_token_idx);
+   
+        let suggests = self.suggest_based_on_last_token(last_token, None, text_before_cursor, full_text, identifier);
+        suggests
+    }
+
     pub fn suggest_based_on_last_token(&self, token: Option<&Token>, token_str: Option<&str>, text_before_cursor: &str, full_text: &str, identifier: Option<&Token>) -> Vec<SuggestType> {
         if token.is_none() && token_str.is_none() {
             return vec![SuggestType::Keyword, SuggestType::Special]
