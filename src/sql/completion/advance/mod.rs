@@ -527,10 +527,22 @@ mod tests {
 
     #[test]
     fn test_after_as() {
-        let sql = "SELECT 1 AS ";
-        let types = suggest_type(sql, sql);
-        assert_eq!(types.len(), 0);
+        let sqls = vec![
+            "SELECT 1 AS ",
+            "SELECT 1 FROM tabl AS ",
+            ];
+        for sql in sqls {
+            let types = suggest_type(sql, sql);
+            assert_eq!(types.len(), 0);
+        }
     }
 
+
+    #[test]
+    fn test_order_by() {
+        let sql = "select * from foo order by ";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types[0], SuggestType::column(None, "foo", None))
+    }
 
 }
