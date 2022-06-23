@@ -525,5 +525,12 @@ mod tests {
         assert_eq!(types[2], SuggestType::View("".to_string()));
     }
 
+    #[test]
+    fn test_after_as() {
+        let sql = "SELECT 1 AS ";
+        let types = suggest_type(sql, sql);
+        assert_eq!(types.len(), 0);
+    }
+
 
 }

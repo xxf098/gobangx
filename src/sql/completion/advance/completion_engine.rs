@@ -71,14 +71,14 @@ impl Suggest {
         }
     }
     
-    // TODO: support multiple statement
+    // FIXME: support multiple statement
     pub fn suggest_type(&self, full_text: &str, text_before_cursor: &str) -> Vec<SuggestType> {
         let word_before_cursor = last_word(text_before_cursor, "many_punctuations");
         let mut identifier: Option<&Token> = None;
         // FIXME: clone
         let mut tokens = vec![];
         
-        let parsed: Vec<Token> =  if !word_before_cursor.is_empty() {
+        let parsed: Vec<Token> = if !word_before_cursor.is_empty() {
             if word_before_cursor.ends_with("(") {
                 self.parse(text_before_cursor)
             } else {
@@ -94,13 +94,11 @@ impl Suggest {
             self.parse(text_before_cursor)
         };
 
-    
         let statement = TokenList::new(parsed);
     
         let last_token_idx = statement.token_prev(statement.len(), true);
         let last_token = statement.token_idx(last_token_idx);
    
-    
         let suggests = self.suggest_based_on_last_token(last_token, None, text_before_cursor, full_text, identifier);
         suggests
     }
