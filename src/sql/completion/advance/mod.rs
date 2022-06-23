@@ -501,7 +501,21 @@ mod tests {
         assert_eq!(types[2], SuggestType::View("".to_string()));
     }
 
-    // TODO:
+    #[test]
+    fn test_2_statements_1st_current() {
+        let sql = "select * from ; select * from b";
+        let text_before = "select * from ";
+        let types = suggest_type_multi(sql, text_before);
+        assert_eq!(types[0], SuggestType::Schema(None));
+        assert_eq!(types[1], SuggestType::Table("".to_string()));
+        assert_eq!(types[2], SuggestType::View("".to_string()));
+
+        // let sql = "select  from a; select * from b";
+        // let text_before = "select ";
+        // let types = suggest_type_multi(sql, text_before);
+        // println!("{:?}", types);
+        // FIXME
+    }
 
     #[test]
     fn test_create_db_with_template() {
