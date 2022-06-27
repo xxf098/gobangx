@@ -45,6 +45,9 @@ pub fn find_prev_keyword(sql: &str, parser: &Parser) -> (Option<Token>, String) 
 }
 
 pub fn extract_tables(sql: &str, parser: &Parser) -> Vec<SuggestTable> {
+    if sql.contains(";") {
+        return extract_tables_multi(sql, parser)
+    }
     let parsed = parser.parse(sql);
     if parsed.len() < 1 {
         return vec![]
@@ -53,6 +56,17 @@ pub fn extract_tables(sql: &str, parser: &Parser) -> Vec<SuggestTable> {
     let tokens = extract_from_part(parsed, insert_stmt);
     extract_table_identifiers(tokens)
 }
+
+fn extract_tables_multi(sql: &str, parser: &Parser) -> Vec<SuggestTable> {
+    let parsed = parser.parse_multi(sql);
+    if parsed.len() < 1 {
+        return vec![]
+    }
+    let insert_stmt = parsed[0].get(0).map(|t| t.value.to_lowercase() == "insert").unwrap_or(false);
+    let tokens = extract_from_part(parsed.into_iter().next().unwrap(), insert_stmt);
+    extract_table_identifiers(tokens)
+}
+
 
 fn is_subselect(token: &Token) -> bool {
     if !token.is_group() {

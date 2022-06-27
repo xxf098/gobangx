@@ -103,7 +103,7 @@ impl Suggest {
         suggests
     }
 
-    pub fn _suggest_type_multi<'a>(&mut self, mut full_text: &'a str, mut text_before_cursor: &'a str) -> Vec<SuggestType> {
+    pub fn _suggest_type_multi<'a>(&self, mut full_text: &'a str, mut text_before_cursor: &'a str) -> Vec<SuggestType> {
         let word_before_cursor = last_word(text_before_cursor, "many_punctuations");
         let mut identifier: Option<&Token> = None;
         // FIXME: clone
