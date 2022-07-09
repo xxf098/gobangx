@@ -13,7 +13,7 @@ mod sql;
 mod log;
 
 use crate::app::App;
-use crate::event::{Event, Key};
+use crate::event::{Event};
 use anyhow::Result;
 use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
@@ -22,7 +22,7 @@ use crossterm::{
 use std::io;
 use tui::{backend::CrosstermBackend, Terminal};
 
-// TODO: SQL meta, foreign table, recent list ctrl-r vscode, copy error info
+// TODO: table output
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let value = crate::cli::parse();
