@@ -1,5 +1,5 @@
 use crate::log::LogLevel;
-use crate::Key;
+use crate::event::Key;
 use crate::cli::CliConfig;
 use serde::{Deserialize, Deserializer};
 use std::fmt;
@@ -96,6 +96,7 @@ pub struct KeyConfig {
     pub copy2: [Key; 2], // copy column
     pub advanced_copy: Key, // copy table schema
     pub enter: Key,
+    pub space: Key,
     pub exit: Key,
     pub quit: Key,
     pub exit_popup: Key,
@@ -197,6 +198,7 @@ impl Default for KeyConfig {
             copy2: [Key::Char('y'), Key::Char('c')],
             advanced_copy: Key::Char('Y'),
             enter: Key::Enter,
+            space: Key::Char(' '),
             exit: Key::Ctrl('c'),
             quit: Key::Char('q'),
             exit_popup: Key::Esc,

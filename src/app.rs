@@ -13,6 +13,7 @@ use crate::{
     },
     config::{Config, Connection},
 };
+use crate::sql::Updater;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -41,6 +42,7 @@ pub struct App<'a> {
     recents: RecentComponent<'a>,
     pool: Option<Box<dyn Pool>>,
     left_main_chunk_percentage: u16,
+    updater: Updater,
     pub config: Config,
     pub error: ErrorComponent<'a>,
     pub store: Store,
@@ -67,6 +69,7 @@ impl<'a> App<'a> {
             left_main_chunk_percentage: 15,
             store,
             keys: Vec::with_capacity(8),
+            updater: Updater::default(),
         };
         app.update_helps();
         app
@@ -188,7 +191,7 @@ impl<'a> App<'a> {
             ))
         };
         self.databases
-            .update(conn, self.pool.as_ref().unwrap())
+            .update(conn, self.pool.as_ref().unwrap(), &mut self.updater)
             .await?;
         self.focus = Focus::DabataseList;
         self.record_table.reset();
@@ -224,7 +227,7 @@ impl<'a> App<'a> {
                 ))
             };
             self.databases
-                .update(conn, self.pool.as_ref().unwrap())
+                .update(conn, self.pool.as_ref().unwrap(), &mut self.updater)
                 .await?;
             if is_focus { self.focus = Focus::DabataseList; }
             self.record_table.reset();
@@ -370,6 +373,9 @@ impl<'a> App<'a> {
                             .unwrap()
                             .get_records(&database, &table, 0, None, None)
                             .await?;
+                        if self.updater.update_columns(&database, &table, &headers) {
+                            self.sql_editor.update_db_metadata(self.updater.db_metadata());
+                        }
                         self.record_table
                             .update(records, headers, database.clone(), table.clone(), 0);
                         self.properties

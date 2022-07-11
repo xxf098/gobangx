@@ -1,11 +1,13 @@
+use std::sync::{Arc, RwLock};
 use super::{
-    compute_character_width, PlainCompletionComponent, Component, EventState, MovableComponent,
+    compute_character_width, AdvanceCompletionComponent, Component, EventState, MovableComponent,
     StatefulDrawableComponent, TableComponent,
     utils::highlight_sql,
 };
 use crate::components::help_info::HelpInfo;
 use crate::config::{KeyConfig, Settings, DatabaseType};
 use crate::database::{ExecuteResult, Pool};
+use crate::sql::DbMetadata;
 use crate::event::{Key, Store};
 use crate::ui::stateful_paragraph::{ParagraphState, StatefulParagraph};
 use anyhow::Result;
@@ -40,7 +42,7 @@ pub struct SqlEditorComponent<'a> {
     input_idx: usize,
     table: TableComponent,
     query_result: Option<QueryResult>,
-    completion: PlainCompletionComponent,
+    completion: AdvanceCompletionComponent,
     key_config: &'a KeyConfig,
     settings: Settings,
     paragraph_state: ParagraphState,
@@ -51,12 +53,13 @@ pub struct SqlEditorComponent<'a> {
 impl<'a> SqlEditorComponent<'a> {
     pub fn new(key_config: &'a KeyConfig, settings: Settings, database_type: DatabaseType) -> Self {
         let db_type = database_type.clone();
+        let completion = AdvanceCompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into());
         Self {
             input: Vec::new(),
             input_idx: 0,
             input_cursor_position_x: 0,
             table: TableComponent::new(key_config.clone(), settings.clone()),
-            completion: PlainCompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into()),
+            completion: completion,
             focus: Focus::Editor,
             paragraph_state: ParagraphState::default(),
             query_result: None,
@@ -70,6 +73,10 @@ impl<'a> SqlEditorComponent<'a> {
         self.database_type = database_type;
     }
 
+    pub fn update_db_metadata(&mut self, db_metadata: Arc<RwLock<DbMetadata>>) {
+        self.completion.update_candidates(&vec![], Some(db_metadata));
+    }
+
     fn update_completion(&mut self) {
         let input = &self
             .input
@@ -81,11 +88,12 @@ impl<'a> SqlEditorComponent<'a> {
             .split(' ')
             .map(|i| i.to_string())
             .collect::<Vec<String>>();
+        let full_text: String = self.input.iter().collect();
         self.completion
-            .update(input.last().unwrap_or(&String::new()));
+            .update(input.last().unwrap_or(&String::new()), full_text);
     }
 
-    fn complete(&mut self) -> anyhow::Result<EventState> {
+    fn complete(&mut self, add_space: bool) -> anyhow::Result<EventState> {
         if let Some(candidate) = self.completion.selected_candidate() {
             let mut input = Vec::new();
             let first = self
@@ -115,7 +123,7 @@ impl<'a> SqlEditorComponent<'a> {
                     .chars()
                     .map(|c| c.to_string())
                     .collect::<Vec<String>>();
-                c.push(" ".to_string());
+                if add_space {  c.push(" ".to_string()); };
                 c
             };
 
@@ -143,7 +151,7 @@ impl<'a> SqlEditorComponent<'a> {
                 .chars()
                 .map(compute_character_width)
                 .sum::<u16>();
-            self.update_completion();
+            self.completion.reset();
             return Ok(EventState::Consumed);
         }
         Ok(EventState::NotConsumed)
@@ -223,7 +231,13 @@ impl<'a> Component for SqlEditorComponent<'a> {
         } else {
             if matches!(self.focus, Focus::Editor) {
                 if key[0] == self.key_config.enter {
-                    return self.complete();
+                    return self.complete(false);
+                }
+                if key[0] == self.key_config.space && self.completion.visible() {
+                    let state = self.complete(true)?;
+                    if state.is_consumed() {
+                        return Ok(EventState::Consumed)
+                    }
                 }
                 if key[0] == self.key_config.move_up && self.completion.visible() {
                     return self.completion.event(key);
@@ -262,7 +276,7 @@ impl<'a> Component for SqlEditorComponent<'a> {
                     self.input_cursor_position_x = self
                         .input_cursor_position_x
                         .saturating_sub(compute_character_width(self.input[self.input_idx]));
-                    self.completion.update("");
+                    self.completion.update("", "");
                 }
                 return Ok(EventState::Consumed);
             }
@@ -271,7 +285,7 @@ impl<'a> Component for SqlEditorComponent<'a> {
                     let next_c = self.input[self.input_idx];
                     self.input_idx += 1;
                     self.input_cursor_position_x += compute_character_width(next_c);
-                    self.completion.update("");
+                    self.completion.update("", "");
                 }
                 return Ok(EventState::Consumed);
             }

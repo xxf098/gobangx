@@ -1,8 +1,9 @@
+use std::sync::{Arc, RwLock};
 use super::{Component, EventState, MovableComponent};
 use crate::components::help_info::HelpInfo;
-use crate::config::{KeyConfig, Settings};
+use crate::config::{KeyConfig, Settings, DatabaseType};
 use crate::event::Key;
-use crate::sql::{Completion, Plain};
+use crate::sql::{Completion, Plain, DbMetadata, AdvanceSQLCompleter};
 use anyhow::Result;
 use tui::{
     backend::Backend,
@@ -22,6 +23,7 @@ pub struct CompletionComponent<T: Completion> {
     settings: Settings,
     state: ListState,
     word: String,
+    full_text: String,
     completion: T,
     visible: bool,
 }
@@ -36,12 +38,14 @@ impl<T: Completion> CompletionComponent<T> {
                 .map(|w| w.to_string())
                 .collect()
         };
+        let w = word.into();
         Self {
             key_config,
             settings,
             state: ListState::default(),
-            word: word.into(),
-            completion: T::new(candidates),
+            word: w.clone(),
+            full_text: w,
+            completion: T::new(DatabaseType::MySql, candidates),
             visible: false, 
         }
     }
@@ -55,25 +59,31 @@ impl<T: Completion> CompletionComponent<T> {
             settings,
             state: ListState::default(),
             word: "".to_string(),
-            completion: T::new(candidates),
+            full_text: "".to_string(),
+            completion: T::new(DatabaseType::MySql, candidates),
             visible: false,
         }
     }
 
-    pub fn update(&mut self, word: impl Into<String>) {
+    pub fn update(&mut self, word: impl Into<String>, full_text: impl Into<String>) {
         self.word = word.into();
+        self.full_text = full_text.into();
         self.visible = false;
         self.state.select(None);
-        self.state.select(Some(0))
+        // self.state.select(Some(0))
     }
 
-    pub fn update_candidates(&mut self, candidates: &[String]) {
+    pub fn reset(&mut self) {
+        self.update("", "")
+    }
+
+    pub fn update_candidates(&mut self, candidates: &[String], db_metadata: Option<Arc<RwLock<DbMetadata>>>) {
         // for candidate in candidates {
         //     if self.candidates.iter().find(|x| *x == candidate).is_none() {
         //         self.candidates.push(candidate.clone())
         //     }
         // }
-        self.completion.update_candidates(candidates)
+        self.completion.update(candidates, db_metadata)
     }
 
     fn next(&mut self) {
@@ -104,13 +114,13 @@ impl<T: Completion> CompletionComponent<T> {
         self.state.select(Some(i));
     }
 
-    fn filterd_candidates(&self) -> Vec<&String> {
+    fn filterd_candidates(&self) -> Vec<String> {
         // self.candidates.iter().filter(move |c| {
         //     (c.starts_with(self.word.to_lowercase().as_str())
         //         || c.starts_with(self.word.to_uppercase().as_str()))
         //         && !self.word.is_empty()
         // })
-        self.completion.complete("".to_string(), &self.word)
+        self.completion.complete(&self.full_text)
     }
 
     pub fn selected_candidate(&self) -> Option<String> {
@@ -189,6 +199,8 @@ impl<T: Completion> Component for CompletionComponent<T> {
 }
 
 pub type PlainCompletionComponent  = CompletionComponent<Plain>;
+pub type AdvanceCompletionComponent  = CompletionComponent<AdvanceSQLCompleter>;
+
 
 #[cfg(test)]
 mod test {
@@ -199,7 +211,7 @@ mod test {
         assert_eq!(
             PlainCompletionComponent::new(KeyConfig::default(), Settings::default(),"an", false)
                 .filterd_candidates(),
-            vec![&"AND".to_string()]
+            vec!["AND".to_string()]
         );
     }
 
@@ -208,7 +220,7 @@ mod test {
         assert_eq!(
             PlainCompletionComponent::new(KeyConfig::default(), Settings::default(), "AN", false)
                 .filterd_candidates(),
-            vec![&"AND".to_string()]
+            vec!["AND".to_string()]
         );
     }
 
@@ -217,13 +229,13 @@ mod test {
         assert_eq!(
             PlainCompletionComponent::new(KeyConfig::default(), Settings::default(), "n", false)
                 .filterd_candidates(),
-            vec![&"NOT".to_string(), &"NULL".to_string()]
+            vec!["NOT".to_string(), "NULL".to_string()]
         );
 
         assert_eq!(
             PlainCompletionComponent::new(KeyConfig::default(), Settings::default(), "N", false)
                 .filterd_candidates(),
-            vec![&"NOT".to_string(), &"NULL".to_string()]
+            vec!["NOT".to_string(), "NULL".to_string()]
         );
     }
 }
