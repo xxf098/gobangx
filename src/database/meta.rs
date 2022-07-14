@@ -80,7 +80,11 @@ impl Value {
     }
 
     pub fn substr(&self, max: usize) -> String {
-        if max >= self.data.len() { self.data.clone() } else { self.data[..max].to_string() }
+        // handle unicode
+        if max >= self.data.chars().count() { self.data.clone() } else {
+            let end = self.data.char_indices().map(|(i, _)| i).nth(max).unwrap_or(self.data.len());
+            self.data[..end].to_string() 
+        }
     }
 }
 
