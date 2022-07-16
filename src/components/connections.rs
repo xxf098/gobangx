@@ -139,7 +139,7 @@ impl<'a> Component for ConnectionsComponent<'a> {
             return Ok(EventState::Consumed);
         } else if key == self.key_config.copy {
             if let Some(c) = self.selected_connection() {
-                let s = c.database_url_with_name()?;
+                let s = c.database_url()?;
                 copy_to_clipboard(&s)?;
             }
             return Ok(EventState::Consumed);
