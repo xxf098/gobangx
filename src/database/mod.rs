@@ -241,11 +241,23 @@ impl DatabaseType {
         Ok(columns)
     }
 
+    // FIXME: check column type
     pub fn delete_row_by_column(&self, database: &Database, table: &Table, col: &str, val: &str) -> String {
         match self {
             DatabaseType::MySql => format!("delete from `{}`.`{}` where {} = '{}' LIMIT 1", database.name, table.name, col, val),
             DatabaseType::Sqlite => format!("delete from `{table}` where {col} = (select {col} from `{table}` where {col} = '{val}' LIMIT 1)", table=table.name, col=col, val=val),
             DatabaseType::Postgres => format!(r#"delete from "{database}"."{schema}"."{table}" where "{col}" = (select "{col}" from "{database}"."{schema}"."{table}" where "{col}" = '{val}' LIMIT 1)"#, database=database.name, schema=table.pg_schema(), table=table.name, col=col, val=val),
+            _ => unimplemented!(),
+        }
+    }
+
+    // delete multiple rows
+    pub fn delete_rows_by_column(&self, database: &Database, table: &Table, col: &str, val: &[&str]) -> String {
+        let v = format!("'{}'", val.join("','"));
+        match self {
+            DatabaseType::MySql => format!("DELETE FROM `{}`.`{}` where {} IN ({})", database.name, table.name, col, v),
+            DatabaseType::Sqlite => format!("delete from `{table}` where {col} = (select {col} from `{table}` where {col} IN ({val}))", table=table.name, col=col, val=v),
+            DatabaseType::Postgres => format!(r#"delete from "{database}"."{schema}"."{table}" where "{col}" = (select "{col}" from "{database}"."{schema}"."{table}" where "{col}" IN ({val}))"#, database=database.name, schema=table.pg_schema(), table=table.name, col=col, val=v),
             _ => unimplemented!(),
         }
     }
