@@ -254,10 +254,11 @@ impl DatabaseType {
     // delete multiple rows
     pub fn delete_rows_by_column(&self, database: &Database, table: &Table, col: &str, val: &[&str]) -> String {
         let v = format!("'{}'", val.join("','"));
+        let limit = val.len();
         match self {
-            DatabaseType::MySql => format!("DELETE FROM `{}`.`{}` where {} IN ({})", database.name, table.name, col, v),
-            DatabaseType::Sqlite => format!("delete from `{table}` where {col} = (select {col} from `{table}` where {col} IN ({val}))", table=table.name, col=col, val=v),
-            DatabaseType::Postgres => format!(r#"delete from "{database}"."{schema}"."{table}" where "{col}" = (select "{col}" from "{database}"."{schema}"."{table}" where "{col}" IN ({val}))"#, database=database.name, schema=table.pg_schema(), table=table.name, col=col, val=v),
+            DatabaseType::MySql => format!("DELETE FROM `{}`.`{}` where {} IN ({}) LIMIT {}", database.name, table.name, col, v, limit),
+            DatabaseType::Sqlite => format!("delete from `{table}` where {col} IN (select {col} from `{table}` where {col} IN ({val}) LIMIT {limit})", table=table.name, col=col, val=v, limit=limit),
+            DatabaseType::Postgres => format!(r#"delete from "{database}"."{schema}"."{table}" where "{col}" IN (select "{col}" from "{database}"."{schema}"."{table}" where "{col}" IN ({val}) LIMIT {limit})"#, database=database.name, schema=table.pg_schema(), table=table.name, col=col, val=v, limit=limit),
             _ => unimplemented!(),
         }
     }
