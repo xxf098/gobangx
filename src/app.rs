@@ -176,20 +176,7 @@ impl<'a> App<'a> {
         if let Some(pool) = self.pool.as_ref() {
             pool.close().await;
         }
-        let page_size = self.config.settings.page_size;
-        self.pool = if conn.is_mysql() {
-            Some(Box::new(
-                MySqlPool::new(conn.database_url()?.as_str(), page_size).await?,
-            ))
-        } else if conn.is_postgres() {
-            Some(Box::new(
-                PostgresPool::new(conn.database_url()?.as_str(), page_size).await?,
-            ))
-        } else {
-            Some(Box::new(
-                SqlitePool::new(conn.database_url()?.as_str(), page_size).await?,
-            ))
-        };
+        self.pool = self.get_pool(conn).await.ok();
         self.databases
             .update(conn, self.pool.as_ref().unwrap(), &mut self.updater)
             .await?;
@@ -204,28 +191,8 @@ impl<'a> App<'a> {
             if let Some(pool) = self.pool.as_ref() {
                 pool.close().await;
             }
-            let page_size = self.config.settings.page_size;
-            self.pool = if conn.is_mysql() {
-                self.sql_editor.set_database_type(DatabaseType::MySql);
-                Some(Box::new(
-                    MySqlPool::new(conn.database_url()?.as_str(), page_size).await?,
-                ))
-            } else if conn.is_postgres() {
-                self.sql_editor.set_database_type(DatabaseType::Postgres);
-                Some(Box::new(
-                    PostgresPool::new(conn.database_url()?.as_str(), page_size).await?,
-                ))
-            } else if conn.is_mssql() {
-                self.sql_editor.set_database_type(DatabaseType::Mssql);
-                Some(Box::new(
-                    MssqlPool::new(conn.database_url()?.as_str(), page_size).await?,
-                ))
-            } else {
-                self.sql_editor.set_database_type(DatabaseType::Sqlite);
-                Some(Box::new(
-                    SqlitePool::new(conn.database_url()?.as_str(), page_size).await?,
-                ))
-            };
+            self.pool = self.get_pool(conn).await.ok();
+            self.sql_editor.set_database_type(conn.get_type());
             self.databases
                 .update(conn, self.pool.as_ref().unwrap(), &mut self.updater)
                 .await?;
@@ -234,6 +201,28 @@ impl<'a> App<'a> {
             self.tab.reset();
         }
         Ok(())
+    }
+
+    async fn get_pool(&self, conn: &Connection) -> anyhow::Result<Box<dyn Pool>> {
+        let page_size = self.config.settings.page_size;
+        if conn.is_mysql() {
+            Ok(Box::new(
+                MySqlPool::new(conn.database_url()?.as_str(), page_size).await?,
+            ))
+        } else if conn.is_postgres() {
+            Ok(Box::new(
+                PostgresPool::new(conn.database_url()?.as_str(), page_size).await?,
+            ))
+        } else if conn.is_mssql() {
+            Ok(Box::new(
+                MssqlPool::new(conn.database_url()?.as_str(), page_size).await?,
+            ))
+        } else {
+            Ok(Box::new(
+                SqlitePool::new(conn.database_url()?.as_str(), page_size).await?,
+            ))
+        }
+        
     }
 
     async fn update_record_table(&mut self, focus: bool, orderby: Option<String>, selected_column: usize) -> anyhow::Result<()> {

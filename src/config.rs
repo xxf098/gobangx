@@ -446,6 +446,10 @@ impl Connection {
     pub fn is_mssql(&self) -> bool {
         matches!(self.r#type, DatabaseType::Mssql)
     }
+
+    pub fn get_type(&self) -> DatabaseType {
+        self.r#type.clone()
+    }
 }
 
 pub fn get_app_config_path() -> anyhow::Result<std::path::PathBuf> {
