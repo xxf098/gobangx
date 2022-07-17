@@ -205,19 +205,12 @@ impl<'a> App<'a> {
 
     async fn get_pool(&self, conn: &Connection) -> anyhow::Result<Box<dyn Pool>> {
         let page_size = self.config.settings.page_size;
+        let database_url = conn.database_url()?;
         match conn.get_type() {
-            DatabaseType::MySql => Ok(Box::new(
-                MySqlPool::new(conn.database_url()?.as_str(), page_size).await?,
-            )),
-            DatabaseType::Postgres => Ok(Box::new(
-                PostgresPool::new(conn.database_url()?.as_str(), page_size).await?,
-            )),
-            DatabaseType::Mssql => Ok(Box::new(
-                MssqlPool::new(conn.database_url()?.as_str(), page_size).await?,
-            )),
-            DatabaseType::Sqlite => Ok(Box::new(
-                SqlitePool::new(conn.database_url()?.as_str(), page_size).await?,
-            )),
+            DatabaseType::MySql => Ok(Box::new(MySqlPool::new(&database_url, page_size).await?)),
+            DatabaseType::Postgres => Ok(Box::new(PostgresPool::new(&database_url, page_size).await?)),
+            DatabaseType::Mssql => Ok(Box::new(MssqlPool::new(&database_url, page_size).await?)),
+            DatabaseType::Sqlite => Ok(Box::new(SqlitePool::new(&database_url, page_size).await?)),
         }
     }
 
