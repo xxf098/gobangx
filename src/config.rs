@@ -78,7 +78,7 @@ pub struct Connection {
     port: Option<u16>,
     path: Option<std::path::PathBuf>, // sqlite file path
     password: Option<String>,
-    ssl_mode: Option<String>, // mysql ssl-mode
+    ssl_mode: Option<String>, // mysql ssl-mode, postgress sslmode
     pub database: Option<String>,
     pub database_url: Option<String>, // database connection url
 }
@@ -277,7 +277,7 @@ impl Connection {
         };
         let database = u.path_segments().map(|c| c.collect::<Vec<_>>().iter().map(|c| c.to_string()).next()).flatten();
         let pairs = u.query_pairs();
-        let ssl_mode = pairs.filter(|p| p.0 == "ssl-mode").map(|p| p.1.to_string()).next();
+        let ssl_mode = pairs.filter(|p| p.0 == "ssl-mode").map(|p| p.1.to_string()).filter(|s| s.to_uppercase() != "DISABLED" && s.to_uppercase() != "DISABLE").next();
         let c = Self {
             r#type: db_type,
             name: None,
@@ -354,22 +354,24 @@ impl Connection {
                     .password
                     .as_ref()
                     .map_or(String::new(), |p| p.to_string());
-
+                let sslmode = self.ssl_mode.as_deref().unwrap_or("disable");
                 match self.database.as_ref() {
                     Some(database) => Ok(format!(
-                        "postgres://{user}:{password}@{host}:{port}/{database}",
+                        "postgres://{user}:{password}@{host}:{port}/{database}?sslmode={sslmode}",
                         user = user,
                         password = password,
                         host = host,
                         port = port,
-                        database = database
+                        database = database,
+                        sslmode = sslmode,
                     )),
                     None => Ok(format!(
-                        "postgres://{user}:{password}@{host}:{port}",
+                        "postgres://{user}:{password}@{host}:{port}?sslmode={sslmode}",
                         user = user,
                         password = password,
                         host = host,
                         port = port,
+                        sslmode = sslmode,
                     )),
                 }
             }
