@@ -41,6 +41,39 @@ pub trait Pool: Send + Sync {
         table: &Table,
     ) -> anyhow::Result<Vec<Box<dyn TableRow>>>;
 
+    async fn get_headers(
+        &self,
+        database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Header>> {
+        let columns = self.get_columns(&database, &table).await?;
+        let headers = columns
+            .iter()
+            .filter_map(|c| {
+                let mut iter = c.columns().into_iter();
+                let name = iter.next();
+                if name.is_none() {
+                    return None
+                }
+                let typ = iter.next().map(|t| {
+                    match t.as_str() {
+                        x if x.starts_with("int") => ColType::Int,
+                        "bigint" | "integer" | "smallint" => ColType::Int,
+                        "boolean" => ColType::Boolean,
+                        x if x.starts_with("timestamp") => ColType::Date,
+                        "character varying" => ColType::VarChar,
+                        "text" => ColType::VarChar,
+                        _ => ColType::Unknown
+                    }
+                    
+                }).unwrap_or(ColType::Unknown);
+                Some(Header::new(name.unwrap(), typ))
+            })
+            .collect::<Vec<_>>();
+        // merge 2 headers
+        Ok(headers)
+    }
+
     async fn get_columns2(
         &self,
         _database: &Database,

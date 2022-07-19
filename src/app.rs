@@ -345,12 +345,20 @@ impl<'a> App<'a> {
                     if let Some((database, table, id)) = self.databases.tree().selected_table() {
                         self.recents.add(id, &database, &table);
                         self.record_table.reset();
-                        let (headers, records) = self
+                        // handle null value
+                        let column_headers = self.pool.
+                            as_ref()
+                            .unwrap()
+                            .get_headers(&database, &table).await?;
+                        let (mut headers, records) = self
                             .pool
                             .as_ref()
                             .unwrap()
                             .get_records(&database, &table, 0, None, None)
                             .await?;
+                        if headers.len() < 1 {
+                            headers = column_headers;
+                        }
                         if self.updater.update_columns(&database, &table, &headers) {
                             self.sql_editor.update_db_metadata(self.updater.db_metadata());
                         }
