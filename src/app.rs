@@ -191,7 +191,7 @@ impl<'a> App<'a> {
             if let Some(pool) = self.pool.as_ref() {
                 pool.close().await;
             }
-            self.pool = self.get_pool(conn).await.ok();
+            self.pool = Some(self.get_pool(conn).await?);
             self.sql_editor.set_database_type(conn.get_type());
             self.databases
                 .update(conn, self.pool.as_ref().unwrap(), &mut self.updater)
