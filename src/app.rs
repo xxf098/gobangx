@@ -2,7 +2,7 @@ use crate::clipboard::copy_to_clipboard;
 use crate::components::{
     HelpInfo, Component as _, DrawableComponent as _, EventState, StatefulDrawableComponent,
 };
-use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, MssqlPool};
+use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, MssqlPool, ColType};
 use crate::event::{Key, Event, Store};
 use crate::config::DatabaseType;
 use crate::{
@@ -358,6 +358,15 @@ impl<'a> App<'a> {
                             .await?;
                         if headers.len() < 1 {
                             headers = column_headers;
+                        } else {
+                            // merge headers
+                            for header in headers.iter_mut() {
+                                if let Some(h) = column_headers.iter().filter(|h| h.name == header.name).next() {
+                                    if h.col_type != ColType::Unknown {
+                                        header.col_type = h.col_type.clone();
+                                    }
+                                }
+                            } 
                         }
                         if self.updater.update_columns(&database, &table, &headers) {
                             self.sql_editor.update_db_metadata(self.updater.db_metadata());
