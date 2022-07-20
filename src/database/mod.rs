@@ -56,12 +56,16 @@ pub trait Pool: Send + Sync {
                     return None
                 }
                 let typ = iter.next().map(|t| {
-                    match t.as_str() {
-                        x if x.starts_with("int") => ColType::Int,
-                        "bigint" | "integer" | "smallint" => ColType::Int,
-                        "boolean" => ColType::Boolean,
+                    // FIXME: trie
+                    match t.to_lowercase().as_str() {
+                        x if x.starts_with("int") || x.starts_with("smallint") || x.starts_with("bigint") || x.starts_with("mediumint") ||  x.starts_with("tinyint") => ColType::Int,
+                        "integer" => ColType::Int,
+                        x if x.starts_with("decimal") => ColType::Float,
+                        "real" | "double" | "float" => ColType::Float,
+                        "boolean" | "bool" => ColType::Boolean,
                         x if x.starts_with("timestamp") => ColType::Date,
-                        "character varying" => ColType::VarChar,
+                        "date" | "datetime" => ColType::Date,
+                        x if x.starts_with("varchar") || x.starts_with("character") => ColType::VarChar,
                         "text" => ColType::VarChar,
                         _ => ColType::Unknown
                     }
