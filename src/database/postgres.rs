@@ -358,7 +358,7 @@ impl Pool for PostgresPool {
             .as_ref()
             .map_or("public", |schema| schema.as_str());
         let mut rows = sqlx::query(
-            "SELECT * FROM information_schema.columns WHERE table_catalog = $1 AND table_schema = $2 AND table_name = $3"
+            "SELECT * FROM information_schema.columns WHERE table_catalog = $1 AND table_schema = $2 AND table_name = $3 ORDER BY ordinal_position"
         )
         .bind(&database.name).bind(table_schema).bind(&table.name)
         .fetch(&self.pool);
