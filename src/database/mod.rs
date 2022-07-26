@@ -15,11 +15,26 @@ use std::sync::{Arc, RwLock};
 use async_trait::async_trait;
 use database_tree::{Child, Database, Table};
 use crate::config::DatabaseType;
+use sqlparse::Trie;
 
 // pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
 pub const MYSQL_KEYWORDS: [&str; 1] = ["int"];
 pub const POSTGRES_KEYWORDS: [&str; 1] = ["group"];
 const INDENT: &str = "    ";
+
+// TODO: memo
+fn init_trie () -> Trie<ColType> {
+    let mut trie = Trie::default();
+    let ints = ["int", "smallint", "bigint", "mediumint", "tinyint", "integer"];
+    for key in ints { trie.insert(key, ColType::Int) };
+    let floats = ["real", "double", "float"];
+    for key in floats { trie.insert(key, ColType::Float) };
+    let time = ["timestamp", "date", "datetime"];
+    for key in time { trie.insert(key, ColType::Date) };
+    let varchar = ["varchar", "character", "text"];
+    for key in varchar { trie.insert(key, ColType::VarChar) };
+    trie
+}
 
 #[async_trait]
 pub trait Pool: Send + Sync {
@@ -47,30 +62,17 @@ pub trait Pool: Send + Sync {
         table: &Table,
     ) -> anyhow::Result<Vec<Header>> {
         let columns = self.get_columns(&database, &table).await?;
+        let trie = init_trie();
         let headers = columns
             .iter()
             .filter_map(|c| {
                 let mut iter = c.columns().into_iter();
                 let name = iter.next();
+                // map
                 if name.is_none() {
                     return None
                 }
-                let typ = iter.next().map(|t| {
-                    // FIXME: trie
-                    match t.to_lowercase().as_str() {
-                        x if x.starts_with("int") || x.starts_with("smallint") || x.starts_with("bigint") || x.starts_with("mediumint") ||  x.starts_with("tinyint") => ColType::Int,
-                        "integer" => ColType::Int,
-                        x if x.starts_with("decimal") => ColType::Float,
-                        "real" | "double" | "float" => ColType::Float,
-                        "boolean" | "bool" => ColType::Boolean,
-                        x if x.starts_with("timestamp") => ColType::Date,
-                        "date" | "datetime" => ColType::Date,
-                        x if x.starts_with("varchar") || x.starts_with("character") => ColType::VarChar,
-                        "text" => ColType::VarChar,
-                        _ => ColType::Unknown
-                    }
-                    
-                }).unwrap_or(ColType::Unknown);
+                let typ = iter.next().map(|t| { trie.find(t.to_lowercase().as_str(), false).unwrap_or(ColType::Unknown) }).unwrap();
                 Some(Header::new(name.unwrap(), typ))
             })
             .collect::<Vec<_>>();
@@ -442,4 +444,21 @@ macro_rules! get_or_null {
     ($value:expr) => {
         $value.map_or(Value::default(), |v| Value::new(v.to_string()))
     };
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_trie_find() {
+        let trie = init_trie();
+        let typ = trie.find("date", false);
+        assert_eq!(typ, Some(ColType::Date));
+        let typ = trie.find("datetime", false);
+        assert_eq!(typ, Some(ColType::Date));
+        let typ = trie.find("timestamp with time zone", false);
+        assert_eq!(typ, Some(ColType::Date));
+    }
 }
