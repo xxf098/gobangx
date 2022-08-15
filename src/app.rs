@@ -359,10 +359,10 @@ impl<'a> App<'a> {
                         if headers.len() < 1 {
                             headers = column_headers;
                         } else {
-                            // merge headers
-                            for header in headers.iter_mut() {
-                                if let Some(h) = column_headers.iter().filter(|h| h.name == header.name).next() {
-                                    if h.col_type != ColType::Unknown {
+                            // merge headers, use real column type
+                            for (i, header) in headers.iter_mut().enumerate() {
+                                if let Some(h) = column_headers.get(i) {
+                                    if h.name == header.name && h.col_type != ColType::Unknown {
                                         header.col_type = h.col_type.clone();
                                     }
                                 }
