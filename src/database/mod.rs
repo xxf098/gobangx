@@ -68,7 +68,6 @@ pub trait Pool: Send + Sync {
             .filter_map(|c| {
                 let mut iter = c.columns().into_iter();
                 let name = iter.next();
-                // map
                 if name.is_none() {
                     return None
                 }
@@ -134,7 +133,7 @@ impl DatabaseType {
 
     pub fn drop_table(&self, database: &Database, table: &Table) -> String {
         match self {
-            DatabaseType::Postgres => format!("drop table {}.{}.{}", database.name, table.pg_schema(),table.name),
+            DatabaseType::Postgres => format!(r#"drop table "{}"."{}"."{}""#, database.name, table.pg_schema(),table.name),
             DatabaseType::MySql => format!("drop table {}.{}", database.name, table.name),
             _ => format!("drop table {}", table.name),
         }
@@ -323,7 +322,7 @@ impl DatabaseType {
                 let mut sqls = vec![];
                 for row in rows {
                     let row_str = convert_row_str(row, headers);
-                    let sql = format!("INSERT INTO {}.{} ({}) VALUES ({})", table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, header_str, row_str);
+                    let sql = format!(r#"INSERT INTO "{}"."{}" ({}) VALUES ({})"#, table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, header_str, row_str);
                     sqls.push(sql)
                 }
                 sqls.join(";\n")
