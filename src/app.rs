@@ -57,7 +57,7 @@ impl<'a> App<'a> {
             connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.settings),
             record_table: RecordTableComponent::new(config.key_config.clone(), config.settings.clone()),
             properties: PropertiesComponent::new(&config.key_config, &config.settings),
-            sql_editor: SqlEditorComponent::new(&config.key_config, config.settings.clone(), DatabaseType::Sqlite),
+            sql_editor: SqlEditorComponent::new(&config.key_config, &config.settings, DatabaseType::Sqlite),
             tab: TabComponent::new(&config.key_config),
             help: HelpComponent::new(&config.key_config),
             databases: DatabasesComponent::new(&config.key_config, &config.settings),
