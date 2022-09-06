@@ -21,7 +21,7 @@ impl Default for EventConfig {
 #[derive(Clone, Debug)]
 pub enum Event {
     Input(Key),
-    _RedrawDatabase(bool),
+    RedrawDatabase(bool),
     RedrawTable(bool),
     OrderByTable((String, usize)),
     ToggleTree,
