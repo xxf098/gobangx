@@ -437,15 +437,15 @@ impl Connection {
         })
     }
 
-    pub fn is_mysql(&self) -> bool {
+    pub fn _is_mysql(&self) -> bool {
         matches!(self.r#type, DatabaseType::MySql)
     }
 
-    pub fn is_postgres(&self) -> bool {
+    pub fn _is_postgres(&self) -> bool {
         matches!(self.r#type, DatabaseType::Postgres)
     }
 
-    pub fn is_mssql(&self) -> bool {
+    pub fn _is_mssql(&self) -> bool {
         matches!(self.r#type, DatabaseType::Mssql)
     }
 
