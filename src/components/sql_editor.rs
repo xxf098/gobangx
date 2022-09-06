@@ -44,14 +44,14 @@ pub struct SqlEditorComponent<'a> {
     query_result: Option<QueryResult>,
     completion: AdvanceCompletionComponent,
     key_config: &'a KeyConfig,
-    settings: Settings,
+    settings: &'a Settings,
     paragraph_state: ParagraphState,
     focus: Focus,
     database_type: DatabaseType,
 }
 
 impl<'a> SqlEditorComponent<'a> {
-    pub fn new(key_config: &'a KeyConfig, settings: Settings, database_type: DatabaseType) -> Self {
+    pub fn new(key_config: &'a KeyConfig, settings: &'a Settings, database_type: DatabaseType) -> Self {
         let db_type = database_type.clone();
         let completion = AdvanceCompletionComponent::new_with_candidates(key_config.clone(), settings.clone(), db_type.into());
         Self {

@@ -57,10 +57,15 @@ impl DatabaseTree {
         new_self
     }
 
-    pub fn filter_by_id(&self, id: usize, reverse: bool) -> Self {
+    pub fn filter_by_id(&mut self, id: usize, reverse: bool) -> Self {
+        let items_len  = self.items.len();
+        let items = self.items.filter_by_id(id, reverse);
+        if items.len() < items_len {
+            self.move_selection(MoveSelection::Up);
+        }
         let mut new_self = Self {
-            items: self.items.filter_by_id(id, reverse),
-            selection: Some(0),
+            items,
+            selection: self.selection,
             visual_selection: None,
         };
         new_self.visual_selection = new_self.calc_visual_selection();

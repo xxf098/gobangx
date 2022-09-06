@@ -1,6 +1,6 @@
 [package]
 name = "gobang"
-version = "0.4.0"
+version = "0.5.0"
 authors = ["xxf098 <xxf098@protonmail.com>"]
 edition = "2018"
 license = "MIT"
@@ -20,7 +20,7 @@ tui = { version = "0.17.0", features = ["crossterm"], default-features = false }
 crossterm = "0.23"
 anyhow = "1.0.55"
 unicode-width = "0.1"
-sqlx = { version = "0.5.11", features = ["mysql", "postgres", "sqlite", "mssql", "chrono", "runtime-tokio-rustls", "decimal", "json"], default-features = false }
+sqlx = { version = "0.5.13", features = ["mysql", "postgres", "sqlite", "mssql", "chrono", "runtime-tokio-rustls", "decimal", "json"], default-features = false }
 chrono = "0.4"
 tokio = { version = "1.17.0", features = ["full"] }
 futures = "0.3.21"
@@ -30,7 +30,7 @@ toml = "0.5"
 strum = "0.24"
 strum_macros = "0.24"
 database-tree = { path = "./database-tree", version = "0.1.0-alpha.5" }
-sqlparse = { version = "0.3.2" }
+sqlparse = { version = "0.3.3" }
 easy-cast = "0.4"
 async-trait = "0.1.52"
 itertools = "0.10.3"

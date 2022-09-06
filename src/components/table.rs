@@ -538,22 +538,30 @@ impl TableComponent {
         )
     }
 
-    // primary_key,id,first column
-    async fn primary_key_value(&self, pool: &Box<dyn Pool>, database: &Database, table: &DTable) -> anyhow::Result<(String, Value)> {
+    // column order: primary_key,id,first column
+    async fn primary_key_value(&self, pool: &Box<dyn Pool>, database: &Database, table: &DTable) -> anyhow::Result<(String, Vec<Value>)> {
         let database_type = pool.database_type();
         let columns = database_type.primary_key_columns(pool, &database, &table).await?;
         if  let Some(primary_key) = columns.iter().next() {
             if let Some(index) = self.headers.iter().position(|h| h.name == *primary_key) {
-                if let Some(value) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.get(index).map(|s| s.clone()))).flatten().flatten() {
-                    return Ok((primary_key.to_string(), value.read().unwrap().clone()))
+                if let Some(value) = self.selected_rows()
+                        .map(|rows| rows.iter().filter_map(|row| row.get(index).map(|s| s.clone()))
+                        .map(|v| v.read().unwrap().clone())
+                        .collect::<Vec<_>>()) {
+                    return Ok((primary_key.to_string(), value))
                 }
             }
         } else {
-            if let Some((i, col)) = self.headers.iter().enumerate().find(|(_, h)| h.name.to_lowercase() == "id" ).or(self.headers.iter().enumerate().next()) {
-                if let Some(id) = self.selected_rows().map(|rows| rows.iter().next().map(|row| row.get(i).map(|s| s.clone()))).flatten().flatten() {
-                    // let col = self.headers.iter().next().unwrap();
-                    return Ok((col.name.clone(), id.read().unwrap().clone()))
+            if let Some((index, col)) = self.headers.iter().enumerate().find(|(_, h)| h.name.to_lowercase() == "id" ).or(self.headers.iter().enumerate().next()) {
+                if let Some(value) = self.selected_rows()
+                        .map(|rows| rows.iter().filter_map(|row| row.get(index).map(|s| s.clone()))
+                        .map(|v| v.read().unwrap().clone())
+                        .collect::<Vec<_>>()) {
+                    return Ok((col.name.clone(), value))
                 }
+                // if let Some(id) = self.selected_rows().map(|rows| rows.iter().map(|row| row.get(index).map(|s| s.clone()))).flatten().flatten() {
+                //     return Ok((col.name.clone(), id.read().unwrap().clone()))
+                // }
             }
         }
         anyhow::bail!("primary key not found")
@@ -831,8 +839,10 @@ impl Component for TableComponent {
         // delete by primary_key
         if key == self.key_config.delete {
             if let Some((database, table)) = &self.table {
-                let (primary_key, value) = self.primary_key_value(pool, database, table).await?;
-                let sql = pool.database_type().delete_row_by_column(&database, &table, &primary_key, &value.data);
+                let (primary_key, values) = self.primary_key_value(pool, database, table).await?;
+                let col_values = values.iter().map(|v| v.data.as_str()).collect::<Vec<_>>();
+                // let sql = pool.database_type().delete_row_by_column(&database, &table, &primary_key, &values[0].data);
+                let sql = pool.database_type().delete_rows_by_column(&database, &table, &primary_key, &col_values);
                 pool.execute(&sql).await?;
                 store.dispatch(Event::RedrawTable(true)).await?;
                 return Ok(EventState::Consumed)
@@ -878,7 +888,7 @@ impl Component for TableComponent {
                 let header = &self.headers[self.selected_column];
                 let v = self.cell_editor.value();
                 let value = if v == NULL { Value::default() } else { Value::new(v.clone()) };
-                let sql = pool.database_type().update_row_by_column(database, table, &pkey, &pval.data, &header, &value);
+                let sql = pool.database_type().update_row_by_column(database, table, &pkey, &pval[0].data, &header, &value);
                 self.set_selected_cell(v);
                 pool.execute(&sql).await?;
                 return Ok(EventState::Consumed)

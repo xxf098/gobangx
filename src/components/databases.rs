@@ -295,6 +295,7 @@ impl<'a> Component for DatabasesComponent<'a> {
         pool: &Box<dyn Pool>,
         _store: &Store,
     ) -> Result<EventState> {
+        // delete table
         if key == self.key_config.delete {
             if let Some((database, table, id)) = self.tree.selected_table() {
                 let sql = pool.database_type().drop_table(&database, &table);

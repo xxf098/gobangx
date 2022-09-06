@@ -15,11 +15,26 @@ use std::sync::{Arc, RwLock};
 use async_trait::async_trait;
 use database_tree::{Child, Database, Table};
 use crate::config::DatabaseType;
+use sqlparse::Trie;
 
 // pub const RECORDS_LIMIT_PER_PAGE: u8 = 200;
 pub const MYSQL_KEYWORDS: [&str; 1] = ["int"];
 pub const POSTGRES_KEYWORDS: [&str; 1] = ["group"];
 const INDENT: &str = "    ";
+
+// TODO: memo
+fn init_trie () -> Trie<ColType> {
+    let mut trie = Trie::default();
+    let ints = ["int", "smallint", "bigint", "mediumint", "tinyint", "integer"];
+    for key in ints { trie.insert(key, ColType::Int) };
+    let floats = ["real", "double", "float"];
+    for key in floats { trie.insert(key, ColType::Float) };
+    let time = ["timestamp", "date", "datetime"];
+    for key in time { trie.insert(key, ColType::Date) };
+    let varchar = ["varchar", "character", "text"];
+    for key in varchar { trie.insert(key, ColType::VarChar) };
+    trie
+}
 
 #[async_trait]
 pub trait Pool: Send + Sync {
@@ -40,6 +55,29 @@ pub trait Pool: Send + Sync {
         database: &Database,
         table: &Table,
     ) -> anyhow::Result<Vec<Box<dyn TableRow>>>;
+
+    async fn get_headers(
+        &self,
+        database: &Database,
+        table: &Table,
+    ) -> anyhow::Result<Vec<Header>> {
+        let columns = self.get_columns(&database, &table).await?;
+        let trie = init_trie();
+        let headers = columns
+            .iter()
+            .filter_map(|c| {
+                let mut iter = c.columns().into_iter();
+                let name = iter.next();
+                if name.is_none() {
+                    return None
+                }
+                let typ = iter.next().map(|t| { trie.find(t.to_lowercase().as_str(), false).unwrap_or(ColType::Unknown) }).unwrap();
+                Some(Header::new(name.unwrap(), typ))
+            })
+            .collect::<Vec<_>>();
+        // merge 2 headers
+        Ok(headers)
+    }
 
     async fn get_columns2(
         &self,
@@ -95,7 +133,7 @@ impl DatabaseType {
 
     pub fn drop_table(&self, database: &Database, table: &Table) -> String {
         match self {
-            DatabaseType::Postgres => format!("drop table {}.{}.{}", database.name, table.pg_schema(),table.name),
+            DatabaseType::Postgres => format!(r#"drop table "{}"."{}"."{}""#, database.name, table.pg_schema(),table.name),
             DatabaseType::MySql => format!("drop table {}.{}", database.name, table.name),
             _ => format!("drop table {}", table.name),
         }
@@ -241,11 +279,24 @@ impl DatabaseType {
         Ok(columns)
     }
 
+    // FIXME: check column type
     pub fn delete_row_by_column(&self, database: &Database, table: &Table, col: &str, val: &str) -> String {
         match self {
             DatabaseType::MySql => format!("delete from `{}`.`{}` where {} = '{}' LIMIT 1", database.name, table.name, col, val),
             DatabaseType::Sqlite => format!("delete from `{table}` where {col} = (select {col} from `{table}` where {col} = '{val}' LIMIT 1)", table=table.name, col=col, val=val),
             DatabaseType::Postgres => format!(r#"delete from "{database}"."{schema}"."{table}" where "{col}" = (select "{col}" from "{database}"."{schema}"."{table}" where "{col}" = '{val}' LIMIT 1)"#, database=database.name, schema=table.pg_schema(), table=table.name, col=col, val=val),
+            _ => unimplemented!(),
+        }
+    }
+
+    // delete multiple rows
+    pub fn delete_rows_by_column(&self, database: &Database, table: &Table, col: &str, val: &[&str]) -> String {
+        let v = format!("'{}'", val.join("','"));
+        let limit = val.len();
+        match self {
+            DatabaseType::MySql => format!("DELETE FROM `{}`.`{}` where {} IN ({}) LIMIT {}", database.name, table.name, col, v, limit),
+            DatabaseType::Sqlite => format!("delete from `{table}` where {col} IN (select {col} from `{table}` where {col} IN ({val}) LIMIT {limit})", table=table.name, col=col, val=v, limit=limit),
+            DatabaseType::Postgres => format!(r#"delete from "{database}"."{schema}"."{table}" where "{col}" IN (select "{col}" from "{database}"."{schema}"."{table}" where "{col}" IN ({val}) LIMIT {limit})"#, database=database.name, schema=table.pg_schema(), table=table.name, col=col, val=v, limit=limit),
             _ => unimplemented!(),
         }
     }
@@ -271,7 +322,7 @@ impl DatabaseType {
                 let mut sqls = vec![];
                 for row in rows {
                     let row_str = convert_row_str(row, headers);
-                    let sql = format!("INSERT INTO {}.{} ({}) VALUES ({})", table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, header_str, row_str);
+                    let sql = format!(r#"INSERT INTO "{}"."{}" ({}) VALUES ({})"#, table.schema.clone().unwrap_or_else(|| "public".to_string()), table.name, header_str, row_str);
                     sqls.push(sql)
                 }
                 sqls.join(";\n")
@@ -392,4 +443,21 @@ macro_rules! get_or_null {
     ($value:expr) => {
         $value.map_or(Value::default(), |v| Value::new(v.to_string()))
     };
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_trie_find() {
+        let trie = init_trie();
+        let typ = trie.find("date", false);
+        assert_eq!(typ, Some(ColType::Date));
+        let typ = trie.find("datetime", false);
+        assert_eq!(typ, Some(ColType::Date));
+        let typ = trie.find("timestamp with time zone", false);
+        assert_eq!(typ, Some(ColType::Date));
+    }
 }

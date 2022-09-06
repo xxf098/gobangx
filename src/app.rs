@@ -2,7 +2,7 @@ use crate::clipboard::copy_to_clipboard;
 use crate::components::{
     HelpInfo, Component as _, DrawableComponent as _, EventState, StatefulDrawableComponent,
 };
-use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, MssqlPool};
+use crate::database::{MySqlPool, Pool, PostgresPool, SqlitePool, MssqlPool, ColType};
 use crate::event::{Key, Event, Store};
 use crate::config::DatabaseType;
 use crate::{
@@ -57,7 +57,7 @@ impl<'a> App<'a> {
             connections: ConnectionsComponent::new(&config.key_config, &config.conn, &config.settings),
             record_table: RecordTableComponent::new(config.key_config.clone(), config.settings.clone()),
             properties: PropertiesComponent::new(&config.key_config, &config.settings),
-            sql_editor: SqlEditorComponent::new(&config.key_config, config.settings.clone(), DatabaseType::Sqlite),
+            sql_editor: SqlEditorComponent::new(&config.key_config, &config.settings, DatabaseType::Sqlite),
             tab: TabComponent::new(&config.key_config),
             help: HelpComponent::new(&config.key_config),
             databases: DatabasesComponent::new(&config.key_config, &config.settings),
@@ -176,20 +176,7 @@ impl<'a> App<'a> {
         if let Some(pool) = self.pool.as_ref() {
             pool.close().await;
         }
-        let page_size = self.config.settings.page_size;
-        self.pool = if conn.is_mysql() {
-            Some(Box::new(
-                MySqlPool::new(conn.database_url()?.as_str(), page_size).await?,
-            ))
-        } else if conn.is_postgres() {
-            Some(Box::new(
-                PostgresPool::new(conn.database_url()?.as_str(), page_size).await?,
-            ))
-        } else {
-            Some(Box::new(
-                SqlitePool::new(conn.database_url()?.as_str(), page_size).await?,
-            ))
-        };
+        self.pool = Some(self.get_pool(conn).await?);
         self.databases
             .update(conn, self.pool.as_ref().unwrap(), &mut self.updater)
             .await?;
@@ -204,28 +191,8 @@ impl<'a> App<'a> {
             if let Some(pool) = self.pool.as_ref() {
                 pool.close().await;
             }
-            let page_size = self.config.settings.page_size;
-            self.pool = if conn.is_mysql() {
-                self.sql_editor.set_database_type(DatabaseType::MySql);
-                Some(Box::new(
-                    MySqlPool::new(conn.database_url()?.as_str(), page_size).await?,
-                ))
-            } else if conn.is_postgres() {
-                self.sql_editor.set_database_type(DatabaseType::Postgres);
-                Some(Box::new(
-                    PostgresPool::new(conn.database_url()?.as_str(), page_size).await?,
-                ))
-            } else if conn.is_mssql() {
-                self.sql_editor.set_database_type(DatabaseType::Mssql);
-                Some(Box::new(
-                    MssqlPool::new(conn.database_url()?.as_str(), page_size).await?,
-                ))
-            } else {
-                self.sql_editor.set_database_type(DatabaseType::Sqlite);
-                Some(Box::new(
-                    SqlitePool::new(conn.database_url()?.as_str(), page_size).await?,
-                ))
-            };
+            self.pool = Some(self.get_pool(conn).await?);
+            self.sql_editor.set_database_type(conn.get_type());
             self.databases
                 .update(conn, self.pool.as_ref().unwrap(), &mut self.updater)
                 .await?;
@@ -234,6 +201,17 @@ impl<'a> App<'a> {
             self.tab.reset();
         }
         Ok(())
+    }
+
+    async fn get_pool(&self, conn: &Connection) -> anyhow::Result<Box<dyn Pool>> {
+        let page_size = self.config.settings.page_size;
+        let database_url = conn.database_url()?;
+        match conn.get_type() {
+            DatabaseType::MySql => Ok(Box::new(MySqlPool::new(&database_url, page_size).await?)),
+            DatabaseType::Postgres => Ok(Box::new(PostgresPool::new(&database_url, page_size).await?)),
+            DatabaseType::Mssql => Ok(Box::new(MssqlPool::new(&database_url, page_size).await?)),
+            DatabaseType::Sqlite => Ok(Box::new(SqlitePool::new(&database_url, page_size).await?)),
+        }
     }
 
     async fn update_record_table(&mut self, focus: bool, orderby: Option<String>, selected_column: usize) -> anyhow::Result<()> {
@@ -367,12 +345,29 @@ impl<'a> App<'a> {
                     if let Some((database, table, id)) = self.databases.tree().selected_table() {
                         self.recents.add(id, &database, &table);
                         self.record_table.reset();
-                        let (headers, records) = self
+                        // handle null value
+                        let column_headers = self.pool.
+                            as_ref()
+                            .unwrap()
+                            .get_headers(&database, &table).await?;
+                        let (mut headers, records) = self
                             .pool
                             .as_ref()
                             .unwrap()
                             .get_records(&database, &table, 0, None, None)
                             .await?;
+                        if headers.len() < 1 {
+                            headers = column_headers;
+                        } else {
+                            // merge headers, use real column type
+                            for (i, header) in headers.iter_mut().enumerate() {
+                                if let Some(h) = column_headers.get(i) {
+                                    if h.name == header.name && h.col_type != ColType::Unknown {
+                                        header.col_type = h.col_type.clone();
+                                    }
+                                }
+                            } 
+                        }
                         if self.updater.update_columns(&database, &table, &headers) {
                             self.sql_editor.update_db_metadata(self.updater.db_metadata());
                         }
