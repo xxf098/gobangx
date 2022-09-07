@@ -23,6 +23,7 @@ pub enum SuggestType {
 
 impl SuggestType {
 
+    #![allow(dead_code)]
     pub fn column(schema: Option<&str>, table: &str, alias: Option<&str>) -> SuggestType {
         SuggestType::Column(vec![SuggestTable::new(schema, table, alias)])
     }

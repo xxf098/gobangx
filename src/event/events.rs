@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::event::Key;
 use crossterm::event;
 use tokio::sync::mpsc;
