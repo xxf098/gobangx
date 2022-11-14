@@ -16,7 +16,7 @@ members=[
 ]
 
 [dependencies]
-tui = { version = "0.17.0", features = ["crossterm"], default-features = false }
+tui = { version = "0.19.0", features = ["crossterm"], default-features = false }
 crossterm = "0.23"
 anyhow = "1.0.55"
 unicode-width = "0.1"
