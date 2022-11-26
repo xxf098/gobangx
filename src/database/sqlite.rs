@@ -18,7 +18,7 @@ impl SqlitePool {
         Ok(Self {
             page_size,
             pool: SqlitePoolOptions::new()
-                .connect_timeout(Duration::from_secs(5))
+                .acquire_timeout(Duration::from_secs(5))
                 .connect(database_url)
                 .await?,
         })

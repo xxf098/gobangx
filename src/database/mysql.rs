@@ -20,7 +20,7 @@ impl MySqlPool {
         Ok(Self {
             page_size,
             pool: MySqlPoolOptions::new()
-                .connect_timeout(Duration::from_secs(5))
+                .acquire_timeout(Duration::from_secs(5))
                 .connect(database_url)
                 .await?,
         })
