@@ -48,17 +48,7 @@ impl DatabaseTreeItems {
                 .tree_items
                 .iter()
                 .filter(|item| if reverse { item.id != id } else { item.id == id } )
-                .map(|item| {
-                    let mut item = item.clone();
-                    if item.is_database() {
-                        item.set_collapsed(false);
-                        item
-                    } else {
-                        let mut item = item;
-                        item.show();
-                        item
-                    }
-                })
+                .map(|item| item.clone())
                 .collect::<Vec<DatabaseTreeItem>>(),
         }
     }
