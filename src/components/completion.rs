@@ -89,7 +89,7 @@ impl<T: Completion> CompletionComponent<T> {
     fn next(&mut self) {
         let i = match self.state.selected() {
             Some(i) => {
-                if i >= self.filterd_candidates().len() - 1 {
+                if i >= self.filterd_candidates().len().saturating_sub(1) {
                     0
                 } else {
                     i + 1
@@ -104,7 +104,7 @@ impl<T: Completion> CompletionComponent<T> {
         let i = match self.state.selected() {
             Some(i) => {
                 if i == 0 {
-                    self.filterd_candidates().len() - 1
+                    self.filterd_candidates().len().saturating_sub(1)
                 } else {
                     i - 1
                 }
