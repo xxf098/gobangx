@@ -65,7 +65,7 @@ jobs:
       TARGET_DIR: ./target
       # Emit backtraces on panics.
       RUST_BACKTRACE: 1
-      RUST_MIN_SRV: "1.43.1"
+      RUST_MIN_SRV: "1.65.0"
     strategy:
       fail-fast: false
       matrix:
@@ -73,7 +73,7 @@ jobs:
         # build: [linux, linux-arm, macos, win-msvc, win32-msvc]
         include:
         - build: linux
-          os: ubuntu-18.04
+          os: ubuntu-22.04
           rust: stable
           target: x86_64-unknown-linux-musl
         # - build: linux-arm
@@ -93,7 +93,7 @@ jobs:
         #   rust: stable
         #   target: i686-pc-windows-msvc
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Install Rust
         uses: actions-rs/toolchain@v1
