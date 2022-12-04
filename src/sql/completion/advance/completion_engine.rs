@@ -84,6 +84,9 @@ impl Suggest {
                 self.parse(text_before_cursor)
             } else {
                 tokens = self.parse(word_before_cursor);
+                if tokens.len() < 1 {
+                    return vec![]
+                }
                 let p = &tokens[0];
                 let l = text_before_cursor.len() - word_before_cursor.len();
                 if p.children.len() > 0 && p.children.token_idx(Some(0)).map(|t| t.typ == TokenType::Identifier).unwrap_or(false) {
