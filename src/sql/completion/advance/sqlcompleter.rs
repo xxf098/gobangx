@@ -209,6 +209,20 @@ mod tests {
     }
 
     #[test]
+    fn test_complete_table() {
+        let mut completer = AdvanceSQLCompleter::new(DatabaseType::Postgres, vec![]);
+        let candidates = vec!["abc".to_string()];
+        let mut db_metadata = DbMetadata::default();
+        db_metadata.current_db = "test".to_string();
+        db_metadata.schemas = vec!["test".into(), "test1".into()];
+        db_metadata.tables = vec!["mytbl".into(), "tablename".into()];
+        let db_metadata = Arc::new(RwLock::new(db_metadata));
+        completer.update(&candidates, Some(db_metadata));
+        let completions = completer.get_completions("select * from test.my");
+        assert_eq!(completions, vec!["mytbl"])
+    }
+
+    #[test]
     fn test_suggest_type1() {
         let suggest = Suggest::default();
         let now = Instant::now();
