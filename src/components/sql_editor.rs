@@ -100,7 +100,7 @@ impl<'a> SqlEditorComponent<'a> {
                 .input
                 .iter()
                 .enumerate()
-                .filter(|(i, _)| i < &self.input_idx.saturating_sub(self.completion.word().len()))
+                .filter(|(i, _)| i < &self.input_idx.saturating_sub(self.completion.completed_word().len()))
                 .map(|(_, c)| c.to_string())
                 .collect::<Vec<String>>();
             let last = self
@@ -136,7 +136,7 @@ impl<'a> SqlEditorComponent<'a> {
             if is_last_word {
                 self.input_idx += 1;
             }
-            self.input_idx -= self.completion.word().len();
+            self.input_idx -= self.completion.completed_word().len();
             self.input_cursor_position_x += middle
                 .join("")
                 .chars()
@@ -147,7 +147,7 @@ impl<'a> SqlEditorComponent<'a> {
             }
             self.input_cursor_position_x -= self
                 .completion
-                .word()
+                .completed_word()
                 .chars()
                 .map(compute_character_width)
                 .sum::<u16>();

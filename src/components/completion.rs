@@ -134,6 +134,16 @@ impl<T: Completion> CompletionComponent<T> {
         self.word.to_string()
     }
 
+    // complete schema.table
+    pub fn completed_word(&self) -> String {
+        let mut word = self.word.to_string();
+        if word.contains(".") {
+            let last_word = word.as_str().split(".").last().map(|s| s.to_string());
+            word = last_word.unwrap_or(word)
+        }
+        return word
+    }
+
     pub fn visible(&self) -> bool {
         self.visible
     }
