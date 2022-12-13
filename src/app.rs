@@ -398,6 +398,7 @@ impl<'a> App<'a> {
                         if key[0] == self.config.key_config.enter && self.record_table.filter_focused()
                         {
                             self.update_record_table(true, None, 0).await?;
+                            self.record_table.filter.save_history()
                         }
 
                         if key[0] == self.config.key_config.exit_popup && self.record_table.filter_focused()

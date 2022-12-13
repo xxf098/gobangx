@@ -20,7 +20,7 @@ impl PostgresPool {
         Ok(Self {
             page_size,
             pool: PgPoolOptions::new()
-                .connect_timeout(Duration::from_secs(5))
+                .acquire_timeout(Duration::from_secs(5))
                 .connect(database_url)
                 .await?,
         })

@@ -16,6 +16,7 @@ use tui::{
     Frame,
 };
 use unicode_width::UnicodeWidthStr;
+use std::collections::VecDeque;
 
 pub struct TableFilterComponent {
     key_config: KeyConfig,
@@ -25,6 +26,8 @@ pub struct TableFilterComponent {
     input_idx: usize,
     input_cursor_position: u16,
     completion: PlainCompletionComponent,
+    history: VecDeque<String>,
+    history_index: usize,
 }
 
 impl TableFilterComponent {
@@ -37,11 +40,31 @@ impl TableFilterComponent {
             input_cursor_position: 0,
             completion: PlainCompletionComponent::new(key_config, settings.clone(),"", false),
             settings,
+            history: VecDeque::with_capacity(10),
+            history_index: 0,
         }
     }
 
+    // enter to search
     pub fn input_str(&self) -> String {
         self.input.iter().collect()
+    }
+
+    pub fn save_history(&mut self)  {
+        self.history_index = 0;
+        let s: String = self.input.iter().collect();
+        if s.len() < 1 {
+            return
+        }
+        if let Some(back) = self.history.back() {
+            if back.as_str() == s {
+                return
+            }
+        }
+        if self.history.len() >= 20 {
+            self.history.pop_front();
+        }
+        self.history.push_back(s)
     }
 
     pub fn reset(&mut self) {
@@ -260,6 +283,22 @@ impl Component for TableFilterComponent {
                     self.input_cursor_position = self.input_str().width() as u16;
                 }
                 Ok(EventState::Consumed)
+            }
+            [Key::Up] => {
+                if self.input_idx >= self.input.len() {
+                    self.history_index = if self.history_index == 0 { self.history.len().saturating_sub(1) } 
+                        else { self.history_index.saturating_sub(1) };
+                    if let Some(s) = self.history.get(self.history_index) {
+                        self.input = s.chars().collect();
+                        self.input_idx = self.input.len();
+                        self.input_cursor_position = self.input_str().width() as u16;
+                        Ok(EventState::Consumed)
+                    } else {
+                        self.completion.event(key)
+                    }
+                } else {
+                    self.completion.event(key)
+                }
             }
             key => self.completion.event(key),
         }
