@@ -94,6 +94,7 @@ pub struct KeyConfig {
     pub move_down: Key,
     pub copy: Key,
     pub copy2: [Key; 2], // copy column
+    pub copy3: [Key; 2], // copy full path/full row
     pub advanced_copy: Key, // copy table schema
     pub enter: Key,
     pub space: Key,
@@ -196,6 +197,7 @@ impl Default for KeyConfig {
             move_down: Key::Down,
             copy: Key::Char('y'),
             copy2: [Key::Char('y'), Key::Char('c')],
+            copy3: [Key::Char('y'), Key::Char('y')],
             advanced_copy: Key::Char('Y'),
             enter: Key::Enter,
             space: Key::Char(' '),

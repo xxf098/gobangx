@@ -38,6 +38,7 @@ pub enum DatabaseTreeItemKind {
     },
     Table {
         database: Database,
+        schema: Schema,
         table: Table,
     },
     Schema {
@@ -84,6 +85,14 @@ impl DatabaseTreeItemKind {
         }
     }
 
+    pub fn fullname(&self) -> String {
+        match self {
+            Self::Database { name, .. } => name.to_string(),
+            Self::Table { table, schema, .. } => format!("{}.{}", schema.name.clone(), table.name.clone()),
+            Self::Schema { schema, database, .. } => format!("{}.{}", schema.name.clone(), database.name.clone()),
+        }
+    }
+
     pub fn database_name(&self) -> Option<String> {
         match self {
             Self::Database { .. } => None,
@@ -116,6 +125,7 @@ impl DatabaseTreeItem {
             info: TreeItemInfo::new(if table.schema.is_some() { 2 } else { 1 }, false),
             kind: DatabaseTreeItemKind::Table {
                 database: database.clone(),
+                schema: Schema { name: table.schema.clone().unwrap_or(database.name.clone()), tables: vec![] },
                 table: table.clone(),
             },
         }

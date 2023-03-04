@@ -265,12 +265,19 @@ impl<'a> Component for DatabasesComponent<'a> {
                     return Ok(EventState::Consumed);
                 }
             }
+            key if key == self.key_config.copy3 => {
+                if let Some(item) = self.tree.selected_item() {
+                    let name = item.kind().fullname();
+                    copy_to_clipboard(&name)?;
+                }
+                return Ok(EventState::Consumed);
+            }
             key if key[0] == self.key_config.copy => {
                 if let Some(item) = self.tree.selected_item() {
                     let name = item.kind().name();
                     copy_to_clipboard(&name)?;
                 }
-                return Ok(EventState::Consumed);
+                return Ok(EventState::NotConsumed);
             }
             key => {
                 if tree_nav(
