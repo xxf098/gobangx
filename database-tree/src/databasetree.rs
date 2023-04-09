@@ -99,7 +99,7 @@ impl DatabaseTree {
             let item = &self.items.tree_items[index];
             match item.kind() {
                 DatabaseTreeItemKind::Database { .. } => None,
-                DatabaseTreeItemKind::Table { table, database } => {
+                DatabaseTreeItemKind::Table { table, database, .. } => {
                     Some((database.clone(), table.clone(), item.id))
                 }
                 DatabaseTreeItemKind::Schema { .. } => None,

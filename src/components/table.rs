@@ -9,6 +9,7 @@ use crate::database::{Pool, Header, Value};
 use crate::clipboard::copy_to_clipboard;
 use anyhow::Result;
 use database_tree::{Database, Table as DTable};
+use itertools::Itertools;
 use std::convert::{From, Into};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, RwLock};
@@ -734,6 +735,13 @@ impl Component for TableComponent {
         // } else if key == self.key_config.reset_column_width {
         //     self.reset_column();
         //     return Ok(EventState::Consumed);
+        } else if key == self.key_config.copy3 {
+            if let Some(rows) =  self.selected_rows() {
+                let data = rows.iter().map(|row| row.iter().map(|col| col.read().unwrap().clone().data.clone()).join(",")).join("\n");
+                copy_to_clipboard(&data)?;
+                return Ok(EventState::Consumed);
+            }
+            return Ok(EventState::Consumed);
         } else if key == [self.key_config.jump_to_start] {
             self.first_column();
             return Ok(EventState::Consumed);
